@@ -5,26 +5,17 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/Lakr233/Litext",
       "state" : {
-        "revision" : "ccc57c2ba7431925ec382e0b6971b43bdbd77c6e",
-        "version" : "0.5.1"
+        "revision" : "b7900007258b4e48887209e29316d8104ef6dc98",
+        "version" : "1.0.0"
       }
     },
     {
-      "identity" : "lookinserver",
+      "identity" : "markdown_core",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/QMUI/LookinServer/",
+      "location" : "https://github.com/Lakr233/markdown_core",
       "state" : {
-        "revision" : "e553d1b689d147817dc54ad5c28fcff71e860101",
-        "version" : "1.2.8"
-      }
-    },
-    {
-      "identity" : "lrucache",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/nicklockwood/LRUCache",
-      "state" : {
-        "revision" : "542f0449556327415409ededc9c43a4bd0a397dc",
-        "version" : "1.0.7"
+        "revision" : "cb38a2ae07f33c06a7a5972ae223f19bf6343119",
+        "version" : "0.1.2"
       }
     },
     {
@@ -37,30 +28,12 @@
       }
     },
     {
-      "identity" : "swift-cmark",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/swiftlang/swift-cmark",
-      "state" : {
-        "revision" : "b022b08312decdc46585e0b3440d97f6f22ef703",
-        "version" : "0.6.0"
-      }
-    },
-    {
       "identity" : "swift-collections",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/apple/swift-collections",
       "state" : {
         "revision" : "c1805596154bb3a265fd91b8ac0c4433b4348fb0",
         "version" : "1.2.0"
-      }
-    },
-    {
-      "identity" : "swiftmath",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Lakr233/SwiftMath",
-      "state" : {
-        "revision" : "cfd646dcac0c5553e21ebf1ee05f9078277518bc",
-        "version" : "1.7.2"
       }
     }
   ],
