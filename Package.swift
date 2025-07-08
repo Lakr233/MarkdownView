@@ -17,7 +17,7 @@ let package = Package(
     ],
     dependencies: [
         .package(url: "https://github.com/Lakr233/markdown_core", from: "0.1.2"),
-        .package(url: "https://github.com/Lakr233/Litext", from: "1.0.0"),
+        .package(url: "https://github.com/Lakr233/Litext", from: "1.0.2"),
         .package(url: "https://github.com/Lakr233/Splash", from: "0.17.0"),
     ],
     targets: [

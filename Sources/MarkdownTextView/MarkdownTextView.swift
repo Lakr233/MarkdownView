@@ -45,9 +45,14 @@ public class MarkdownTextView: UIView {
     public func set(document: String, theme: MarkdownTheme) {
         textView.attributedText = (try? TextBuilder(theme: theme).build(document)) ?? .init()
     }
-
+    
     // suggested to run at background thread
     public func set(ast: Root, theme: MarkdownTheme) {
+        textView.attributedText = TextBuilder(theme: theme).build(ast)
+    }
+    
+    // suggested to run at background thread
+    public func set(ast: [NodeWrapper], theme: MarkdownTheme) {
         textView.attributedText = TextBuilder(theme: theme).build(ast)
     }
 }

@@ -8,6 +8,7 @@
 import markdown_core
 import markdown_core_ast
 import UIKit
+import Litext
 
 protocol NodeTransformer {
     func transform(_ input: NodeWrapper, theme: MarkdownTheme) -> NSAttributedString
@@ -80,6 +81,15 @@ extension NodeWrapper {
         return paragraphStyle
     }
 
+    func createAttachmentHoldingString(attachment: LTXAttachment, theme: MarkdownTheme) -> NSMutableAttributedString {
+        var attributes = createDefaultAttributes(theme: theme)
+        attributes[LTXAttachmentAttributeName] = attachment
+        return NSMutableAttributedString(
+            string: LTXReplacementText,
+            attributes: attributes
+        )
+    }
+    
     func insertNewline(into: NSMutableAttributedString, theme: MarkdownTheme) {
         let newline = NSAttributedString(
             string: "\n",

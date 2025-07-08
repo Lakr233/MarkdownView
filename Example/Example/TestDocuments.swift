@@ -35,7 +35,13 @@ func ast_parse_thematicBreak() -> Root {
 
 func ast_parse_blockquote() -> Root {
     let json = markdown_rs_core_parse_to_ast_json(###"""
-    > quote
+    Sint mollit eu eiusmod incididunt veniam do voluptate fugiat incididunt quis minim non incididunt elit.
+    
+    > Fugiat eiusmod occaecat ea dolore minim reprehenderit sint fugiat eu do anim magna Lorem cillum. Elit magna et et magna sit proident deserunt ut nisi sunt ex ullamco ad. Commodo nostrud anim cupidatat eu voluptate sint pariatur. Deserunt incididunt et et sit tempor qui et eu veniam non mollit ullamco mollit dolor sit. Fugiat ea nulla occaecat qui esse. Nulla id aute velit eu velit sunt culpa incididunt et officia mollit. Consectetur ad ut aliqua non officia eiusmod est deserunt. Do laboris consequat sunt proident ex amet dolore ea do fugiat sit.
+    
+    > Sint mollit eu eiusmod incididunt veniam do voluptate fugiat incididunt quis minim non incididunt elit.
+    
+    Fugiat eiusmod occaecat ea dolore minim reprehenderit sint fugiat eu do anim magna Lorem cillum. Elit magna et et magna sit proident deserunt ut nisi sunt ex ullamco ad. Commodo nostrud anim cupidatat eu voluptate sint pariatur. Deserunt incididunt et et sit tempor qui et eu veniam non mollit ullamco mollit dolor sit. Fugiat ea nulla occaecat qui esse. Nulla id aute velit eu velit sunt culpa incididunt et officia mollit. Consectetur ad ut aliqua non officia eiusmod est deserunt. Do laboris consequat sunt proident ex amet dolore ea do fugiat sit.
     """###)
     let ast = try! MarkdownAbstractSyntaxTreeParser.parse(from: json)
     return ast

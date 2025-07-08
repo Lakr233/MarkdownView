@@ -26,9 +26,9 @@ public class TextBuilder {
         try build(parse(document))
     }
 
-    func build(_ ast: Root) -> NSAttributedString {
+    func build(_ children: [NodeWrapper]) -> NSAttributedString {
         let build = NSMutableAttributedString()
-        for child in ast.children {
+        for child in children {
             let transformer = child.transformer
             let attributedString = transformer.transform(child, theme: theme)
             if !attributedString.string.isEmpty {
@@ -36,5 +36,10 @@ public class TextBuilder {
             }
         }
         return build
+    }
+        
+    
+    func build(_ ast: Root) -> NSAttributedString {
+        build(ast.children)
     }
 }
