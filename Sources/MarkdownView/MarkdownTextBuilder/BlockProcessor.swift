@@ -17,6 +17,7 @@ final class BlockProcessor {
     private let thematicBreakDrawing: TextBuilder.DrawingCallback?
     private let codeDrawing: TextBuilder.DrawingCallback?
     private let tableDrawing: TextBuilder.DrawingCallback?
+    private let blockquoteDrawing: TextBuilder.BlockquoteDrawingCallback?
 
     init(
         theme: MarkdownTheme,
@@ -24,7 +25,8 @@ final class BlockProcessor {
         context: MarkdownTextView.PreprocessContent,
         thematicBreakDrawing: TextBuilder.DrawingCallback?,
         codeDrawing: TextBuilder.DrawingCallback?,
-        tableDrawing: TextBuilder.DrawingCallback?
+        tableDrawing: TextBuilder.DrawingCallback?,
+        blockquoteDrawing: TextBuilder.BlockquoteDrawingCallback?
     ) {
         self.theme = theme
         self.viewProvider = viewProvider
@@ -32,6 +34,7 @@ final class BlockProcessor {
         self.thematicBreakDrawing = thematicBreakDrawing
         self.codeDrawing = codeDrawing
         self.tableDrawing = tableDrawing
+        self.blockquoteDrawing = blockquoteDrawing
     }
 
     func processHeading(level _: Int, contents: [MarkdownInlineNode]) -> NSAttributedString {
@@ -55,7 +58,11 @@ final class BlockProcessor {
             paragraph.paragraphSpacing = 16
             paragraph.lineSpacing = 4
         } content: {
-            contents.render(theme: theme, context: context, viewProvider: viewProvider)
+            let rendered = contents.render(theme: theme, context: context, viewProvider: viewProvider)
+            if rendered.length == 0 {
+                return NSMutableAttributedString(string: " ", attributes: [.font: theme.fonts.body])
+            }
+            return rendered
         }
     }
 
@@ -98,11 +105,73 @@ final class BlockProcessor {
         return (text, codeView)
     }
 
-    func processBlockquote(_ children: [MarkdownBlockNode], processor: (MarkdownBlockNode) -> NSAttributedString) -> NSAttributedString {
+    func processBlockquote(_ children: [MarkdownBlockNode], depth: Int, processor: (MarkdownBlockNode) -> NSAttributedString) -> NSAttributedString {
         let result = NSMutableAttributedString()
-        for child in children {
-            result.append(processor(child))
+
+        for (index, child) in children.enumerated() {
+            let childContent = processor(child)
+
+            if index == 0, case .heading = child {
+                result.append(removeLeadingSpacing(from: childContent))
+            } else {
+                result.append(childContent)
+            }
         }
+
+        let blockquoteTheme = theme.blockquote
+        let totalIndent = CGFloat(depth + 1) * blockquoteTheme.leftIndent
+
+        result.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: result.length), options: []) { value, range, _ in
+            let paragraphStyle: NSMutableParagraphStyle = if let existingStyle = value as? NSParagraphStyle {
+                existingStyle.mutableCopy() as! NSMutableParagraphStyle
+            } else {
+                NSMutableParagraphStyle()
+            }
+
+            paragraphStyle.firstLineHeadIndent += totalIndent
+            paragraphStyle.headIndent += totalIndent
+            paragraphStyle.tailIndent = -blockquoteTheme.rightIndent
+
+            if paragraphStyle.paragraphSpacing > 8 {
+                paragraphStyle.paragraphSpacing = 8
+            }
+
+            result.addAttribute(.paragraphStyle, value: paragraphStyle, range: range)
+        }
+
+        applyTextColorAlpha(to: result, alpha: blockquoteTheme.textColorAlpha)
+
+        result.addAttribute(.blockquoteDepth, value: depth, range: NSRange(location: 0, length: result.length))
+
+        if result.length > 0 {
+            result.addAttribute(.isBlockquoteStart, value: true, range: NSRange(location: 0, length: 1))
+            result.addAttribute(.isBlockquoteEnd, value: true, range: NSRange(location: result.length - 1, length: 1))
+        }
+
+        if let blockquoteDrawing {
+            result.enumerateAttributes(in: NSRange(location: 0, length: result.length), options: []) { attributes, range, _ in
+                if let existingCallback = attributes[.ltxLineDrawingCallback] as? LTXLineDrawingAction {
+                    let combinedCallback = LTXLineDrawingAction { context, line, lineOrigin in
+                        blockquoteDrawing(context, line, lineOrigin, depth)
+                        existingCallback.action(context, line, lineOrigin)
+                    }
+                    result.addAttribute(.ltxLineDrawingCallback, value: combinedCallback, range: range)
+                } else {
+                    result.addAttribute(
+                        .ltxLineDrawingCallback,
+                        value: LTXLineDrawingAction { context, line, lineOrigin in
+                            blockquoteDrawing(context, line, lineOrigin, depth)
+                        },
+                        range: range
+                    )
+                }
+            }
+        }
+
+        if result.length > 0, !result.string.hasSuffix("\n") {
+            result.append(NSAttributedString(string: "\n"))
+        }
+
         return result
     }
 
@@ -153,5 +222,33 @@ extension BlockProcessor {
         )
         string.append(.init(string: "\n"))
         return string
+    }
+
+    private func removeLeadingSpacing(from attributedString: NSAttributedString) -> NSAttributedString {
+        let mutableString = attributedString.mutableCopy() as! NSMutableAttributedString
+        mutableString.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: mutableString.length), options: []) { value, range, _ in
+            if let style = value as? NSParagraphStyle {
+                let mutableStyle = style.mutableCopy() as! NSMutableParagraphStyle
+                mutableStyle.paragraphSpacingBefore = 0
+                mutableString.addAttribute(.paragraphStyle, value: mutableStyle, range: range)
+            }
+        }
+        return mutableString
+    }
+
+    private func applyTextColorAlpha(to attributedString: NSMutableAttributedString, alpha: CGFloat) {
+        let range = NSRange(location: 0, length: attributedString.length)
+
+        attributedString.enumerateAttributes(in: range, options: []) { attributes, range, _ in
+            if attributes[.foregroundColor] == nil {
+                attributedString.addAttribute(.foregroundColor, value: theme.colors.body, range: range)
+            }
+        }
+
+        attributedString.enumerateAttribute(.foregroundColor, in: range, options: []) { value, range, _ in
+            if let color = value as? UIColor, color.cgColor.alpha >= 1.0 {
+                attributedString.addAttribute(.foregroundColor, value: color.withAlphaComponent(alpha), range: range)
+            }
+        }
     }
 }

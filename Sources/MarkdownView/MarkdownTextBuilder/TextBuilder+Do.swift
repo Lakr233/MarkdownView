@@ -31,8 +31,17 @@ extension TextBuilder {
             .withBulletDrawing { context, line, lineOrigin, depth in
                 let radius: CGFloat = 3
                 let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                context.setStrokeColor(theme.colors.body.cgColor)
-                context.setFillColor(theme.colors.body.cgColor)
+
+                var textColor = theme.colors.body
+                if let firstRun = line.glyphRuns().first,
+                   let attributes = CTRunGetAttributes(firstRun) as? [NSAttributedString.Key: Any],
+                   let color = attributes[.foregroundColor] as? UIColor
+                {
+                    textColor = color
+                }
+
+                context.setStrokeColor(textColor.cgColor)
+                context.setFillColor(textColor.cgColor)
                 let rect = CGRect(
                     x: boundingBox.minX - 16,
                     y: boundingBox.midY - radius,
@@ -52,9 +61,18 @@ extension TextBuilder {
                 while text.count < size + 1 {
                     text = " " + text
                 }
+
+                var textColor = theme.colors.body
+                if let firstRun = line.glyphRuns().first,
+                   let attributes = CTRunGetAttributes(firstRun) as? [NSAttributedString.Key: Any],
+                   let color = attributes[.foregroundColor] as? UIColor
+                {
+                    textColor = color
+                }
+
                 let string = NSAttributedString(string: text, attributes: [
                     .font: theme.fonts.codeInline,
-                    .foregroundColor: theme.colors.body,
+                    .foregroundColor: textColor,
                 ])
                 let rect = lineBoundingBox(line, lineOrigin: lineOrigin).offsetBy(dx: -indent, dy: 0)
                 let path = CGPath(rect: rect, transform: nil)
@@ -73,8 +91,18 @@ extension TextBuilder {
                     width: imageSize.width,
                     height: imageSize.height
                 )
+
+                // Get the current color from the text
+                var textColor = theme.colors.body
+                if let firstRun = line.glyphRuns().first,
+                   let attributes = CTRunGetAttributes(firstRun) as? [NSAttributedString.Key: Any],
+                   let color = attributes[.foregroundColor] as? UIColor
+                {
+                    textColor = color
+                }
+
                 context.clip(to: targetRect, mask: cgImage)
-                context.setFillColor(theme.colors.body.withAlphaComponent(0.24).cgColor)
+                context.setFillColor(textColor.withAlphaComponent(0.24).cgColor)
                 context.fill(targetRect)
             }
             .withThematicBreakDrawing { [weak view] context, line, lineOrigin in
@@ -99,9 +127,14 @@ extension TextBuilder {
                 if codeView.superview != view { view.addSubview(codeView) }
                 let intrinsicContentSize = codeView.intrinsicContentSize
                 let lineBoundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
+                var leftIndent: CGFloat = 0
+                if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle {
+                    leftIndent = paragraphStyle.headIndent
+                }
+
                 codeView.frame = .init(
-                    origin: .init(x: lineOrigin.x, y: view.bounds.height - lineBoundingBox.maxY),
-                    size: .init(width: view.bounds.width, height: intrinsicContentSize.height)
+                    origin: .init(x: lineOrigin.x + leftIndent, y: view.bounds.height - lineBoundingBox.maxY),
+                    size: .init(width: view.bounds.width - leftIndent, height: intrinsicContentSize.height)
                 )
                 codeView.previewAction = view.codePreviewHandler
             }
@@ -117,12 +150,63 @@ extension TextBuilder {
                 if tableView.superview != view { view.addSubview(tableView) }
                 let lineBoundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
                 let intrinsicContentSize = tableView.intrinsicContentSize
+                var leftIndent: CGFloat = 0
+                if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle {
+                    leftIndent = paragraphStyle.headIndent
+                }
+
                 tableView.frame = .init(
-                    x: lineOrigin.x,
+                    x: lineOrigin.x + leftIndent,
                     y: view.bounds.height - lineBoundingBox.maxY,
-                    width: view.bounds.width,
+                    width: view.bounds.width - leftIndent,
                     height: intrinsicContentSize.height
                 )
+            }
+            .withBlockquoteDrawing { [weak view] context, line, lineOrigin, depth in
+                guard let view else { return }
+                let blockquoteTheme = theme.blockquote
+                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
+
+                var lineSpacing: CGFloat = 4
+                var paragraphSpacing: CGFloat = 0
+                var isStart = false
+                var isEnd = false
+
+                let lineRange = CTLineGetStringRange(line)
+                if lineRange.location < view.textView.attributedText.length {
+                    let attrs = view.textView.attributedText.attributes(at: lineRange.location, effectiveRange: nil)
+
+                    if let paragraphStyle = attrs[.paragraphStyle] as? NSParagraphStyle {
+                        lineSpacing = paragraphStyle.lineSpacing
+                        paragraphSpacing = paragraphStyle.paragraphSpacing
+                    }
+
+                    // Check for blockquote boundaries
+                    for i in lineRange.location ..< min(lineRange.location + lineRange.length, view.textView.attributedText.length) {
+                        let charAttrs = view.textView.attributedText.attributes(at: i, effectiveRange: nil)
+                        isStart = isStart || (charAttrs[.isBlockquoteStart] as? Bool ?? false)
+                        isEnd = isEnd || (charAttrs[.isBlockquoteEnd] as? Bool ?? false)
+                    }
+                }
+
+                // Calculate vertical bar dimensions
+                let overlapExtension: CGFloat = 10.0
+                let topExtension = isStart ? lineSpacing : (lineSpacing + overlapExtension)
+                let bottomExtension = isEnd ? lineSpacing : (lineSpacing + paragraphSpacing + overlapExtension)
+
+                let barTop = boundingBox.maxY + topExtension
+                let barBottom = boundingBox.minY - bottomExtension
+                let barHeight = barTop - barBottom
+
+                // Draw vertical bars for each nesting level
+                let textMargin = boundingBox.minX - (CGFloat(depth + 1) * blockquoteTheme.leftIndent)
+                for level in 0 ... depth {
+                    let barX = textMargin + CGFloat(level) * blockquoteTheme.leftIndent
+                    let alpha = level == 0 ? 1.0 : max(0.3, 0.6 - CGFloat(level - 1) * 0.15)
+
+                    context.setFillColor(blockquoteTheme.barColor.withAlphaComponent(alpha).cgColor)
+                    context.fill(CGRect(x: barX, y: barBottom, width: blockquoteTheme.barWidth, height: barHeight))
+                }
             }
             .build()
     }

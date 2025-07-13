@@ -21,6 +21,7 @@ final class TextBuilder {
     private var thematicBreakDrawing: DrawingCallback?
     private var codeDrawing: DrawingCallback?
     private var tableDrawing: DrawingCallback?
+    private var blockquoteDrawing: BlockquoteDrawingCallback?
 
     var listIndent: CGFloat = 20
 
@@ -69,6 +70,11 @@ final class TextBuilder {
         return self
     }
 
+    func withBlockquoteDrawing(_ drawing: @escaping BlockquoteDrawingCallback) -> TextBuilder {
+        blockquoteDrawing = drawing
+        return self
+    }
+
     struct BuildResult {
         let document: NSAttributedString
         let subviews: [UIView]
@@ -80,7 +86,7 @@ final class TextBuilder {
         previouslyBuilt = true
         var subviewCollector = [UIView]()
         for node in nodes {
-            text.append(processBlock(node, context: context, subviews: &subviewCollector))
+            text.append(processBlock(node, context: context, subviews: &subviewCollector, depth: 0))
         }
         text.fixAttributes(in: .init(location: 0, length: text.length))
         return .init(document: text, subviews: subviewCollector)
@@ -93,7 +99,8 @@ extension TextBuilder {
     private func processBlock(
         _ node: MarkdownBlockNode,
         context: MarkdownTextView.PreprocessContent,
-        subviews: inout [UIView]
+        subviews: inout [UIView],
+        depth: Int = 0
     ) -> NSAttributedString {
         let blockProcessor = BlockProcessor(
             theme: theme,
@@ -101,7 +108,8 @@ extension TextBuilder {
             context: context,
             thematicBreakDrawing: thematicBreakDrawing,
             codeDrawing: codeDrawing,
-            tableDrawing: tableDrawing
+            tableDrawing: tableDrawing,
+            blockquoteDrawing: blockquoteDrawing
         )
 
         let listProcessor = ListProcessor(
@@ -138,8 +146,8 @@ extension TextBuilder {
             subviews.append(result.1)
             return result.0
         case let .blockquote(children):
-            return blockProcessor.processBlockquote(children) {
-                self.processBlock($0, context: context, subviews: &subviews)
+            return blockProcessor.processBlockquote(children, depth: depth) {
+                self.processBlock($0, context: context, subviews: &subviews, depth: depth + 1)
             }
         case let .table(_, rows):
             let result = blockProcessor.processTable(rows: rows)
