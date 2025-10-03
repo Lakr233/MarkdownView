@@ -24,7 +24,7 @@ extension NSString {
 
     func rangeOfLine(at index: Int) -> NSRange {
         var startIndex = index
-        while startIndex > 0, character(at: startIndex - 1) != 0x0A { // 0x0A 是换行符 '\n'
+        while startIndex > 0, character(at: startIndex - 1) != 0x0A { // 0x0A is newline '\n'
             startIndex -= 1
         }
 

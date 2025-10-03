@@ -8,12 +8,13 @@
 import Litext
 import UIKit
 
+@MainActor
 extension MarkdownTextView: LTXLabelDelegate {
-    public func ltxLabelSelectionDidChange(_: Litext.LTXLabel, selection _: NSRange?) {
+    public nonisolated func ltxLabelSelectionDidChange(_: Litext.LTXLabel, selection _: NSRange?) {
         // reserved for future use
     }
 
-    public func ltxLabelDetectedUserEventMovingAtLocation(_ label: Litext.LTXLabel, location: CGPoint) {
+    public nonisolated func ltxLabelDetectedUserEventMovingAtLocation(_ label: Litext.LTXLabel, location: CGPoint) {
         guard let scrollView = trackedScrollView else { return }
         guard scrollView.contentSize.height > scrollView.bounds.height else { return }
 
@@ -40,7 +41,7 @@ extension MarkdownTextView: LTXLabelDelegate {
         scrollView.setContentOffset(currentOffset, animated: false)
     }
 
-    public func ltxLabelDidTapOnHighlightContent(_: LTXLabel, region: LTXHighlightRegion?, location: CGPoint) {
+    public nonisolated func ltxLabelDidTapOnHighlightContent(_: LTXLabel, region: LTXHighlightRegion?, location: CGPoint) {
         guard let highlightRegion = region else {
             return
         }

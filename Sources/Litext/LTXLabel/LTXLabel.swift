@@ -8,6 +8,7 @@ import CoreText
 import Foundation
 import QuartzCore
 
+@MainActor
 public class LTXLabel: LTXPlatformView, Identifiable {
     public let id: UUID = .init()
 
@@ -65,10 +66,8 @@ public class LTXLabel: LTXPlatformView, Identifiable {
     var selectedLinkForMenuAction: URL?
     var selectionLayer: CAShapeLayer?
 
-    #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-        var selectionHandleStart: LTXSelectionHandle = .init(type: .start)
-        var selectionHandleEnd: LTXSelectionHandle = .init(type: .end)
-    #endif
+    var selectionHandleStart: LTXSelectionHandle = .init(type: .start)
+    var selectionHandleEnd: LTXSelectionHandle = .init(type: .end)
 
     var interactionState = InteractionState()
     var flags = Flags()
@@ -86,16 +85,13 @@ public class LTXLabel: LTXPlatformView, Identifiable {
         isMultipleTouchEnabled = false
         isExclusiveTouch = true
 
-        #if targetEnvironment(macCatalyst)
-        #else
-            clipsToBounds = false // for selection handle
-            selectionHandleStart.isHidden = true
-            selectionHandleStart.delegate = self
-            addSubview(selectionHandleStart)
-            selectionHandleEnd.isHidden = true
-            selectionHandleEnd.delegate = self
-            addSubview(selectionHandleEnd)
-        #endif
+        clipsToBounds = false // for selection handle
+        selectionHandleStart.isHidden = true
+        selectionHandleStart.delegate = self
+        addSubview(selectionHandleStart)
+        selectionHandleEnd.isHidden = true
+        selectionHandleEnd.delegate = self
+        addSubview(selectionHandleEnd)
     }
 
     @available(*, unavailable)
@@ -104,10 +100,7 @@ public class LTXLabel: LTXPlatformView, Identifiable {
     }
 
     deinit {
-        attributedText = .init()
         attachmentViews = []
-        clearSelection()
-        deactivateHighlightRegion()
         NotificationCenter.default.removeObserver(self)
     }
 

@@ -11,6 +11,7 @@ import UIKit
 
 // MARK: - LTXAttributeStringRepresentable Extension
 
+@MainActor
 extension TableView: LTXAttributeStringRepresentable {
     func attributedStringRepresentation() -> NSAttributedString {
         let attributedString = NSMutableAttributedString()

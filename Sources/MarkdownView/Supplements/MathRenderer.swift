@@ -6,11 +6,12 @@
 //
 
 import Foundation
-import LRUCache
+@preconcurrency import LRUCache
 import SwiftMath
 import UIKit
 
 public enum MathRenderer {
+    @MainActor
     static let renderCache = LRUCache<String, UIImage>(countLimit: 256)
 
     private static func preprocessLatex(_ latex: String) -> String {
@@ -27,6 +28,7 @@ public enum MathRenderer {
             .replacingBoxedCommand()
     }
 
+    @MainActor
     public static func renderToImage(
         latex: String,
         fontSize: CGFloat = 16,

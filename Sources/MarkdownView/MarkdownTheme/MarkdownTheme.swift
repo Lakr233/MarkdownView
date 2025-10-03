@@ -10,7 +10,8 @@ import Splash
 import UIKit
 
 public extension MarkdownTheme {
-    static var `default`: MarkdownTheme = .init()
+    @MainActor
+    static let `default`: MarkdownTheme = .init()
     static let codeScale = 0.85
 }
 

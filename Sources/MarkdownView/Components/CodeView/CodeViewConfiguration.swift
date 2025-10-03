@@ -12,6 +12,7 @@ enum CodeViewConfiguration {
     static let lineNumberWidth: CGFloat = 40
     static let lineNumberPadding: CGFloat = 8
 
+    @MainActor
     static func intrinsicHeight(
         for content: String,
         theme: MarkdownTheme = .default

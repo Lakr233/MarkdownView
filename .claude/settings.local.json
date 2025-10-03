@@ -1,0 +1,21 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(swift --version:*)",
+      "Bash(xcodebuild -version:*)",
+      "Bash(swift package validate-tools-version:*)",
+      "Bash(swift --version)",
+      "Bash(swift package resolve)",
+      "Bash(swift build:*)",
+      "Bash(swift build)",
+      "Bash(xcodebuild -workspace Example/Example.xcworkspace -scheme Example -destination 'platform=macOS Catalyst' build)",
+      "Bash(xcodebuild -workspace Example/Example.xcworkspace -scheme Example -destination 'platform=macOS,variant=Mac Catalyst' build)",
+      "Bash(brew install:*)",
+      "Bash(xcodebuild -workspace Example/Example.xcworkspace -scheme Example -destination 'platform=macOS,arch=x86_64,variant=Mac Catalyst' build)",
+      "Bash(xcbeautify:*)",
+      "Bash(swift package dump-package)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

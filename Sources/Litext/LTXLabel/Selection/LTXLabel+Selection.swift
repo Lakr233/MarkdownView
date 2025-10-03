@@ -19,20 +19,14 @@ public extension LTXLabel {
             return .init()
         }
 
-        #if canImport(UIKit)
-            UIPasteboard.general.string = selectedText.string
-        #elseif canImport(AppKit)
-            let pasteboard = NSPasteboard.general
-            pasteboard.clearContents()
-            pasteboard.setString(selectedText.string, forType: .string)
-        #endif
+        UIPasteboard.general.string = selectedText.string
 
         return selectedText.copy() as! NSAttributedString
     }
 }
 
 extension LTXLabel {
-    func updateSelectinoRange(withLocation location: CGPoint) {
+    func updateSelectionRange(withLocation location: CGPoint) {
         guard let startIndex = textLayout.nearestTextIndex(at: convertPointForTextLayout(interactionState.initialTouchLocation)),
               let endIndex = textLayout.nearestTextIndex(at: convertPointForTextLayout(location))
         else { return }

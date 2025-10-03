@@ -15,8 +15,8 @@ import Foundation
 ///
 
 public enum LocalizedText {
-    public static let copy = NSLocalizedString("Copy", bundle: .module, comment: "Copy menu item")
-    public static let selectAll = NSLocalizedString("Select All", bundle: .module, comment: "Select all menu item")
-    public static let openLink = NSLocalizedString("Open Link", bundle: .module, comment: "Open link menu item")
-    public static let copyLink = NSLocalizedString("Copy Link", bundle: .module, comment: "Copy link menu item")
+    public static let copy = NSLocalizedString("Copy", comment: "Copy menu item")
+    public static let selectAll = NSLocalizedString("Select All", comment: "Select all menu item")
+    public static let openLink = NSLocalizedString("Open Link", comment: "Open link menu item")
+    public static let copyLink = NSLocalizedString("Copy Link", comment: "Copy link menu item")
 }

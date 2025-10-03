@@ -7,10 +7,11 @@
 
 import Foundation
 import MarkdownParser
-import Splash
+@preconcurrency import Splash
 import UIKit
 
 public extension MarkdownTheme {
+    @MainActor
     func codeTheme(withFont font: UIFont) -> Splash.Theme {
         var ret = codeThemeTemplate
         ret.font = .init(size: Double(font.pointSize))
@@ -18,6 +19,7 @@ public extension MarkdownTheme {
     }
 }
 
+@MainActor
 private let codeThemeTemplate: Splash.Theme = .init(
     font: .init(size: 8), // not used
     plainTextColor: .label,

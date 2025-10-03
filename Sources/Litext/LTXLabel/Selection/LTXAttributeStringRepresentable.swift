@@ -5,6 +5,7 @@
 
 import Foundation
 
+@MainActor
 public protocol LTXAttributeStringRepresentable {
     func attributedStringRepresentation() -> NSAttributedString
 }

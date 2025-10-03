@@ -82,6 +82,7 @@ final class BlockProcessor {
         }
     }
 
+    @MainActor
     func processCodeBlock(
         language: String?,
         content: String,
@@ -162,6 +163,7 @@ final class BlockProcessor {
         return result
     }
 
+    @MainActor
     func processTable(rows: [RawTableRow]) -> (NSAttributedString, TableView) {
         let tableView = viewProvider.acquireTableView()
         let contents = rows.map {

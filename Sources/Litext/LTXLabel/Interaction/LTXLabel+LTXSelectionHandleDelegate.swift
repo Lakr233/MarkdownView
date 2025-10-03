@@ -19,11 +19,10 @@ extension LTXLabel: LTXSelectionHandleDelegate {
                 length: length
             )
         case .end:
-            let startLocation = selectionRange.location
-            let endingLocation = max(textLocation, startLocation + 1)
+            let endingLocation = max(textLocation, selectionRange.location + 1)
             self.selectionRange = .init(
-                location: startLocation,
-                length: endingLocation - startLocation
+                location: selectionRange.location,
+                length: endingLocation - selectionRange.location
             )
         }
     }

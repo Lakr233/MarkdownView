@@ -3,6 +3,7 @@
 ## Verify Build
 - You must build with `xcodebuild` on `Example/Example.xcworkspace` with scheme `Example` and target `Mac Catalyst`.
 - You must use `xcbeautify` to save your context and tokens.
+- Command should be `xcodebuild $args | xcbeautify -q`
 
 ## Core Style
 - **Indentation**: 4 spaces

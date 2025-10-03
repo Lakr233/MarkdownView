@@ -21,7 +21,10 @@ extension LTXLabel {
 
         for highlightRegion in highlightRegions {
             guard let attachment = highlightRegion.attributes[LTXAttachmentAttributeName] as? LTXAttachment,
-                  let view = attachment.view else { continue }
+                  let view = attachment.view
+            else {
+                continue
+            }
 
             if view.superview == self {
                 newAttachmentViews.insert(view)

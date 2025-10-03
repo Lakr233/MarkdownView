@@ -10,7 +10,7 @@ private class ObjectPool<T: Equatable & Hashable> {
     private let factory: () -> T
     fileprivate lazy var objects: Deque<T> = .init()
 
-    public init(_ factory: @escaping () -> T) {
+    init(_ factory: @escaping () -> T) {
         self.factory = factory
     }
 
@@ -50,6 +50,7 @@ private class ViewBox<T: UIView>: ObjectPool<T> {
     }
 }
 
+@MainActor
 public final class ReusableViewProvider {
     private let codeViewPool: ViewBox<CodeView> = .init {
         CodeView()

@@ -17,62 +17,52 @@ extension LTXLabel {
         selectionLayer?.removeFromSuperlayer()
         selectionLayer = nil
 
-        #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-            selectionHandleStart.isHidden = true
-            selectionHandleEnd.isHidden = true
-        #endif
+        selectionHandleStart.isHidden = true
+        selectionHandleEnd.isHidden = true
 
         guard let range = selectionRange,
               range.location != NSNotFound,
               range.length > 0
         else {
-            #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-                hideSelectionMenuController()
-            #endif
+            hideSelectionMenuController()
             return
         }
 
         let selectionPath = LTXPlatformBezierPath()
         let selectionRects = textLayout.rects(for: range)
         guard !selectionRects.isEmpty else {
-            #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-                hideSelectionMenuController()
-            #endif
+            hideSelectionMenuController()
             return
         }
 
         createSelectionPath(selectionPath, fromRects: selectionRects)
         createSelectionLayer(withPath: selectionPath)
 
-        #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-            showSelectionMenuController()
-        #endif
+        showSelectionMenuController()
 
-        #if canImport(UIKit) && !targetEnvironment(macCatalyst)
-            selectionHandleStart.isHidden = false
-            selectionHandleEnd.isHidden = false
+        selectionHandleStart.isHidden = false
+        selectionHandleEnd.isHidden = false
 
-            var beginRect = textLayout.rects(
-                for: NSRange(location: range.location, length: 1)
-            ).first ?? .zero
-            beginRect = convertRectFromTextLayout(beginRect, insetForInteraction: false)
-            selectionHandleStart.frame = .init(
-                x: beginRect.minX - LTXSelectionHandle.knobRadius - 1,
-                y: beginRect.minY - LTXSelectionHandle.knobRadius,
-                width: LTXSelectionHandle.knobRadius * 2,
-                height: beginRect.height + LTXSelectionHandle.knobRadius
-            )
-            var endRect = textLayout.rects(
-                for: NSRange(location: range.location + range.length - 1, length: 1)
-            ).first ?? .zero
-            endRect = convertRectFromTextLayout(endRect, insetForInteraction: false)
-            selectionHandleEnd.frame = .init(
-                x: endRect.maxX - LTXSelectionHandle.knobRadius + 1,
-                y: endRect.minY,
-                width: LTXSelectionHandle.knobRadius * 2,
-                height: endRect.height + LTXSelectionHandle.knobRadius
-            )
-        #endif
+        var beginRect = textLayout.rects(
+            for: NSRange(location: range.location, length: 1)
+        ).first ?? .zero
+        beginRect = convertRectFromTextLayout(beginRect, insetForInteraction: false)
+        selectionHandleStart.frame = .init(
+            x: beginRect.minX - LTXSelectionHandle.knobRadius - 1,
+            y: beginRect.minY - LTXSelectionHandle.knobRadius,
+            width: LTXSelectionHandle.knobRadius * 2,
+            height: beginRect.height + LTXSelectionHandle.knobRadius
+        )
+        var endRect = textLayout.rects(
+            for: NSRange(location: range.location + range.length - 1, length: 1)
+        ).first ?? .zero
+        endRect = convertRectFromTextLayout(endRect, insetForInteraction: false)
+        selectionHandleEnd.frame = .init(
+            x: endRect.maxX - LTXSelectionHandle.knobRadius + 1,
+            y: endRect.minY,
+            width: LTXSelectionHandle.knobRadius * 2,
+            height: endRect.height + LTXSelectionHandle.knobRadius
+        )
 
         NotificationCenter.default.post(name: kDeduplicateSelectionNotification, object: self)
     }
@@ -95,36 +85,19 @@ extension LTXLabel {
         for rect in rects {
             let convertedRect = convertRectFromTextLayout(rect, insetForInteraction: false)
 
-            #if canImport(UIKit)
-                let subpath = LTXPlatformBezierPath(rect: convertedRect)
-                selectionPath.append(subpath)
-            #elseif canImport(AppKit)
-                let subpath = LTXPlatformBezierPath(rect: convertedRect)
-                selectionPath.appendPath(subpath)
-            #endif
+            let subpath = LTXPlatformBezierPath(rect: convertedRect)
+            selectionPath.append(subpath)
         }
     }
 
     private func createSelectionLayer(withPath path: LTXPlatformBezierPath) {
         let selLayer = CAShapeLayer()
 
-        #if canImport(UIKit)
-            selLayer.path = path.cgPath
-        #elseif canImport(AppKit)
-            selLayer.path = path.quartzPath
-        #endif
+        selLayer.path = path.cgPath
 
-        #if canImport(UIKit)
-            selLayer.fillColor = UIColor.systemBlue.withAlphaComponent(0.1).cgColor
-        #elseif canImport(AppKit)
-            selLayer.fillColor = NSColor.linkColor.withAlphaComponent(0.1).cgColor
-        #endif
+        selLayer.fillColor = UIColor.systemBlue.withAlphaComponent(0.1).cgColor
 
-        #if canImport(UIKit)
-            layer.insertSublayer(selLayer, at: 0)
-        #elseif canImport(AppKit)
-            layer?.insertSublayer(selLayer, at: 0)
-        #endif
+        layer.insertSublayer(selLayer, at: 0)
 
         selectionLayer = selLayer
     }

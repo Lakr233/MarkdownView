@@ -8,11 +8,11 @@ import QuartzCore
 
 extension LTXLabel {
     func activateHighlightRegionAtPoint(_ location: CGPoint) -> Bool {
-        if let hitHighlightRegion = highlightRegionAtPoint(location) {
-            addActiveHighlightRegion(hitHighlightRegion)
-            return true
+        guard let hitHighlightRegion = highlightRegionAtPoint(location) else {
+            return false
         }
-        return false
+        addActiveHighlightRegion(hitHighlightRegion)
+        return true
     }
 
     func deactivateHighlightRegion() {

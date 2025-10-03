@@ -131,6 +131,7 @@ final class CodeView: UIView {
     }
 }
 
+@MainActor
 extension CodeView: LTXAttributeStringRepresentable {
     func attributedStringRepresentation() -> NSAttributedString {
         textView.attributedText

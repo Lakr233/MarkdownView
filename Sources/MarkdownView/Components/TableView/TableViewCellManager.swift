@@ -9,6 +9,7 @@
 import Litext
 import UIKit
 
+@MainActor
 final class TableViewCellManager {
     // MARK: - Properties
 

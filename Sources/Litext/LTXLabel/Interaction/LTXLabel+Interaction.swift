@@ -7,8 +7,8 @@
 
 import Foundation
 
-private let kMinimalDistanceToMove: CGFloat = 3.0
-private let kMultiClickTimeThreshold: TimeInterval = 0.25
+private let minimalDistanceToMove: CGFloat = 3.0
+private let multiClickTimeThreshold: TimeInterval = 0.25
 
 extension LTXLabel {
     func setInteractionStateToBegin(initialLocation: CGPoint) {
@@ -19,7 +19,7 @@ extension LTXLabel {
 
     func bumpClickCountIfWithinTimeGap() {
         let currentTime = Date().timeIntervalSince1970
-        let isContinuousClick = currentTime - interactionState.lastClickTime <= kMultiClickTimeThreshold
+        let isContinuousClick = currentTime - interactionState.lastClickTime <= multiClickTimeThreshold
         interactionState.lastClickTime = currentTime
         if isContinuousClick {
             interactionState.clickCount += 1
@@ -36,7 +36,7 @@ extension LTXLabel {
         perform(
             #selector(performContinuousStateReset),
             with: nil,
-            afterDelay: kMultiClickTimeThreshold
+            afterDelay: multiClickTimeThreshold
         )
     }
 
@@ -50,6 +50,6 @@ extension LTXLabel {
             point.x - interactionState.initialTouchLocation.x,
             point.y - interactionState.initialTouchLocation.y
         )
-        return distance > 3
+        return distance > minimalDistanceToMove
     }
 }
