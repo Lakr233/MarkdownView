@@ -6,7 +6,6 @@
 //
 
 import Foundation
-import Litext
 import MarkdownParser
 import SwiftMath
 import UIKit
@@ -100,18 +99,20 @@ extension MarkdownInlineNode {
             )
         case let .math(content, replacementIdentifier):
             if let item = context.rendered[replacementIdentifier], let image = item.image {
-                var imageSize = image.size
-                let lineHeight = theme.fonts.body.lineHeight
+                let baseFont = theme.fonts.body
+                var attachmentSize = image.size
+                let maxInlineHeight = baseFont.lineHeight
+                let scaleThreshold = maxInlineHeight * 1.8
+                let shouldClampHeight = attachmentSize.height <= scaleThreshold
 
-                if imageSize.height > lineHeight, imageSize.height < lineHeight * 1.5 {
-                    // scale down for single-line equations
-                    let aspectRatio = imageSize.width / imageSize.height
-                    let scaledHeight = lineHeight
-                    let scaledWidth = scaledHeight * aspectRatio
-                    imageSize = CGSize(width: scaledWidth, height: scaledHeight)
+                if shouldClampHeight, attachmentSize.height > maxInlineHeight {
+                    let aspectRatio = attachmentSize.width / attachmentSize.height
+                    attachmentSize = CGSize(width: maxInlineHeight * aspectRatio, height: maxInlineHeight)
                 }
 
-                let drawingCallback = LTXLineDrawingAction { context, line, lineOrigin in
+                let drawingAction = MarkdownLineDrawingAction { context, line, lineOrigin, usedRect in
+                    var drawSize = attachmentSize
+                    var scale: CGFloat = 1
                     let glyphRuns = CTLineGetGlyphRuns(line) as NSArray
                     var runOffsetX: CGFloat = 0
                     for i in 0 ..< glyphRuns.count {
@@ -120,41 +121,48 @@ extension MarkdownInlineNode {
                         if attributes[.contextIdentifier] as? String == replacementIdentifier {
                             break
                         }
-                        runOffsetX += CTRunGetTypographicBounds(run, CFRange(location: 0, length: 0), nil, nil, nil)
+                        let runWidth = CGFloat(CTRunGetTypographicBounds(run, CFRange(location: 0, length: 0), nil, nil, nil))
+                        runOffsetX += runWidth
                     }
 
                     var ascent: CGFloat = 0
                     var descent: CGFloat = 0
                     CTLineGetTypographicBounds(line, &ascent, &descent, nil)
-                    if imageSize.height > ascent { // we only draw above the line
-                        let newWidth = imageSize.width * (ascent / imageSize.height)
-                        imageSize = CGSize(width: newWidth, height: ascent)
+                    let availableHeight = ascent + descent
+                    if shouldClampHeight, availableHeight > 0, drawSize.height > availableHeight {
+                        scale = min(scale, availableHeight / drawSize.height)
                     }
 
-                    let rect = CGRect(
-                        x: lineOrigin.x + runOffsetX,
-                        y: lineOrigin.y,
-                        width: imageSize.width,
-                        height: imageSize.height
-                    )
+                    let availableWidth = max(0, usedRect.width - runOffsetX)
+                    if availableWidth > 0, drawSize.width > availableWidth {
+                        scale = min(scale, availableWidth / drawSize.width)
+                    }
 
-                    context.saveGState()
-                    context.translateBy(x: 0, y: rect.origin.y + rect.size.height)
-                    context.scaleBy(x: 1, y: -1)
-                    context.translateBy(x: 0, y: -rect.origin.y)
-                    image.draw(in: rect)
-                    context.restoreGState()
+                    if scale != 1 {
+                        drawSize = CGSize(width: drawSize.width * scale, height: drawSize.height * scale)
+                    }
+
+                    var rect = MarkdownAttachmentRenderer.attachmentRect(
+                        size: drawSize,
+                        line: line,
+                        origin: lineOrigin,
+                        offsetX: runOffsetX
+                    )
+                    let glyphBounds = usedRect.offsetBy(dx: lineOrigin.x - usedRect.minX, dy: lineOrigin.y - usedRect.maxY)
+                    rect.origin.y = glyphBounds.midY - rect.height / 2
+
+                    MarkdownAttachmentRenderer.drawImage(image, in: rect, context: context)
                 }
-                let attachment = LTXAttachment.hold(attrString: .init(string: content))
-                attachment.size = imageSize
+                let attachment = MarkdownAttachment.hold(attrString: .init(string: content))
+                attachment.size = attachmentSize
+                var attributes: [NSAttributedString.Key: Any] = [
+                    .contextIdentifier: replacementIdentifier,
+                ]
+                attributes.merge(attachment: attachment)
+                attributes.merge(lineDrawing: drawingAction)
                 return NSAttributedString(
-                    string: LTXReplacementText,
-                    attributes: [
-                        LTXAttachmentAttributeName: attachment,
-                        LTXLineDrawingCallbackName: drawingCallback,
-                        kCTRunDelegateAttributeName as NSAttributedString.Key: attachment.runDelegate,
-                        .contextIdentifier: replacementIdentifier,
-                    ]
+                    string: MarkdownReplacementText.attachment,
+                    attributes: attributes
                 )
             } else {
                 return NSAttributedString(

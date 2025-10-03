@@ -4,7 +4,6 @@
 //
 
 import CoreText
-import Litext
 import MarkdownParser
 import UIKit
 
@@ -27,7 +26,7 @@ final class TextBuilder {
     init(
         nodes: [MarkdownBlockNode],
         context: MarkdownTextView.PreprocessedContent,
-        viewProvider: ReusableViewProvider,
+        viewProvider: ReusableViewProvider
     ) {
         self.nodes = nodes
         self.context = context
@@ -103,7 +102,7 @@ extension TextBuilder {
     private func processBlock(
         _ node: MarkdownBlockNode,
         context: MarkdownTextView.PreprocessedContent,
-        subviews: inout [UIView],
+        subviews: inout [UIView]
     ) -> NSAttributedString {
         let blockProcessor = BlockProcessor(
             theme: theme,

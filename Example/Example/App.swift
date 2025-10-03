@@ -11,29 +11,39 @@ import SwiftUI
 struct TheApp: App {
     var body: some Scene {
         WindowGroup {
-            NavigationView {
-                Content()
-                    .toolbar {
-                        ToolbarItem {
-                            Button {
-                                NotificationCenter.default.post(name: .init("Play"), object: nil)
-                            } label: {
-                                Image(systemName: "play")
+            TabView {
+                NavigationView {
+                    Content()
+                        .toolbar {
+                            ToolbarItem {
+                                Button {
+                                    NotificationCenter.default.post(name: .init("Play"), object: nil)
+                                } label: {
+                                    Image(systemName: "play")
+                                }
+                            }
+                            ToolbarItem {
+                                Button {
+                                    NotificationCenter.default.post(name: .init("Reset"), object: nil)
+                                } label: {
+                                    Image(systemName: "arrow.counterclockwise")
+                                }
                             }
                         }
-                        ToolbarItem {
-                            Button {
-                                NotificationCenter.default.post(name: .init("Reset"), object: nil)
-                            } label: {
-                                Image(systemName: "arrow.counterclockwise")
-                            }
-                        }
+                        .navigationTitle("MarkdownView")
+                        .navigationBarTitleDisplayMode(.inline)
+                }
+                .navigationViewStyle(.stack)
+                .frame(minWidth: 200, maxWidth: .infinity)
+                .tabItem {
+                    Label("Demo", systemImage: "play.circle")
+                }
+
+                DocumentSelectionView()
+                    .tabItem {
+                        Label("Documents", systemImage: "doc.text")
                     }
-                    .navigationTitle("MarkdownView")
-                    .navigationBarTitleDisplayMode(.inline)
             }
-            .navigationViewStyle(.stack)
-            .frame(minWidth: 200, maxWidth: .infinity)
         }
     }
 }

@@ -10,7 +10,7 @@ private class ObjectPool<T: Equatable & Hashable> {
     private let factory: () -> T
     fileprivate lazy var objects: Deque<T> = .init()
 
-    public init(_ factory: @escaping () -> T) {
+    init(_ factory: @escaping () -> T) {
         self.factory = factory
     }
 

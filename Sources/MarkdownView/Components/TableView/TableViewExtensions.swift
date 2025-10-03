@@ -6,13 +6,10 @@
 //  Copyright (c) 2025 ktiays. All rights reserved.
 //
 
-import Litext
 import UIKit
 
-// MARK: - LTXAttributeStringRepresentable Extension
-
-extension TableView: LTXAttributeStringRepresentable {
-    func attributedStringRepresentation() -> NSAttributedString {
+extension TableView: MarkdownAttributedStringRepresentable {
+    func markdownAttributedStringRepresentation() -> NSAttributedString {
         let attributedString = NSMutableAttributedString()
 
         for row in contents {

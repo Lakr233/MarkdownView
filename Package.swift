@@ -7,8 +7,9 @@ let package = Package(
     name: "MarkdownView",
     defaultLocalization: "en",
     platforms: [
-        .iOS(.v13),
-        .macCatalyst(.v13),
+        .iOS(.v15),
+        .macCatalyst(.v15),
+        .macOS(.v12),
     ],
     products: [
         .library(name: "MarkdownView", targets: ["MarkdownView"]),
@@ -23,7 +24,6 @@ let package = Package(
     ],
     targets: [
         .target(name: "MarkdownView", dependencies: [
-            "Litext",
             "Splash",
             "MarkdownParser",
             "SwiftMath",
@@ -35,6 +35,5 @@ let package = Package(
             .product(name: "cmark-gfm", package: "swift-cmark"),
             .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
         ]),
-        .target(name: "Litext"),
     ]
 )

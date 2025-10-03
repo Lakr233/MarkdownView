@@ -3,7 +3,6 @@
 //  Copyright (c) 2025 ktiays. All rights reserved.
 //
 
-import Litext
 import UIKit
 
 final class TableView: UIView {

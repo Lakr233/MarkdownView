@@ -4,25 +4,24 @@
 //
 
 import CoreText
-import Litext
 import UIKit
 
 // MARK: - TextBuilder Callback Types
 
 extension TextBuilder {
-    typealias DrawingCallback = (CGContext, CTLine, CGPoint) -> Void
-    typealias BulletDrawingCallback = (CGContext, CTLine, CGPoint, Int) -> Void
-    typealias CheckboxDrawingCallback = (CGContext, CTLine, CGPoint, Bool) -> Void
-    typealias NumberedDrawingCallback = (CGContext, CTLine, CGPoint, Int) -> Void
-    typealias BlockquoteMarkingCallback = (CGContext, CTLine, CGPoint) -> Void
-    typealias BlockquoteDrawingCallback = (CGContext, CTLine, CGPoint) -> Void
+    typealias DrawingCallback = (CGContext, CTLine, CGPoint, CGRect) -> Void
+    typealias BulletDrawingCallback = (CGContext, CTLine, CGPoint, CGRect, Int) -> Void
+    typealias CheckboxDrawingCallback = (CGContext, CTLine, CGPoint, CGRect, Bool) -> Void
+    typealias NumberedDrawingCallback = (CGContext, CTLine, CGPoint, CGRect, Int) -> Void
+    typealias BlockquoteMarkingCallback = (CGContext, CTLine, CGPoint, CGRect) -> Void
+    typealias BlockquoteDrawingCallback = (CGContext, CTLine, CGPoint, CGRect) -> Void
 }
 
 // MARK: - RenderText
 
 struct RenderText {
     let attributedString: NSAttributedString
-    let fullWidthAttachments: [LTXAttachment]
+    let fullWidthAttachments: [MarkdownAttachment]
 }
 
 // MARK: - String Extension

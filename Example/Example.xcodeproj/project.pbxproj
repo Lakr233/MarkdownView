@@ -7,18 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		50219C662D3E2304006CB93C /* App.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50219C652D3E2304006CB93C /* App.swift */; };
 		507C16722D2719F100B478D2 /* MarkdownView in Frameworks */ = {isa = PBXBuildFile; productRef = 507C16712D2719F100B478D2 /* MarkdownView */; };
 		5084C6742D281A41007310F0 /* LookinServer in Frameworks */ = {isa = PBXBuildFile; productRef = 5084C6732D281A41007310F0 /* LookinServer */; };
 		50A350BB2DE4B651008F094E /* MarkdownParser in Frameworks */ = {isa = PBXBuildFile; productRef = 50A350BA2DE4B651008F094E /* MarkdownParser */; };
-		50C466DA2E11310E00A6B17C /* TestDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = 50C466D92E11310E00A6B17C /* TestDocument.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
-		50219C652D3E2304006CB93C /* App.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = App.swift; sourceTree = "<group>"; };
 		505E99EA2D26D8380014A6D3 /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		50C466D92E11310E00A6B17C /* TestDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TestDocument.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		50CCA58C2E9C37F300B9FEE7 /* Example */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			path = Example;
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
 		505E99E72D26D8380014A6D3 /* Frameworks */ = {
@@ -41,19 +45,10 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
-		50219C642D3E22FB006CB93C /* Example */ = {
-			isa = PBXGroup;
-			children = (
-				50219C652D3E2304006CB93C /* App.swift */,
-				50C466D92E11310E00A6B17C /* TestDocument.swift */,
-			);
-			path = Example;
-			sourceTree = "<group>";
-		};
 		505E99E12D26D8380014A6D3 = {
 			isa = PBXGroup;
 			children = (
-				50219C642D3E22FB006CB93C /* Example */,
+				50CCA58C2E9C37F300B9FEE7 /* Example */,
 				5015F6D32D26DCFB005FA7D2 /* Frameworks */,
 				505E99EB2D26D8380014A6D3 /* Products */,
 			);
@@ -83,6 +78,9 @@
 			);
 			dependencies = (
 			);
+			fileSystemSynchronizedGroups = (
+				50CCA58C2E9C37F300B9FEE7 /* Example */,
+			);
 			name = Example;
 			packageProductDependencies = (
 				507C16712D2719F100B478D2 /* MarkdownView */,
@@ -101,7 +99,7 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = 1;
 				LastSwiftUpdateCheck = 1620;
-				LastUpgradeCheck = 1640;
+				LastUpgradeCheck = 2600;
 				TargetAttributes = {
 					505E99E92D26D8380014A6D3 = {
 						CreatedOnToolsVersion = 16.2;
@@ -168,8 +166,6 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				50C466DA2E11310E00A6B17C /* TestDocument.swift in Sources */,
-				50219C662D3E2304006CB93C /* App.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -235,6 +231,7 @@
 				MTL_FAST_MATH = YES;
 				ONLY_ACTIVE_ARCH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
 				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
 			};
@@ -292,6 +289,7 @@
 				MTL_ENABLE_DEBUG_INFO = NO;
 				MTL_FAST_MATH = YES;
 				SDKROOT = iphoneos;
+				STRING_CATALOG_GENERATE_SYMBOLS = YES;
 				SWIFT_COMPILATION_MODE = wholemodule;
 				VALIDATE_PRODUCT = YES;
 			};

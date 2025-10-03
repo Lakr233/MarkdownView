@@ -6,13 +6,12 @@
 //  Copyright (c) 2025 ktiays. All rights reserved.
 //
 
-import Litext
 import UIKit
 
 final class TableViewCellManager {
     // MARK: - Properties
 
-    private(set) var cells: [LTXLabel] = []
+    private(set) var cells: [MarkdownSelectableTextView] = []
     private(set) var cellSizes: [CGSize] = []
     private(set) var widths: [CGFloat] = []
     private(set) var heights: [CGFloat] = []
@@ -78,12 +77,11 @@ final class TableViewCellManager {
         maximumWidth: CGFloat,
         isHeader: Bool,
         in containerView: UIView
-    ) -> LTXLabel {
-        let cell: LTXLabel
+    ) -> MarkdownSelectableTextView {
+        let cell: MarkdownSelectableTextView
 
         if index >= cells.count {
-            cell = LTXLabel()
-            cell.isSelectable = true
+            cell = MarkdownSelectableTextView()
             cell.backgroundColor = .clear
             cell.preferredMaxLayoutWidth = maximumWidth
             containerView.addSubview(cell)
@@ -91,6 +89,8 @@ final class TableViewCellManager {
         } else {
             cell = cells[index]
         }
+
+        cell.preferredMaxLayoutWidth = max(0, maximumWidth)
 
         cell.attributedText = attributedText
 
@@ -103,7 +103,7 @@ final class TableViewCellManager {
         return cell
     }
 
-    private func calculateCellSize(for cell: LTXLabel, cellPadding: CGFloat) -> CGSize {
+    private func calculateCellSize(for cell: MarkdownSelectableTextView, cellPadding: CGFloat) -> CGSize {
         let contentSize = cell.intrinsicContentSize
         return CGSize(
             width: ceil(contentSize.width) + cellPadding * 2,
@@ -111,39 +111,33 @@ final class TableViewCellManager {
         )
     }
 
-    private func applyCellHeaderStyling(to cell: LTXLabel) {
-        if let attributedText = cell.attributedText.mutableCopy() as? NSMutableAttributedString {
-            let range = NSRange(location: 0, length: attributedText.length)
+    private func applyCellHeaderStyling(to cell: MarkdownSelectableTextView) {
+        guard let mutable = cell.attributedText?.mutableCopy() as? NSMutableAttributedString else { return }
+        let range = NSRange(location: 0, length: mutable.length)
 
-            attributedText.enumerateAttribute(.font, in: range, options: []) {
-                value, subRange, _ in
-                if let existingFont = value as? UIFont {
-                    let boldFont = UIFont.boldSystemFont(ofSize: existingFont.pointSize)
-                    attributedText.addAttribute(.font, value: boldFont, range: subRange)
-                } else {
-                    attributedText.addAttribute(.font, value: theme.fonts.bold, range: subRange)
-                }
+        mutable.enumerateAttribute(.font, in: range, options: []) { value, subRange, _ in
+            if let existingFont = value as? UIFont {
+                let boldFont = UIFont.boldSystemFont(ofSize: existingFont.pointSize)
+                mutable.addAttribute(.font, value: boldFont, range: subRange)
+            } else {
+                mutable.addAttribute(.font, value: theme.fonts.bold, range: subRange)
             }
-
-            cell.attributedText = attributedText
         }
+
+        cell.attributedText = mutable
     }
 
-    private func applyCellNormalStyling(to cell: LTXLabel) {
-        if let attributedText = cell.attributedText.mutableCopy() as? NSMutableAttributedString {
-            let range = NSRange(location: 0, length: attributedText.length)
+    private func applyCellNormalStyling(to cell: MarkdownSelectableTextView) {
+        guard let mutable = cell.attributedText?.mutableCopy() as? NSMutableAttributedString else { return }
+        let range = NSRange(location: 0, length: mutable.length)
 
-            attributedText.enumerateAttribute(.foregroundColor, in: range, options: []) {
-                value, subRange, _ in
-                if value == nil {
-                    attributedText.addAttribute(
-                        .foregroundColor, value: theme.colors.body, range: subRange
-                    )
-                }
+        mutable.enumerateAttribute(.foregroundColor, in: range, options: []) { value, subRange, _ in
+            if value == nil {
+                mutable.addAttribute(.foregroundColor, value: theme.colors.body, range: subRange)
             }
-
-            cell.attributedText = attributedText
         }
+
+        cell.attributedText = mutable
     }
 
     private func updateCellsAppearance() {

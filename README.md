@@ -13,6 +13,7 @@ A powerful pure UIKit framework for rendering Markdown documents with real-time 
 - 🎨 **Syntax Highlighting**: Beautiful code syntax highlighting with Splash
 - 📊 **Math Rendering**: LaTeX math formula rendering with SwiftMath
 - 📱 **iOS Optimized**: Native UIKit implementation for optimal performance
+- 🧱 **UITextView Core**: Built directly on TextKit for first-class selection, accessibility, and attachment support
 
 ## Installation
 
@@ -25,8 +26,8 @@ dependencies: [
 ```
 
 Platform compatibility:
-- iOS 13.0+
-- Mac Catalyst 13.0+
+- iOS 15.0+
+- Mac Catalyst 15.0+
 
 ## Usage
 

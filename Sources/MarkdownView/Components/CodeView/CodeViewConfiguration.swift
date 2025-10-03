@@ -85,8 +85,6 @@ extension CodeView {
 
     private func setupTextView() {
         textView.backgroundColor = .clear
-        textView.preferredMaxLayoutWidth = .infinity
-        textView.isSelectable = true
         scrollView.addSubview(textView)
     }
 
@@ -173,7 +171,7 @@ extension CodeView {
 
         scrollView.contentSize = CGSize(
             width: textView.frame.width + CodeViewConfiguration.codePadding * 2,
-            height: 0 // disable vertical scrolling to fix rarer bug
+            height: textView.frame.height + CodeViewConfiguration.codePadding * 2
         )
     }
 }

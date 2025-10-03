@@ -4,7 +4,6 @@
 //
 
 import CoreText
-import Litext
 import MarkdownParser
 import UIKit
 
@@ -73,18 +72,20 @@ final class ListProcessor {
         let checkboxDrawing = checkboxDrawing!
         let string = NSMutableAttributedString()
         let theme = theme
-        string.append(.init(string: LTXReplacementText, attributes: [
+        let drawingAction = MarkdownLineDrawingAction { context, line, lineOrigin, usedRect in
+            if item.ordered {
+                numberedDrawing(context, line, lineOrigin, usedRect, item.index)
+            } else if item.isTask {
+                checkboxDrawing(context, line, lineOrigin, usedRect, item.isDone)
+            } else {
+                bulletDrawing(context, line, lineOrigin, usedRect, item.depth)
+            }
+        }
+        var markerAttributes: [NSAttributedString.Key: Any] = [
             .font: theme.fonts.body,
-            .ltxLineDrawingCallback: LTXLineDrawingAction(action: { context, line, lineOrigin in
-                if item.ordered {
-                    numberedDrawing(context, line, lineOrigin, item.index)
-                } else if item.isTask {
-                    checkboxDrawing(context, line, lineOrigin, item.isDone)
-                } else {
-                    bulletDrawing(context, line, lineOrigin, item.depth)
-                }
-            }),
-        ]))
+        ]
+        markerAttributes.merge(lineDrawing: drawingAction)
+        string.append(.init(string: MarkdownReplacementText.attachment, attributes: markerAttributes))
         string.append(item.paragraph.render(theme: theme, context: context, viewProvider: viewProvider))
 
         string.addAttributes(

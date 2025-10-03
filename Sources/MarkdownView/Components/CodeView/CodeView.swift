@@ -3,7 +3,6 @@
 //  Copyright (c) 2025 ktiays. All rights reserved.
 //
 
-import Litext
 import UIKit
 
 final class CodeView: UIView {
@@ -52,7 +51,7 @@ final class CodeView: UIView {
     lazy var barView: UIView = .init()
     lazy var scrollView: UIScrollView = .init()
     lazy var languageLabel: UILabel = .init()
-    lazy var textView: LTXLabel = .init()
+    lazy var textView: MarkdownSelectableTextView = .init()
     lazy var copyButton: UIButton = .init()
     lazy var previewButton: UIButton = .init()
     lazy var lineNumberView: LineNumberView = .init()
@@ -105,7 +104,7 @@ final class CodeView: UIView {
 
     @objc func handlePreview(_: UIButton) {
         UINotificationFeedbackGenerator().notificationOccurred(.success)
-        previewAction?(language, textView.attributedText)
+        previewAction?(language, textView.attributedText ?? .init())
     }
 
     func updateLineNumberView() {
@@ -128,11 +127,5 @@ final class CodeView: UIView {
             bottom: CodeViewConfiguration.codePadding,
             right: CodeViewConfiguration.lineNumberPadding
         )
-    }
-}
-
-extension CodeView: LTXAttributeStringRepresentable {
-    func attributedStringRepresentation() -> NSAttributedString {
-        textView.attributedText
     }
 }

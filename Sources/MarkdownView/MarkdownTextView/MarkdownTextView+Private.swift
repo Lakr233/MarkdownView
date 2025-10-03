@@ -7,7 +7,6 @@
 
 import Combine
 import Foundation
-import Litext
 
 extension MarkdownTextView {
     func resetCombine() {

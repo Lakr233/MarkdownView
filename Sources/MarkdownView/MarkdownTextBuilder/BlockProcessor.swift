@@ -4,7 +4,6 @@
 //
 
 import CoreText
-import Litext
 import MarkdownParser
 import UIKit
 
@@ -72,13 +71,16 @@ final class BlockProcessor {
     func processThematicBreak() -> NSAttributedString {
         buildWithParagraphSync {
             let drawingCallback = self.thematicBreakDrawing
-            return .init(string: LTXReplacementText, attributes: [
+            let attachment = MarkdownAttachment.hold(attrString: .init(string: "\n\n"))
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: theme.fonts.body,
-                .ltxAttachment: LTXAttachment.hold(attrString: .init(string: "\n\n")),
-                .ltxLineDrawingCallback: LTXLineDrawingAction(action: { context, line, lineOrigin in
-                    drawingCallback?(context, line, lineOrigin)
-                }),
-            ])
+            ]
+            attributes.merge(attachment: attachment)
+            let drawingAction = MarkdownLineDrawingAction { context, line, lineOrigin, usedRect in
+                drawingCallback?(context, line, lineOrigin, usedRect)
+            }
+            attributes.merge(lineDrawing: drawingAction)
+            return .init(string: MarkdownReplacementText.attachment, attributes: attributes)
         }
     }
 
@@ -94,16 +96,20 @@ final class BlockProcessor {
         codeView.highlightMap = highlightMap
         codeView.content = content
         let drawer = codeDrawing!
+        let intrinsicHeight = CodeView.intrinsicHeight(for: content, theme: theme)
         let text = buildWithParagraphSync { paragraph in
-            let height = CodeView.intrinsicHeight(for: content, theme: theme)
-            paragraph.minimumLineHeight = height
+            paragraph.minimumLineHeight = intrinsicHeight
         } content: {
-            .init(string: LTXReplacementText, attributes: [
+            let attachment = MarkdownAttachment.hold(attrString: .init(string: content + "\n"))
+            attachment.size = .init(width: 0, height: intrinsicHeight)
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: theme.fonts.body,
-                .ltxAttachment: LTXAttachment.hold(attrString: .init(string: content + "\n")),
-                .ltxLineDrawingCallback: LTXLineDrawingAction { drawer($0, $1, $2) },
                 .contextView: codeView,
-            ])
+            ]
+            attributes.merge(attachment: attachment)
+            attributes.merge(lineDrawing: MarkdownLineDrawingAction { drawer($0, $1, $2, $3) })
+            attachment.view = codeView
+            return .init(string: MarkdownReplacementText.attachment, attributes: attributes)
         }
         return (text, codeView)
     }
@@ -119,6 +125,11 @@ final class BlockProcessor {
         baseParagraphStyle.tailIndent = -4
         baseParagraphStyle.paragraphSpacing = 8
         baseParagraphStyle.lineSpacing = 4
+
+        let drawingContext = BlockquoteDrawingContext(
+            fillColor: theme.colors.body.withAlphaComponent(0.1),
+            headIndent: baseParagraphStyle.headIndent
+        )
 
         for child in children {
             guard case let .paragraph(content) = child else {
@@ -139,6 +150,11 @@ final class BlockProcessor {
             .paragraphStyle,
             value: baseParagraphStyle, range: NSRange(location: 0, length: result.length)
         )
+        result.addAttribute(
+            .blockquoteContext,
+            value: drawingContext,
+            range: NSRange(location: 0, length: result.length)
+        )
 
         let marker = blockquoteMarking!
         let drawer = blockquoteDrawing!
@@ -146,17 +162,22 @@ final class BlockProcessor {
         result.insert(buildWithParagraphSync(withNewLine: false) { paragraph in
             paragraph = baseParagraphStyle
         } content: {
-            .init(string: LTXReplacementText, attributes: [
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: theme.fonts.body,
                 .paragraphStyle: baseParagraphStyle,
-                .ltxLineDrawingCallback: LTXLineDrawingAction { marker($0, $1, $2) },
-            ])
+            ]
+            attributes[.blockquoteContext] = drawingContext
+            attributes.merge(lineDrawing: MarkdownLineDrawingAction { marker($0, $1, $2, $3) })
+            return .init(string: MarkdownReplacementText.attachment, attributes: attributes)
         }, at: 0)
         result.append(buildWithParagraphSync(withNewLine: true) {
-            .init(string: LTXReplacementText, attributes: [
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: theme.fonts.body,
-                .ltxLineDrawingCallback: LTXLineDrawingAction { drawer($0, $1, $2) },
-            ])
+                .paragraphStyle: baseParagraphStyle,
+            ]
+            attributes[.blockquoteContext] = drawingContext
+            attributes.merge(lineDrawing: MarkdownLineDrawingAction { drawer($0, $1, $2, $3) })
+            return .init(string: MarkdownReplacementText.attachment, attributes: attributes)
         })
 
         return result
@@ -176,15 +197,20 @@ final class BlockProcessor {
         tableView.setContents(contents)
         let drawer = tableDrawing!
 
+        let intrinsicHeight = tableView.intrinsicContentHeight
         let text = buildWithParagraphSync { paragraph in
-            paragraph.minimumLineHeight = tableView.intrinsicContentHeight
+            paragraph.minimumLineHeight = intrinsicHeight
         } content: {
-            .init(string: LTXReplacementText, attributes: [
+            let attachment = MarkdownAttachment.hold(attrString: representedText)
+            attachment.size = .init(width: 0, height: intrinsicHeight)
+            var attributes: [NSAttributedString.Key: Any] = [
                 .font: theme.fonts.body,
-                .ltxAttachment: LTXAttachment.hold(attrString: representedText),
-                .ltxLineDrawingCallback: LTXLineDrawingAction { drawer($0, $1, $2) },
                 .contextView: tableView,
-            ])
+            ]
+            attributes.merge(attachment: attachment)
+            attributes.merge(lineDrawing: MarkdownLineDrawingAction { drawer($0, $1, $2, $3) })
+            attachment.view = tableView
+            return .init(string: MarkdownReplacementText.attachment, attributes: attributes)
         }
         return (text, tableView)
     }

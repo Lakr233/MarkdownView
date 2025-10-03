@@ -4,8 +4,6 @@
 //
 
 import Combine
-import CoreText
-import Litext
 import MarkdownParser
 import UIKit
 
@@ -14,7 +12,8 @@ public final class MarkdownTextView: UIView {
     public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
     public internal(set) var document: PreprocessedContent = .init()
-    public let textView: LTXLabel = .init()
+    let contentTextView = MarkdownContentTextView()
+    public var textView: UITextView { contentTextView }
     public var theme: MarkdownTheme = .default {
         didSet { setMarkdown(document) } // update it
     }
@@ -33,10 +32,14 @@ public final class MarkdownTextView: UIView {
     public init(viewProvider: ReusableViewProvider = .init()) {
         self.viewProvider = viewProvider
         super.init(frame: .zero)
-        textView.isSelectable = true
-        textView.backgroundColor = .clear
-        textView.delegate = self
-        addSubview(textView)
+        textView.interactions.removeAll { interaction in
+            if interaction is UIDropInteraction { return true }
+            if interaction is UIDragInteraction { return true }
+            return false
+        }
+        contentTextView.backgroundColor = .clear
+        contentTextView.delegate = self
+        addSubview(contentTextView)
         setupCombine()
     }
 
@@ -48,13 +51,20 @@ public final class MarkdownTextView: UIView {
     override public func layoutSubviews() {
         super.layoutSubviews()
 
-        textView.preferredMaxLayoutWidth = bounds.width
-        textView.frame = bounds
+        contentTextView.frame = bounds
+        contentTextView.textContainer.size = CGSize(
+            width: max(0, bounds.width - contentTextView.textContainerInset.left - contentTextView.textContainerInset.right),
+            height: .greatestFiniteMagnitude
+        )
     }
 
     public func boundingSize(for width: CGFloat) -> CGSize {
-        textView.preferredMaxLayoutWidth = width
-        return textView.intrinsicContentSize
+        contentTextView.textContainer.size = CGSize(
+            width: max(0, width - contentTextView.textContainerInset.left - contentTextView.textContainerInset.right),
+            height: .greatestFiniteMagnitude
+        )
+        let fitting = contentTextView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude))
+        return CGSize(width: width, height: fitting.height)
     }
 
     public func setMarkdownManually(_ content: PreprocessedContent) {

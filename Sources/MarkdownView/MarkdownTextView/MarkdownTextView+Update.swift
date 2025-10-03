@@ -5,8 +5,6 @@
 //  Created by 秋星桥 on 7/9/25.
 //
 
-import CoreText
-import Litext
 import UIKit
 
 extension MarkdownTextView {
@@ -34,23 +32,14 @@ extension MarkdownTextView {
         contextViews.removeAll()
 
         let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
-        textView.attributedText = artifacts.document
+        contentTextView.apply(document: artifacts.document, hostedViews: artifacts.subviews)
         contextViews = artifacts.subviews
-
-        for view in artifacts.subviews {
-            if let view = view as? CodeView {
-                view.textView.delegate = self
-            }
-        }
 
         for goneView in oldViews where !artifacts.subviews.contains(goneView) {
             goneView.removeFromSuperview()
         }
 
-        textView.setNeedsLayout()
+        contentTextView.setNeedsLayout()
         setNeedsLayout()
-
-        textView.setNeedsDisplay()
-        setNeedsDisplay()
     }
 }

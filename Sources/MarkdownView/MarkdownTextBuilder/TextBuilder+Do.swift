@@ -30,15 +30,14 @@ extension TextBuilder {
     static func lineBoundingBox(_ line: CTLine, lineOrigin: CGPoint) -> CGRect {
         var ascent: CGFloat = 0
         var descent: CGFloat = 0
-        let width = CTLineGetTypographicBounds(line, &ascent, &descent, nil)
-        return .init(x: lineOrigin.x, y: lineOrigin.y - descent, width: width, height: ascent + descent)
+        let width = CGFloat(CTLineGetTypographicBounds(line, &ascent, &descent, nil))
+        let height = ascent + descent
+        return .init(x: lineOrigin.x, y: lineOrigin.y - descent - height, width: width, height: height)
     }
 
     static func build(view: MarkdownTextView, viewProvider: ReusableViewProvider) -> BuildResult {
         let context: MarkdownTextView.PreprocessedContent = view.document
         let theme: MarkdownTheme = view.theme
-
-        var blockquoteMarkingStorage: CGFloat? = nil
 
         @discardableResult
         func populateContextColorFromFirstRun(context: CGContext, line: CTLine) -> UIColor {
@@ -54,9 +53,19 @@ extension TextBuilder {
             return textColor
         }
 
+        func blockquoteContext(in line: CTLine) -> BlockquoteDrawingContext? {
+            for run in line.glyphRuns() {
+                let attributes = run.attributes
+                if let context = attributes[.blockquoteContext] as? BlockquoteDrawingContext {
+                    return context
+                }
+            }
+            return nil
+        }
+
         return TextBuilder(nodes: context.blocks, context: context, viewProvider: viewProvider)
             .withTheme(theme)
-            .withBulletDrawing { context, line, lineOrigin, depth in
+            .withBulletDrawing { context, line, lineOrigin, _, depth in
                 let radius: CGFloat = 3
                 let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
                 populateContextColorFromFirstRun(context: context, line: line)
@@ -74,12 +83,11 @@ extension TextBuilder {
                     context.fill(rect)
                 }
             }
-            .withNumberedDrawing { context, line, lineOrigin, num in
+            .withNumberedDrawing { context, line, lineOrigin, _, num in
                 let rect = lineBoundingBox(line, lineOrigin: lineOrigin)
                     .offsetBy(dx: -16, dy: 0)
                     .offsetBy(dx: -8, dy: 0)
                 let image = kNumberCircleImage(num)
-                guard let cgImage = image.cgImage else { return }
                 let imageSize = image.size
                 let targetRect: CGRect = .init(
                     x: rect.minX,
@@ -88,16 +96,13 @@ extension TextBuilder {
                     height: imageSize.height
                 )
                 let textColor = populateContextColorFromFirstRun(context: context, line: line)
-                context.clip(to: targetRect, mask: cgImage)
-                context.setFillColor(textColor.cgColor)
-                context.fill(targetRect)
+                MarkdownAttachmentRenderer.drawTemplateImage(image, in: targetRect, tint: textColor, context: context)
             }
-            .withCheckboxDrawing { context, line, lineOrigin, isChecked in
+            .withCheckboxDrawing { context, line, lineOrigin, _, isChecked in
                 let rect = lineBoundingBox(line, lineOrigin: lineOrigin)
                     .offsetBy(dx: -16, dy: 0)
                     .offsetBy(dx: -8, dy: 0)
                 let image = if isChecked { kCheckedBoxImage } else { kUncheckedBoxImage }
-                guard let cgImage = image.cgImage else { return }
                 let imageSize = image.size
                 let targetRect: CGRect = .init(
                     x: rect.minX,
@@ -106,13 +111,11 @@ extension TextBuilder {
                     height: imageSize.height
                 )
                 let textColor = populateContextColorFromFirstRun(context: context, line: line)
-                context.clip(to: targetRect, mask: cgImage)
-                context.setFillColor(textColor.withAlphaComponent(0.24).cgColor)
-                context.fill(targetRect)
+                MarkdownAttachmentRenderer.drawTemplateImage(image, in: targetRect, tint: textColor.withAlphaComponent(0.24), context: context)
             }
-            .withThematicBreakDrawing { [weak view] context, line, lineOrigin in
+            .withThematicBreakDrawing { [weak view] context, _, lineOrigin, usedRect in
                 guard let view else { return }
-                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
+                let boundingBox = usedRect.offsetBy(dx: lineOrigin.x - usedRect.minX, dy: lineOrigin.y - usedRect.maxY)
 
                 context.setLineWidth(1)
                 context.setStrokeColor(UIColor.label.withAlphaComponent(0.1).cgColor)
@@ -120,7 +123,7 @@ extension TextBuilder {
                 context.addLine(to: .init(x: boundingBox.minX + view.bounds.width, y: boundingBox.midY))
                 context.strokePath()
             }
-            .withCodeDrawing { [weak view] _, line, lineOrigin in
+            .withCodeDrawing { [weak view] _, line, _, _ in
                 guard let view else { return }
                 guard let firstRun = line.glyphRuns().first else { return }
                 let attributes = firstRun.attributes
@@ -128,61 +131,42 @@ extension TextBuilder {
                     assertionFailure()
                     return
                 }
-
-                if codeView.superview != view { view.addSubview(codeView) }
-                let intrinsicContentSize = codeView.intrinsicContentSize
-                let lineBoundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                var leftIndent: CGFloat = 0
-                if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle {
-                    leftIndent = paragraphStyle.headIndent
-                }
-
-                codeView.frame = .init(
-                    origin: .init(x: lineOrigin.x + leftIndent, y: view.bounds.height - lineBoundingBox.maxY),
-                    size: .init(width: view.bounds.width - leftIndent, height: intrinsicContentSize.height)
-                )
                 codeView.previewAction = view.codePreviewHandler
             }
-            .withTableDrawing { [weak view] _, line, lineOrigin in
-                guard let view else { return }
+            .withTableDrawing { _, line, _, _ in
                 guard let firstRun = line.glyphRuns().first else { return }
                 let attributes = firstRun.attributes
-                guard let tableView = attributes[.contextView] as? TableView else {
+                guard attributes[.contextView] is TableView else {
                     assertionFailure()
                     return
                 }
-
-                if tableView.superview != view { view.addSubview(tableView) }
-                let lineBoundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                let intrinsicContentSize = tableView.intrinsicContentSize
-                var leftIndent: CGFloat = 0
-                if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle {
-                    leftIndent = paragraphStyle.headIndent
-                }
-
-                tableView.frame = .init(
-                    x: lineOrigin.x + leftIndent,
-                    y: view.bounds.height - lineBoundingBox.maxY,
-                    width: view.bounds.width - leftIndent,
-                    height: intrinsicContentSize.height
-                )
             }
-            .withBlockquoteMarking { _, line, lineOrigin in
-                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                blockquoteMarkingStorage = boundingBox.maxY
+            .withBlockquoteMarking { _, line, lineOrigin, usedRect in
+                guard let blockquote = blockquoteContext(in: line) else { return }
+                let boundingBox = usedRect.offsetBy(dx: lineOrigin.x - usedRect.minX, dy: lineOrigin.y - usedRect.maxY)
+                blockquote.accumulate(boundingBox)
             }
-            .withBlockquoteDrawing { context, line, lineOrigin in
-                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                defer { blockquoteMarkingStorage = nil }
-                let quotingLineHeight: CGFloat = blockquoteMarkingStorage! - boundingBox.minY
+            .withBlockquoteDrawing { context, line, lineOrigin, usedRect in
+                guard let blockquote = blockquoteContext(in: line) else { return }
+                let boundingBox = usedRect.offsetBy(dx: lineOrigin.x - usedRect.minX, dy: lineOrigin.y - usedRect.maxY)
+                blockquote.accumulate(boundingBox)
+                guard let resolvedBounds = blockquote.consumeBounds(), resolvedBounds.height > 0 else { return }
+                let anchorX = resolvedBounds.minX - blockquote.headIndent + blockquote.inset
+                let fallbackX = resolvedBounds.minX - blockquote.lineWidth - blockquote.inset
+                let lineX = min(anchorX, fallbackX)
+                let top = resolvedBounds.minY - blockquote.verticalInset
+                let bottom = resolvedBounds.maxY + blockquote.verticalInset
+                let height = max(0, bottom - top)
+                guard height > 0 else { return }
                 let lineRect = CGRect(
-                    x: 0,
-                    y: blockquoteMarkingStorage! - quotingLineHeight,
-                    width: 4,
-                    height: quotingLineHeight
+                    x: lineX,
+                    y: top,
+                    width: blockquote.lineWidth,
+                    height: height
                 )
-                context.setFillColor(theme.colors.body.withAlphaComponent(0.1).cgColor)
-                let roundedPath = CGPath(roundedRect: lineRect, cornerWidth: 2, cornerHeight: 2, transform: nil)
+                context.setFillColor(blockquote.fillColor.cgColor)
+                let cornerRadius = blockquote.lineWidth / 2
+                let roundedPath = CGPath(roundedRect: lineRect, cornerWidth: cornerRadius, cornerHeight: cornerRadius, transform: nil)
                 context.addPath(roundedPath)
                 context.fillPath()
             }
