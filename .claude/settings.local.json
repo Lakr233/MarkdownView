@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(find Sources/MarkdownView -name \"*.swift\" -exec grep -H \"func \" {})"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

@@ -57,11 +57,6 @@ public enum MathRenderer {
 // MARK: - String Extension
 
 private extension String {
-    func substring(with range: NSRange) -> String? {
-        guard let swiftRange = Range(range, in: self) else { return nil }
-        return String(self[swiftRange])
-    }
-
     func replacingBoxedCommand() -> String {
         var result = self
         while let range = result.range(of: "\\boxed{") {

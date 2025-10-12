@@ -1,66 +1,37 @@
 //
-//  App.swift
+//  DocumentDetailController.swift
 //  Example
 //
 //  Created by 秋星桥 on 1/20/25.
 //
 
-import SwiftUI
-
-@main
-struct TheApp: App {
-    var body: some Scene {
-        WindowGroup {
-            TabView {
-                NavigationView {
-                    Content()
-                        .toolbar {
-                            ToolbarItem {
-                                Button {
-                                    NotificationCenter.default.post(name: .init("Play"), object: nil)
-                                } label: {
-                                    Image(systemName: "play")
-                                }
-                            }
-                            ToolbarItem {
-                                Button {
-                                    NotificationCenter.default.post(name: .init("Reset"), object: nil)
-                                } label: {
-                                    Image(systemName: "arrow.counterclockwise")
-                                }
-                            }
-                        }
-                        .navigationTitle("MarkdownView")
-                        .navigationBarTitleDisplayMode(.inline)
-                }
-                .navigationViewStyle(.stack)
-                .frame(minWidth: 200, maxWidth: .infinity)
-                .tabItem {
-                    Label("Demo", systemImage: "play.circle")
-                }
-
-                DocumentSelectionView()
-                    .tabItem {
-                        Label("Documents", systemImage: "doc.text")
-                    }
-            }
-        }
-    }
-}
-
 import MarkdownParser
 import MarkdownView
+import UIKit
 
-final class ContentController: UIViewController {
+final class DocumentDetailController: UIViewController {
     let scrollView = UIScrollView()
     let measureLabel = UILabel()
-
     private var markdownTextView: MarkdownTextView!
+    private let documentContent: String
+    private var streamDocument = ""
+
+    init(document: String, title: String) {
+        documentContent = document
+        super.init(nibName: nil, bundle: nil)
+        self.title = title
+    }
+
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        scrollView.contentInset = .init(top: 64, left: 0, bottom: 64, right: 0)
+        view.backgroundColor = .systemBackground
+        scrollView.contentInset = .init(top: 16, left: 0, bottom: 64, right: 0)
         view.addSubview(scrollView)
 
         markdownTextView = MarkdownTextView()
@@ -69,7 +40,7 @@ final class ContentController: UIViewController {
 
         measureLabel.numberOfLines = 0
         measureLabel.font = UIFont.preferredFont(forTextStyle: .footnote)
-        measureLabel.textColor = .label
+        measureLabel.textColor = .secondaryLabel
 
         NotificationCenter.default.addObserver(
             self,
@@ -85,33 +56,54 @@ final class ContentController: UIViewController {
         )
 
         let parser = MarkdownParser()
-        let result = parser.parse(testDocument)
+        let result = parser.parse(documentContent)
         let date = Date()
         markdownTextView.setMarkdownManually(.init(parserResult: result, theme: .default))
         view.setNeedsLayout()
         view.layoutIfNeeded()
         let time = Date().timeIntervalSince(date)
-        measureLabel.text = String(format: "Time: %.4f ms", time * 1000)
+        measureLabel.text = String(format: "渲染时间: %.4f ms", time * 1000)
+
+        // Update title with metric time
+        title = "\(title ?? "-")@\(Int(time * 1000))ms"
+
+        setupNavigationBar()
     }
 
-    private var streamDocument = ""
+    private func setupNavigationBar() {
+        let menu = UIMenu(children: [
+            UIAction(title: "Play", image: UIImage(systemName: "play.fill"), handler: { _ in
+                self.play()
+            }),
+            UIAction(title: "Reset", image: UIImage(systemName: "arrow.counterclockwise"), handler: { _ in
+                self.resetMarkdown()
+            }),
+        ])
+        navigationItem.rightBarButtonItem = UIBarButtonItem(
+            systemItem: .edit,
+            primaryAction: nil,
+            menu: menu
+        )
+    }
 
     @objc func play() {
-        print(#function, Date())
+        streamDocument = ""
         DispatchQueue.global().async { [self] in
-            for char in testDocument {
+            for char in documentContent {
                 streamDocument.append(char)
                 autoreleasepool {
                     let parser = MarkdownParser()
                     let result = parser.parse(streamDocument)
                     let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: .default)
                     DispatchQueue.main.asyncAndWait {
+                        let currentOffset = scrollView.contentOffset
                         let date = Date()
                         markdownTextView.setMarkdown(content)
                         self.view.setNeedsLayout()
                         self.view.layoutIfNeeded()
+                        scrollView.contentOffset = currentOffset
                         let time = Date().timeIntervalSince(date)
-                        self.measureLabel.text = String(format: "Time: %.4f ms", time * 1000)
+                        self.measureLabel.text = String(format: "渲染时间: %.4f ms", time * 1000)
                     }
                 }
             }
@@ -119,6 +111,7 @@ final class ContentController: UIViewController {
     }
 
     @objc func resetMarkdown() {
+        streamDocument = ""
         markdownTextView.reset()
         view.setNeedsLayout()
     }
@@ -153,22 +146,7 @@ final class ContentController: UIViewController {
             height: measureLabel.frame.maxY + 16
         )
 
-        let offset = CGPoint(
-            x: 0,
-            y: scrollView.contentSize.height - scrollView.frame.height
-        )
-        _ = offset
-        scrollView.setContentOffset(offset, animated: false)
-
         let time = Date().timeIntervalSince(date)
-        measureLabel.text = String(format: "Time: %.4f ms", time * 1000)
+        measureLabel.text = String(format: "布局时间: %.4f ms", time * 1000)
     }
-}
-
-struct Content: UIViewControllerRepresentable {
-    func makeUIViewController(context _: Context) -> ContentController {
-        ContentController()
-    }
-
-    func updateUIViewController(_: ContentController, context _: Context) {}
 }

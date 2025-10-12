@@ -102,7 +102,7 @@ extension MarkdownInlineNode {
                 let baseFont = theme.fonts.body
                 var attachmentSize = image.size
                 let maxInlineHeight = baseFont.lineHeight
-                let scaleThreshold = maxInlineHeight * 1.8
+                let scaleThreshold = maxInlineHeight * 2.5
                 let shouldClampHeight = attachmentSize.height <= scaleThreshold
 
                 if shouldClampHeight, attachmentSize.height > maxInlineHeight {
