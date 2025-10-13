@@ -93,7 +93,8 @@ final class MarkdownLineDrawingAction {
 }
 
 final class BlockquoteDrawingContext {
-    private(set) var accumulatedBounds: CGRect?
+    private var pendingBounds: CGRect?
+    private var lastResolvedBounds: CGRect?
     let fillColor: UIColor
     let headIndent: CGFloat
     let lineWidth: CGFloat
@@ -116,16 +117,25 @@ final class BlockquoteDrawingContext {
 
     func accumulate(_ rect: CGRect) {
         guard !rect.isNull, !rect.isInfinite, !rect.isEmpty else { return }
-        if let bounds = accumulatedBounds {
-            accumulatedBounds = bounds.union(rect)
-        } else {
-            accumulatedBounds = rect
-        }
+        pendingBounds = pendingBounds?.union(rect) ?? rect
     }
 
     func consumeBounds() -> CGRect? {
-        defer { accumulatedBounds = nil }
-        return accumulatedBounds
+        if let bounds = pendingBounds {
+            if let lastResolvedBounds {
+                self.lastResolvedBounds = lastResolvedBounds.union(bounds)
+            } else {
+                lastResolvedBounds = bounds
+            }
+            pendingBounds = nil
+            return lastResolvedBounds
+        }
+        return lastResolvedBounds
+    }
+
+    func resetBounds() {
+        pendingBounds = nil
+        lastResolvedBounds = nil
     }
 }
 

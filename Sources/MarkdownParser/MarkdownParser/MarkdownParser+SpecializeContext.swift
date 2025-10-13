@@ -174,8 +174,6 @@ private extension MarkdownParser.SpecializeContext {
                 }
             case .thematicBreak:
                 continue
-            default:
-                continue
             }
         }
 
