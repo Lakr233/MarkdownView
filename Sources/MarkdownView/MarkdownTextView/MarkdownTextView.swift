@@ -79,7 +79,10 @@ public final class MarkdownTextView: UIView {
 
     public func reset() {
         assert(Thread.isMainThread)
-        use(.init())
+        resetCombine()
+        let empty = PreprocessedContent()
+        contentSubject.send(empty)
+        use(empty)
         setupCombine()
     }
 
