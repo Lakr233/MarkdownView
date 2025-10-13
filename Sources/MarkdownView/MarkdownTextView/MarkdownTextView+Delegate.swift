@@ -80,6 +80,11 @@ extension MarkdownTextView: UITextViewDelegate {
         let rect = contentTextView.rect(for: range) ?? .zero
         let location = CGPoint(x: rect.midX, y: rect.midY)
         let convertedLocation = contentTextView.convert(location, to: self)
-        linkHandler?(payload, range, convertedLocation)
+        delegate?.markdownTextView(
+            self,
+            didInteractWith: payload,
+            range: range,
+            location: convertedLocation
+        )
     }
 }

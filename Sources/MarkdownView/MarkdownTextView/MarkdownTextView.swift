@@ -7,9 +7,38 @@ import Combine
 import MarkdownParser
 import UIKit
 
+public protocol MarkdownTextViewDelegate: AnyObject {
+    func markdownTextView(
+        _ textView: MarkdownTextView,
+        didInteractWith link: LinkPayload,
+        range: NSRange,
+        location: CGPoint
+    )
+
+    func markdownTextView(
+        _ textView: MarkdownTextView,
+        didRequestPreviewFor language: String?,
+        content: NSAttributedString
+    )
+}
+
+public extension MarkdownTextViewDelegate {
+    func markdownTextView(
+        _: MarkdownTextView,
+        didInteractWith _: LinkPayload,
+        range _: NSRange,
+        location _: CGPoint
+    ) {}
+
+    func markdownTextView(
+        _: MarkdownTextView,
+        didRequestPreviewFor _: String?,
+        content _: NSAttributedString
+    ) {}
+}
+
 public final class MarkdownTextView: UIView {
-    public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
-    public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
+    public weak var delegate: MarkdownTextViewDelegate?
 
     public internal(set) var document: PreprocessedContent = .init()
     let contentTextView = MarkdownContentTextView()
@@ -41,6 +70,10 @@ public final class MarkdownTextView: UIView {
         contentTextView.delegate = self
         addSubview(contentTextView)
         setupCombine()
+    }
+
+    deinit {
+        viewProvider.removeAll()
     }
 
     @available(*, unavailable)
@@ -80,6 +113,7 @@ public final class MarkdownTextView: UIView {
     public func reset() {
         assert(Thread.isMainThread)
         resetCombine()
+        flushRenderedContent()
         let empty = PreprocessedContent()
         contentSubject.send(empty)
         use(empty)

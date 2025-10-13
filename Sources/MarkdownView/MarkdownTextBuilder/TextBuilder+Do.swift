@@ -131,7 +131,14 @@ extension TextBuilder {
                     assertionFailure()
                     return
                 }
-                codeView.previewAction = view.codePreviewHandler
+                codeView.previewAction = { [weak view] language, content in
+                    guard let view else { return }
+                    view.delegate?.markdownTextView(
+                        view,
+                        didRequestPreviewFor: language,
+                        content: content
+                    )
+                }
             }
             .withTableDrawing { _, line, _, _ in
                 guard let firstRun = line.glyphRuns().first else { return }

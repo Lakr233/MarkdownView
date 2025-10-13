@@ -7,6 +7,7 @@
 
 import Combine
 import Foundation
+import UIKit
 
 extension MarkdownTextView {
     func resetCombine() {
@@ -37,5 +38,30 @@ extension MarkdownTextView {
         autoreleasepool { updateTextExecute() }
 
         layoutIfNeeded()
+    }
+
+    func flushRenderedContent() {
+        assert(Thread.isMainThread)
+        viewProvider.lockPool()
+        defer { viewProvider.unlockPool() }
+
+        guard !contextViews.isEmpty else {
+            contentTextView.apply(document: NSAttributedString(), hostedViews: [])
+            return
+        }
+
+        for view in contextViews {
+            if let codeView = view as? CodeView {
+                viewProvider.stashCodeView(codeView)
+            } else if let tableView = view as? TableView {
+                viewProvider.stashTableView(tableView)
+            } else {
+                assertionFailure("Unexpected hosted view type: \(type(of: view))")
+            }
+            view.removeFromSuperview()
+        }
+
+        contextViews.removeAll()
+        contentTextView.apply(document: NSAttributedString(), hostedViews: [])
     }
 }
