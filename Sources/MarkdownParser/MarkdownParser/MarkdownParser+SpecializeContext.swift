@@ -16,7 +16,7 @@ extension MarkdownParser {
         init() {}
 
         func append(_ node: MarkdownBlockNode) {
-            processNode(node)
+            context.append(contentsOf: normalize(node))
         }
 
         func complete() -> [MarkdownBlockNode] {
@@ -27,281 +27,163 @@ extension MarkdownParser {
 }
 
 private extension MarkdownParser.SpecializeContext {
-    func rawListItemByCherryPick(
-        _ rawListItem: RawListItem
-    ) -> (RawListItem, [MarkdownBlockNode]) {
-        let children = rawListItem.children
-        var newChildren: [MarkdownBlockNode] = []
-        var pickedNodes: [MarkdownBlockNode] = []
-
-        for child in children {
-            switch child {
-            case .codeBlock, .table, .heading, .thematicBreak, .blockquote:
-                pickedNodes.append(child)
-            case let .bulletedList(isTight, items):
-                var resultItems: [RawListItem] = []
-                for item in items {
-                    let (newItem, picked) = rawListItemByCherryPick(item)
-                    resultItems.append(newItem)
-                    pickedNodes.append(contentsOf: picked)
-                }
-                newChildren.append(.bulletedList(isTight: isTight, items: resultItems))
-            case let .numberedList(isTight, start, items):
-                var resultItems: [RawListItem] = []
-                for item in items {
-                    let (newItem, picked) = rawListItemByCherryPick(item)
-                    resultItems.append(newItem)
-                    pickedNodes.append(contentsOf: picked)
-                }
-                newChildren.append(.numberedList(isTight: isTight, start: start, items: resultItems))
-            case let .taskList(isTight, items):
-                var resultItems: [RawTaskListItem] = []
-                for item in items {
-                    let (newItem, picked) = rawTaskListItemByCherryPick(item)
-                    resultItems.append(newItem)
-                    pickedNodes.append(contentsOf: picked)
-                }
-                newChildren.append(.taskList(isTight: isTight, items: resultItems))
-            default:
-                newChildren.append(child)
-            }
-        }
-
-        return (RawListItem(children: newChildren), pickedNodes)
-    }
-
-    func rawTaskListItemByCherryPick(
-        _ rawTaskListItem: RawTaskListItem
-    ) -> (RawTaskListItem, [MarkdownBlockNode]) {
-        let children = rawTaskListItem.children
-        var newChildren: [MarkdownBlockNode] = []
-        var pickedNodes: [MarkdownBlockNode] = []
-
-        for child in children {
-            switch child {
-            case .codeBlock, .table, .heading, .thematicBreak, .blockquote:
-                pickedNodes.append(child)
-            case let .bulletedList(isTight, items):
-                var resultItems: [RawListItem] = []
-                for item in items {
-                    let (newItem, picked) = rawListItemByCherryPick(item)
-                    resultItems.append(newItem)
-                    pickedNodes.append(contentsOf: picked)
-                }
-                newChildren.append(.bulletedList(isTight: isTight, items: resultItems))
-            case let .numberedList(isTight, start, items):
-                var resultItems: [RawListItem] = []
-                for item in items {
-                    let (newItem, picked) = rawListItemByCherryPick(item)
-                    resultItems.append(newItem)
-                    pickedNodes.append(contentsOf: picked)
-                }
-                newChildren.append(.numberedList(isTight: isTight, start: start, items: resultItems))
-            case let .taskList(isTight, items):
-                var resultItems: [RawTaskListItem] = []
-                for item in items {
-                    let (newItem, picked) = rawTaskListItemByCherryPick(item)
-                    resultItems.append(newItem)
-                    pickedNodes.append(contentsOf: picked)
-                }
-                newChildren.append(.taskList(isTight: isTight, items: resultItems))
-            default:
-                newChildren.append(child)
-            }
-        }
-
-        return (RawTaskListItem(isCompleted: rawTaskListItem.isCompleted, children: newChildren), pickedNodes)
-    }
-
-    func processNodeInsideListEnvironment(
-        _ node: MarkdownBlockNode
-    ) -> [MarkdownBlockNode] {
-        switch node {
-        case let .bulletedList(isTight, items):
-            return processListItems(items: items) { processedItems in
-                .bulletedList(isTight: isTight, items: processedItems)
-            }
-        case let .numberedList(isTight, start, items):
-            var containsElementsToExtract = false
-            for item in items {
-                let (_, pickedNodes) = rawListItemByCherryPick(item)
-                if !pickedNodes.isEmpty {
-                    containsElementsToExtract = true
-                    break
-                }
-            }
-            if containsElementsToExtract {
-                return processListItems(items: items) { processedItems in
-                    .bulletedList(isTight: isTight, items: processedItems)
-                }
-            } else {
-                return processListItems(items: items) { processedItems in
-                    .numberedList(isTight: isTight, start: start, items: processedItems)
-                }
-            }
-        case let .taskList(isTight, items):
-            return processTaskListItems(items: items) { processedItems in
-                .taskList(isTight: isTight, items: processedItems)
-            }
-        default:
-            assertionFailure("unsupported node type in list environment")
-            return []
-        }
-    }
-
-    private func processListItems(
-        items: [RawListItem],
-        createList: ([RawListItem]) -> MarkdownBlockNode
-    ) -> [MarkdownBlockNode] {
-        var result: [MarkdownBlockNode] = []
-        var currentItems: [RawListItem] = []
-
-        for itemIndex in 0 ..< items.count {
-            let item = items[itemIndex]
-            let (processedItem, pickedNodes) = rawListItemByCherryPick(item)
-            currentItems.append(processedItem)
-            if !pickedNodes.isEmpty {
-                if !currentItems.isEmpty {
-                    result.append(createList(currentItems))
-                    currentItems = []
-                }
-                result.append(contentsOf: pickedNodes)
-            } else if itemIndex == items.count - 1, !currentItems.isEmpty {
-                result.append(createList(currentItems))
-            }
-        }
-        return result
-    }
-
-    private func processTaskListItems(
-        items: [RawTaskListItem],
-        createList: ([RawTaskListItem]) -> MarkdownBlockNode
-    ) -> [MarkdownBlockNode] {
-        var result: [MarkdownBlockNode] = []
-        var currentItems: [RawTaskListItem] = []
-
-        for itemIndex in 0 ..< items.count {
-            let item = items[itemIndex]
-            let (processedItem, pickedNodes) = rawTaskListItemByCherryPick(item)
-            currentItems.append(processedItem)
-            if !pickedNodes.isEmpty {
-                if !currentItems.isEmpty {
-                    result.append(createList(currentItems))
-                    currentItems = []
-                }
-                result.append(contentsOf: pickedNodes)
-            } else if itemIndex == items.count - 1, !currentItems.isEmpty {
-                result.append(createList(currentItems))
-            }
-        }
-        return result
-    }
-
-    func processNode(_ node: MarkdownBlockNode) {
+    func normalize(_ node: MarkdownBlockNode) -> [MarkdownBlockNode] {
         switch node {
         case let .blockquote(children):
-            let flattenedChildren = flattenBlockquoteChildren(children)
-            context.append(.blockquote(children: flattenedChildren))
-        case .bulletedList:
-            let nodes = processNodeInsideListEnvironment(node)
-            context.append(contentsOf: nodes)
-        case .numberedList:
-            let nodes = processNodeInsideListEnvironment(node)
-            context.append(contentsOf: nodes)
-        case .taskList:
-            let nodes = processNodeInsideListEnvironment(node)
-            context.append(contentsOf: nodes)
-        case let .codeBlock(fenceInfo, content):
-            context.append(.codeBlock(fenceInfo: fenceInfo, content: content))
-        case let .paragraph(content):
-            context.append(.paragraph(content: content))
-        case let .heading(level, content):
-            context.append(.heading(level: level, content: content))
-        case let .table(columnAlignments, rows):
-            context.append(.table(columnAlignments: columnAlignments, rows: rows))
-        case .thematicBreak:
-            context.append(.thematicBreak)
+            let flattenedChildren = normalizeBlockquote(children: children)
+            return [.blockquote(children: flattenedChildren)]
+        case let .bulletedList(isTight, items):
+            return normalizeBulletedList(isTight: isTight, items: items)
+        case let .numberedList(isTight, start, items):
+            return normalizeNumberedList(isTight: isTight, start: start, items: items)
+        case let .taskList(isTight, items):
+            return normalizeTaskList(isTight: isTight, items: items)
+        default:
+            return [node]
         }
     }
 
-    func flattenBlockquoteChildren(_ children: [MarkdownBlockNode]) -> [MarkdownBlockNode] {
-        var flattenedChildren: [MarkdownBlockNode] = []
+    func normalizeBlockquote(children: [MarkdownBlockNode]) -> [MarkdownBlockNode] {
+        collectParagraphs(from: children)
+    }
 
-        for child in children {
-            switch child {
-            case let .paragraph(content):
-                flattenedChildren.append(.paragraph(content: content))
-            case let .heading(_, content):
-                flattenedChildren.append(.paragraph(content: content))
-            case let .codeBlock(_, content):
-                flattenedChildren.append(.paragraph(content: [.text(content)]))
-            case let .blockquote(nestedChildren):
-                let flattened = flattenBlockquoteChildren(nestedChildren)
-                flattenedChildren.append(contentsOf: flattened)
-            case let .bulletedList(_, items):
-                for item in items {
-                    let paragraphs = extractParagraphsFromListItem(item.children)
-                    flattenedChildren.append(contentsOf: paragraphs)
+    func normalizeBulletedList(isTight: Bool, items: [RawListItem]) -> [MarkdownBlockNode] {
+        let normalizedItems = items.map { normalize(rawItem: $0) }
+        return assembleList(normalizedItems: normalizedItems) { processed in
+            .bulletedList(isTight: isTight, items: processed)
+        }
+    }
+
+    func normalizeNumberedList(isTight: Bool, start: Int, items: [RawListItem]) -> [MarkdownBlockNode] {
+        let normalizedItems = items.map { normalize(rawItem: $0) }
+        let shouldDowngrade = normalizedItems.contains { !$0.lifted.isEmpty }
+        return assembleList(normalizedItems: normalizedItems) { processed in
+            if shouldDowngrade {
+                .bulletedList(isTight: isTight, items: processed)
+            } else {
+                .numberedList(isTight: isTight, start: start, items: processed)
+            }
+        }
+    }
+
+    func normalizeTaskList(isTight: Bool, items: [RawTaskListItem]) -> [MarkdownBlockNode] {
+        let normalizedItems = items.map { normalize(taskItem: $0) }
+        return assembleList(normalizedItems: normalizedItems) { processed in
+            .taskList(isTight: isTight, items: processed)
+        }
+    }
+
+    func assembleList<Item>(
+        normalizedItems: [ListItemNormalization<Item>],
+        makeList: ([Item]) -> MarkdownBlockNode
+    ) -> [MarkdownBlockNode] {
+        var result: [MarkdownBlockNode] = []
+        var pendingItems: [Item] = []
+
+        for normalized in normalizedItems {
+            pendingItems.append(normalized.item)
+
+            if !normalized.lifted.isEmpty {
+                if !pendingItems.isEmpty {
+                    result.append(makeList(pendingItems))
+                    pendingItems.removeAll(keepingCapacity: true)
                 }
-            case let .numberedList(_, _, items):
-                for item in items {
-                    let paragraphs = extractParagraphsFromListItem(item.children)
-                    flattenedChildren.append(contentsOf: paragraphs)
-                }
-            case let .taskList(_, items):
-                for item in items {
-                    let paragraphs = extractParagraphsFromListItem(item.children)
-                    flattenedChildren.append(contentsOf: paragraphs)
-                }
-            case let .table(_, rows):
-                for row in rows {
-                    for cell in row.cells {
-                        flattenedChildren.append(.paragraph(content: cell.content))
-                    }
-                }
-            case .thematicBreak:
-                continue
+                result.append(contentsOf: normalized.lifted)
             }
         }
 
-        return flattenedChildren
+        if !pendingItems.isEmpty {
+            result.append(makeList(pendingItems))
+        }
+
+        return result
     }
 
-    func extractParagraphsFromListItem(_ children: [MarkdownBlockNode]) -> [MarkdownBlockNode] {
-        var paragraphs: [MarkdownBlockNode] = []
+    func normalize(rawItem: RawListItem) -> ListItemNormalization<RawListItem> {
+        let (retained, lifted) = partitionListChildren(rawItem.children)
+        return .init(item: RawListItem(children: retained), lifted: lifted)
+    }
+
+    func normalize(taskItem: RawTaskListItem) -> ListItemNormalization<RawTaskListItem> {
+        let (retained, lifted) = partitionListChildren(taskItem.children)
+        return .init(item: RawTaskListItem(isCompleted: taskItem.isCompleted, children: retained), lifted: lifted)
+    }
+
+    func partitionListChildren(_ children: [MarkdownBlockNode]) -> (retained: [MarkdownBlockNode], lifted: [MarkdownBlockNode]) {
+        var retained: [MarkdownBlockNode] = []
+        var lifted: [MarkdownBlockNode] = []
 
         for child in children {
-            switch child {
+            let normalizedChildren = normalize(child)
+            for normalizedChild in normalizedChildren {
+                if shouldLiftFromList(normalizedChild) {
+                    lifted.append(normalizedChild)
+                } else {
+                    retained.append(normalizedChild)
+                }
+            }
+        }
+
+        return (retained, lifted)
+    }
+
+    func shouldLiftFromList(_ node: MarkdownBlockNode) -> Bool {
+        // These block-level nodes break list continuity and must be promoted alongside the list.
+        switch node {
+        case .blockquote, .codeBlock, .table, .heading, .thematicBreak:
+            true
+        default:
+            false
+        }
+    }
+
+    func collectParagraphs(from nodes: [MarkdownBlockNode]) -> [MarkdownBlockNode] {
+        var paragraphs: [MarkdownBlockNode] = []
+
+        for node in nodes {
+            switch node {
             case let .paragraph(content):
                 paragraphs.append(.paragraph(content: content))
             case let .heading(_, content):
                 paragraphs.append(.paragraph(content: content))
             case let .codeBlock(_, content):
                 paragraphs.append(.paragraph(content: [.text(content)]))
-            case .blockquote:
-                // blockquote 应该已经被提取到顶级，这里不应该出现
-                assertionFailure("blockquote should not appear in list items")
-            default:
-                // 递归处理其他嵌套列表
-                if case let .bulletedList(_, items) = child {
-                    for item in items {
-                        let nestedParagraphs = extractParagraphsFromListItem(item.children)
-                        paragraphs.append(contentsOf: nestedParagraphs)
-                    }
-                } else if case let .numberedList(_, _, items) = child {
-                    for item in items {
-                        let nestedParagraphs = extractParagraphsFromListItem(item.children)
-                        paragraphs.append(contentsOf: nestedParagraphs)
-                    }
-                } else if case let .taskList(_, items) = child {
-                    for item in items {
-                        let nestedParagraphs = extractParagraphsFromListItem(item.children)
-                        paragraphs.append(contentsOf: nestedParagraphs)
+            case let .blockquote(children):
+                let nested = collectParagraphs(from: children)
+                paragraphs.append(contentsOf: nested)
+            case let .bulletedList(_, items):
+                for item in items {
+                    let nested = collectParagraphs(from: item.children)
+                    paragraphs.append(contentsOf: nested)
+                }
+            case let .numberedList(_, _, items):
+                for item in items {
+                    let nested = collectParagraphs(from: item.children)
+                    paragraphs.append(contentsOf: nested)
+                }
+            case let .taskList(_, items):
+                for item in items {
+                    let nested = collectParagraphs(from: item.children)
+                    paragraphs.append(contentsOf: nested)
+                }
+            case let .table(_, rows):
+                for row in rows {
+                    for cell in row.cells {
+                        paragraphs.append(.paragraph(content: cell.content))
                     }
                 }
+            case .thematicBreak:
+                continue
+            default:
+                continue
             }
         }
 
         return paragraphs
+    }
+
+    struct ListItemNormalization<Item> {
+        let item: Item
+        let lifted: [MarkdownBlockNode]
     }
 }
