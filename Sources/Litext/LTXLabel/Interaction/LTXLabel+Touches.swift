@@ -19,11 +19,12 @@ public extension LTXLabel {
         var didHandleEvent = false
         for press in presses {
             guard let key = press.key else { continue }
-            if key.charactersIgnoringModifiers == "c", key.modifierFlags.contains(.command) {
+            // Use keyCode instead of charactersIgnoringModifiers for keyboard layout independence
+            if key.keyCode == .keyboardC, key.modifierFlags.contains(.command) {
                 let copiedText = copySelectedText()
                 didHandleEvent = copiedText.length > 0
             }
-            if key.charactersIgnoringModifiers == "a", key.modifierFlags.contains(.command) {
+            if key.keyCode == .keyboardA, key.modifierFlags.contains(.command) {
                 selectAllText()
                 didHandleEvent = true
             }
