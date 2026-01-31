@@ -5,14 +5,27 @@
 //  Created by 秋星桥 on 2025/1/7.
 //
 
-import UIKit
+#if canImport(UIKit)
+    import UIKit
 
-extension UIColor {
-    convenience init(light: UIColor, dark: UIColor) {
-        if #available(iOS 13.0, tvOS 13.0, *) {
+    extension UIColor {
+        convenience init(light: UIColor, dark: UIColor) {
             self.init(dynamicProvider: { $0.userInterfaceStyle == .dark ? dark : light })
-        } else {
-            self.init(cgColor: light.cgColor)
         }
     }
-}
+
+#elseif canImport(AppKit)
+    import AppKit
+
+    extension NSColor {
+        convenience init(light: NSColor, dark: NSColor) {
+            self.init(name: nil) { appearance in
+                if appearance.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua {
+                    dark
+                } else {
+                    light
+                }
+            }
+        }
+    }
+#endif

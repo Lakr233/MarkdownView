@@ -6,7 +6,11 @@
 import CoreText
 import Litext
 import MarkdownParser
-import UIKit
+#if canImport(UIKit)
+    import UIKit
+#elseif canImport(AppKit)
+    import AppKit
+#endif
 
 final class TextBuilder {
     private let nodes: [MarkdownBlockNode]
@@ -81,14 +85,14 @@ final class TextBuilder {
 
     struct BuildResult {
         let document: NSAttributedString
-        let subviews: [UIView]
+        let subviews: [PlatformView]
     }
 
     private var previouslyBuilt = false
     func build() -> BuildResult {
         assert(!previouslyBuilt, "TextBuilder can only be built once.")
         previouslyBuilt = true
-        var subviewCollector = [UIView]()
+        var subviewCollector = [PlatformView]()
         for node in nodes {
             text.append(processBlock(node, context: context, subviews: &subviewCollector))
         }
@@ -103,7 +107,7 @@ extension TextBuilder {
     private func processBlock(
         _ node: MarkdownBlockNode,
         context: MarkdownTextView.PreprocessedContent,
-        subviews: inout [UIView]
+        subviews: inout [PlatformView]
     ) -> NSAttributedString {
         let blockProcessor = BlockProcessor(
             theme: theme,

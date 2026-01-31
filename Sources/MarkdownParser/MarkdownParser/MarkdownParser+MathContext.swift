@@ -181,8 +181,7 @@ extension MarkdownParser {
                             for: .math,
                             identifier: identifier
                         )
-                    )
-                    )
+                    ))
                 } else {
                     result.append(node)
                 }

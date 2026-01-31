@@ -9,7 +9,11 @@ import Foundation
 import Litext
 import MarkdownParser
 import SwiftMath
-import UIKit
+#if canImport(UIKit)
+    import UIKit
+#elseif canImport(AppKit)
+    import AppKit
+#endif
 
 extension [MarkdownInlineNode] {
     func render(theme: MarkdownTheme, context: MarkdownTextView.PreprocessedContent, viewProvider: ReusableViewProvider) -> NSMutableAttributedString {
@@ -101,7 +105,7 @@ extension MarkdownInlineNode {
         case let .math(content, replacementIdentifier):
             // Get LaTeX content from rendered context or fallback to raw content
             let latexContent = context.rendered[replacementIdentifier]?.text ?? content
-            
+
             if let item = context.rendered[replacementIdentifier], let image = item.image {
                 var imageSize = image.size
 
@@ -141,7 +145,7 @@ extension MarkdownInlineNode {
                 }
                 let attachment = LTXAttachment.hold(attrString: .init(string: latexContent))
                 attachment.size = imageSize
-                
+
                 let attributes: [NSAttributedString.Key: Any] = [
                     LTXAttachmentAttributeName: attachment,
                     LTXLineDrawingCallbackName: drawingCallback,
@@ -149,7 +153,7 @@ extension MarkdownInlineNode {
                     .contextIdentifier: replacementIdentifier,
                     .mathLatexContent: latexContent, // Store LaTeX content for on-demand rendering
                 ]
-                
+
                 return NSAttributedString(
                     string: LTXReplacementText,
                     attributes: attributes

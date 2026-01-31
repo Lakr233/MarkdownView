@@ -41,11 +41,14 @@ public extension MarkdownTextView {
 public extension MarkdownParser.ParseResult {
     fileprivate func renderMathContent(_ theme: MarkdownTheme, _ renderedContexts: inout [String: RenderedTextContent]) {
         for (key, value) in mathContext {
-            let image = MathRenderer.renderToImage(
+            var image = MathRenderer.renderToImage(
                 latex: value,
                 fontSize: theme.fonts.body.pointSize,
                 textColor: theme.colors.body
-            )?.withRenderingMode(.alwaysTemplate)
+            )
+            #if canImport(UIKit)
+                image = image?.withRenderingMode(.alwaysTemplate)
+            #endif
             let renderedContext = RenderedTextContent(
                 image: image,
                 text: value

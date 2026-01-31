@@ -256,8 +256,8 @@ struct UnsafeNodeSequence: Sequence {
     }
 }
 
-// Extension node types are not exported in `cmark_gfm_extensions`,
-// so we need to look for them in the symbol table
+/// Extension node types are not exported in `cmark_gfm_extensions`,
+/// so we need to look for them in the symbol table
 struct ExtensionNodeTypes {
     let CMARK_NODE_TABLE: cmark_node_type
     let CMARK_NODE_TABLE_ROW: cmark_node_type

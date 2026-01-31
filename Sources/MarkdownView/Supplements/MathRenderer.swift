@@ -6,12 +6,18 @@
 //
 
 import Foundation
+import Litext
 import LRUCache
 import SwiftMath
-import UIKit
+
+#if canImport(UIKit)
+    import UIKit
+#elseif canImport(AppKit)
+    import AppKit
+#endif
 
 public enum MathRenderer {
-    static let renderCache = LRUCache<String, UIImage>(countLimit: 256)
+    static let renderCache = LRUCache<String, PlatformImage>(countLimit: 256)
 
     private static func preprocessLatex(_ latex: String) -> String {
         latex
@@ -30,8 +36,8 @@ public enum MathRenderer {
     public static func renderToImage(
         latex: String,
         fontSize: CGFloat = 16,
-        textColor: UIColor = .black
-    ) -> UIImage? {
+        textColor: PlatformColor = .black
+    ) -> PlatformImage? {
         let cacheKey = renderCacheKey(for: latex, fontSize: fontSize, textColor: textColor)
         if let cachedImage = renderCache.value(forKey: cacheKey) {
             return cachedImage
@@ -46,15 +52,24 @@ public enum MathRenderer {
             labelMode: .text
         )
         let (error, image) = mathImage.asImage()
-        guard error == nil, let image = image?.withRenderingMode(.alwaysTemplate).withTintColor(.label) else {
-            print("[!] MathRenderer failed to render image for content: \(latex) \(error?.localizedDescription ?? "?")")
-            return nil
-        }
+
+        #if canImport(UIKit)
+            guard error == nil, let image = image?.withRenderingMode(.alwaysTemplate).withTintColor(.label) else {
+                print("[!] MathRenderer failed to render image for content: \(latex) \(error?.localizedDescription ?? "?")")
+                return nil
+            }
+        #elseif canImport(AppKit)
+            guard error == nil, let image else {
+                print("[!] MathRenderer failed to render image for content: \(latex) \(error?.localizedDescription ?? "?")")
+                return nil
+            }
+        #endif
+
         renderCache.setValue(image, forKey: cacheKey)
         return image
     }
 
-    private static func renderCacheKey(for latex: String, fontSize: CGFloat, textColor: UIColor) -> String {
+    private static func renderCacheKey(for latex: String, fontSize: CGFloat, textColor: PlatformColor) -> String {
         "\(latex)#\(fontSize)#\(textColor.description)"
     }
 }

@@ -37,6 +37,10 @@ extension MarkdownTextView {
         // thus we hereby call the autoreleasepool to avoid large memory consumption
         autoreleasepool { updateTextExecute() }
 
-        layoutIfNeeded()
+        #if canImport(UIKit)
+            layoutIfNeeded()
+        #elseif canImport(AppKit)
+            layoutSubtreeIfNeeded()
+        #endif
     }
 }

@@ -4,7 +4,11 @@
 //
 
 import DequeModule
-import UIKit
+#if canImport(UIKit)
+    import UIKit
+#elseif canImport(AppKit)
+    import AppKit
+#endif
 
 private class ObjectPool<T: Equatable & Hashable> {
     private let factory: () -> T
@@ -14,20 +18,19 @@ private class ObjectPool<T: Equatable & Hashable> {
         self.factory = factory
     }
 
-    open func acquire() -> T {
+    func acquire() -> T {
         if let object = objects.popFirst() {
-            return object
+            object
         } else {
-            let object = factory()
-            return object
+            factory()
         }
     }
 
-    open func stash(_ object: T) {
+    func stash(_ object: T) {
         objects.append(object)
     }
 
-    open func reorder(matching sequence: [T]) {
+    func reorder(matching sequence: [T]) {
         var current = Set(objects)
         objects.removeAll()
         for content in sequence where current.contains(content) {
@@ -40,23 +43,13 @@ private class ObjectPool<T: Equatable & Hashable> {
     }
 }
 
-private class ViewBox<T: UIView>: ObjectPool<T> {
-    override func acquire() -> T {
-        super.acquire()
-    }
-
-    override func stash(_ item: T) {
-        super.stash(item)
-    }
-}
-
 public final class ReusableViewProvider {
-    private let codeViewPool: ViewBox<CodeView> = .init {
-        CodeView()
+    private let codeViewPool: ObjectPool<CodeView> = .init {
+        CodeView(frame: .zero)
     }
 
-    private let tableViewPool: ViewBox<TableView> = .init {
-        TableView()
+    private let tableViewPool: ObjectPool<TableView> = .init {
+        TableView(frame: .zero)
     }
 
     private let lock = NSLock()
@@ -92,7 +85,7 @@ public final class ReusableViewProvider {
         tableViewPool.stash(tableView)
     }
 
-    func reorderViews(matching sequence: [UIView]) {
+    func reorderViews(matching sequence: [PlatformView]) {
         // we adjust the sequence of stashed views to match the order
         // afterwards when TextBuilder visit a node requesting new view
         // it will follow the order to avoid glitch

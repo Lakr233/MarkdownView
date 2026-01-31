@@ -7,7 +7,11 @@
 //
 
 import Litext
-import UIKit
+#if canImport(UIKit)
+    import UIKit
+#elseif canImport(AppKit)
+    import AppKit
+#endif
 
 // MARK: - LTXAttributeStringRepresentable Extension
 
