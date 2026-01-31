@@ -139,6 +139,11 @@ import MarkdownParser
             true
         }
 
+        override public func viewDidChangeEffectiveAppearance() {
+            super.viewDidChangeEffectiveAppearance()
+            setMarkdown(document)
+        }
+
         override public func layout() {
             super.layout()
             textView.preferredMaxLayoutWidth = bounds.width

@@ -45,32 +45,53 @@ public enum MathRenderer {
 
         let processedLatex = preprocessLatex(latex)
 
+        #if canImport(AppKit)
+        // Resolve dynamic colors in the current appearance context for SwiftMath
+        var resolvedTextColor = textColor
+        NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+            resolvedTextColor = textColor.usingColorSpace(.sRGB) ?? textColor
+        }
+        #else
+        let resolvedTextColor = textColor
+        #endif
+
         let mathImage = MTMathImage(
             latex: processedLatex,
             fontSize: fontSize,
-            textColor: textColor,
+            textColor: resolvedTextColor,
             labelMode: .text
         )
         let (error, image) = mathImage.asImage()
 
+        guard error == nil, let image else {
+            print("[!] MathRenderer failed to render image for content: \(latex) \(error?.localizedDescription ?? "?")")
+            return nil
+        }
+
         #if canImport(UIKit)
-            guard error == nil, let image = image?.withRenderingMode(.alwaysTemplate).withTintColor(.label) else {
-                print("[!] MathRenderer failed to render image for content: \(latex) \(error?.localizedDescription ?? "?")")
-                return nil
-            }
+            let result = image.withRenderingMode(.alwaysTemplate).withTintColor(.label)
         #elseif canImport(AppKit)
-            guard error == nil, let image else {
-                print("[!] MathRenderer failed to render image for content: \(latex) \(error?.localizedDescription ?? "?")")
-                return nil
-            }
+            image.isTemplate = true
+            let result = image
         #endif
 
-        renderCache.setValue(image, forKey: cacheKey)
-        return image
+        renderCache.setValue(result, forKey: cacheKey)
+        return result
     }
 
     private static func renderCacheKey(for latex: String, fontSize: CGFloat, textColor: PlatformColor) -> String {
-        "\(latex)#\(fontSize)#\(textColor.description)"
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        #if canImport(UIKit)
+            let resolvedColor = textColor.resolvedColor(with: UITraitCollection.current)
+            resolvedColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+        #elseif canImport(AppKit)
+            // Resolve dynamic colors in the context of the current appearance
+            NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+                let resolvedColor = textColor.usingColorSpace(.sRGB) ?? textColor
+                resolvedColor.getRed(&r, green: &g, blue: &b, alpha: &a)
+            }
+        #endif
+        return "\(latex)#\(fontSize)#\(r),\(g),\(b),\(a)"
     }
 }
 

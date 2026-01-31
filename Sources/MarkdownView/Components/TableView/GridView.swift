@@ -275,33 +275,46 @@
             true
         }
 
+        override func viewDidChangeEffectiveAppearance() {
+            super.viewDidChangeEffectiveAppearance()
+            updateThemeColors()
+        }
+
         private func setupView() {
             wantsLayer = true
 
-            backgroundLayer.fillColor = theme.table.cellBackgroundColor.cgColor
+            backgroundLayer.fillColor = resolvedCGColor(theme.table.cellBackgroundColor)
             backgroundLayer.strokeColor = NSColor.clear.cgColor
             backgroundLayer.lineWidth = 0
             layer?.addSublayer(backgroundLayer)
 
-            stripeLayer.fillColor = theme.table.stripeCellBackgroundColor.cgColor
+            stripeLayer.fillColor = resolvedCGColor(theme.table.stripeCellBackgroundColor)
             layer?.addSublayer(stripeLayer)
 
-            headerBackgroundLayer.fillColor = theme.table.headerBackgroundColor.cgColor
+            headerBackgroundLayer.fillColor = resolvedCGColor(theme.table.headerBackgroundColor)
             layer?.addSublayer(headerBackgroundLayer)
 
             shapeLayer.lineWidth = theme.table.borderWidth
-            shapeLayer.strokeColor = theme.table.borderColor.cgColor
+            shapeLayer.strokeColor = resolvedCGColor(theme.table.borderColor)
             shapeLayer.fillColor = NSColor.clear.cgColor
             layer?.addSublayer(shapeLayer)
         }
 
+        private func resolvedCGColor(_ color: NSColor) -> CGColor {
+            var resolved = color
+            effectiveAppearance.performAsCurrentDrawingAppearance {
+                resolved = color.usingColorSpace(.sRGB) ?? color
+            }
+            return resolved.cgColor
+        }
+
         private func updateThemeColors() {
-            backgroundLayer.fillColor = theme.table.cellBackgroundColor.cgColor
+            backgroundLayer.fillColor = resolvedCGColor(theme.table.cellBackgroundColor)
             backgroundLayer.strokeColor = NSColor.clear.cgColor
-            stripeLayer.fillColor = theme.table.stripeCellBackgroundColor.cgColor
-            shapeLayer.strokeColor = theme.table.borderColor.cgColor
+            stripeLayer.fillColor = resolvedCGColor(theme.table.stripeCellBackgroundColor)
+            shapeLayer.strokeColor = resolvedCGColor(theme.table.borderColor)
             shapeLayer.lineWidth = theme.table.borderWidth
-            headerBackgroundLayer.fillColor = theme.table.headerBackgroundColor.cgColor
+            headerBackgroundLayer.fillColor = resolvedCGColor(theme.table.headerBackgroundColor)
         }
 
         override func layout() {
