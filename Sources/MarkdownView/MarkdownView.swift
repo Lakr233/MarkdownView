@@ -23,6 +23,10 @@ import SwiftUI
         public func makeUIView(context _: Context) -> MarkdownTextView {
             let view = MarkdownTextView()
             view.theme = theme
+            view.setContentHuggingPriority(.required, for: .vertical)
+            view.setContentCompressionResistancePriority(.required, for: .vertical)
+            view.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             return view
         }
 
@@ -31,7 +35,8 @@ import SwiftUI
             let parser = MarkdownParser()
             let result = parser.parse(text)
             let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: theme)
-            uiView.setMarkdown(content)
+            uiView.setMarkdownManually(content)
+            uiView.invalidateIntrinsicContentSize()
         }
     }
 
@@ -50,6 +55,10 @@ import SwiftUI
         public func makeNSView(context _: Context) -> MarkdownTextView {
             let view = MarkdownTextView()
             view.theme = theme
+            view.setContentHuggingPriority(.required, for: .vertical)
+            view.setContentCompressionResistancePriority(.required, for: .vertical)
+            view.setContentHuggingPriority(.defaultLow, for: .horizontal)
+            view.setContentCompressionResistancePriority(.defaultLow, for: .horizontal)
             return view
         }
 
@@ -58,7 +67,8 @@ import SwiftUI
             let parser = MarkdownParser()
             let result = parser.parse(text)
             let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: theme)
-            nsView.setMarkdown(content)
+            nsView.setMarkdownManually(content)
+            nsView.invalidateIntrinsicContentSize()
         }
     }
 #endif

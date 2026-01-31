@@ -279,6 +279,10 @@ import Litext
             fatalError("init(coder:) has not been implemented")
         }
 
+        override var isFlipped: Bool {
+            true
+        }
+
         // MARK: - Setup
 
         private func configureSubviews() {

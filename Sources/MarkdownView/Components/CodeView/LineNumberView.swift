@@ -160,6 +160,10 @@ import Litext
             fatalError("init(coder:) has not been implemented")
         }
 
+        override var isFlipped: Bool {
+            true
+        }
+
         private func setupView() {
             wantsLayer = true
             layer?.backgroundColor = NSColor.clear.cgColor

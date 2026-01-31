@@ -38,7 +38,14 @@ import MarkdownParser
             textView.isSelectable = true
             textView.backgroundColor = .clear
             textView.delegate = self
+            textView.translatesAutoresizingMaskIntoConstraints = false
             addSubview(textView)
+            NSLayoutConstraint.activate([
+                textView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                textView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                textView.topAnchor.constraint(equalTo: topAnchor),
+                textView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            ])
             setupCombine()
         }
 
@@ -49,9 +56,11 @@ import MarkdownParser
 
         override public func layoutSubviews() {
             super.layoutSubviews()
-
             textView.preferredMaxLayoutWidth = bounds.width
-            textView.frame = bounds
+        }
+
+        override public var intrinsicContentSize: CGSize {
+            textView.intrinsicContentSize
         }
 
         public func boundingSize(for width: CGFloat) -> CGSize {
@@ -110,7 +119,14 @@ import MarkdownParser
             textView.isSelectable = true
             wantsLayer = true
             layer?.backgroundColor = NSColor.clear.cgColor
+            textView.translatesAutoresizingMaskIntoConstraints = false
             addSubview(textView)
+            NSLayoutConstraint.activate([
+                textView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                textView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                textView.topAnchor.constraint(equalTo: topAnchor),
+                textView.bottomAnchor.constraint(equalTo: bottomAnchor),
+            ])
             setupCombine()
         }
 
@@ -119,11 +135,17 @@ import MarkdownParser
             fatalError("init(coder:) has not been implemented")
         }
 
+        override public var isFlipped: Bool {
+            true
+        }
+
         override public func layout() {
             super.layout()
-
             textView.preferredMaxLayoutWidth = bounds.width
-            textView.frame = bounds
+        }
+
+        override public var intrinsicContentSize: CGSize {
+            textView.intrinsicContentSize
         }
 
         public func boundingSize(for width: CGFloat) -> CGSize {

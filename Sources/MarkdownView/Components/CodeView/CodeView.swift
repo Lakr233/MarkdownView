@@ -208,6 +208,10 @@ import Litext
             fatalError("init(coder:) has not been implemented")
         }
 
+        override var isFlipped: Bool {
+            true
+        }
+
         static func intrinsicHeight(for content: String, theme: MarkdownTheme = .default) -> CGFloat {
             CodeViewConfiguration.intrinsicHeight(for: content, theme: theme)
         }
