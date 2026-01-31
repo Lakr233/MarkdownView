@@ -45,14 +45,14 @@ public enum MathRenderer {
 
         let processedLatex = preprocessLatex(latex)
 
-        #if canImport(AppKit)
-        // Resolve dynamic colors in the current appearance context for SwiftMath
-        var resolvedTextColor = textColor
-        NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
-            resolvedTextColor = textColor.usingColorSpace(.sRGB) ?? textColor
-        }
-        #else
-        let resolvedTextColor = textColor
+        #if canImport(UIKit)
+            let resolvedTextColor = textColor
+        #elseif canImport(AppKit)
+            // Resolve dynamic colors in the current appearance context for SwiftMath
+            var resolvedTextColor = textColor
+            NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+                resolvedTextColor = textColor.usingColorSpace(.sRGB) ?? textColor
+            }
         #endif
 
         let mathImage = MTMathImage(
