@@ -97,7 +97,7 @@ public struct MarkdownTheme: Equatable {
     public struct Spacings: Equatable {
         public var final: CGFloat = 16
         public var general: CGFloat = 8
-        public var list: CGFloat = 12
+        public var list: CGFloat = 8
         public var cell: CGFloat = 32
     }
 

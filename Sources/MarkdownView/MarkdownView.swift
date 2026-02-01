@@ -38,6 +38,15 @@ import SwiftUI
             uiView.setMarkdownManually(content)
             uiView.invalidateIntrinsicContentSize()
         }
+
+        public func sizeThatFits(
+            _ proposal: ProposedViewSize,
+            uiView: MarkdownTextView,
+            context _: Context
+        ) -> CGSize {
+            let width = proposal.width ?? UIView.layoutFittingExpandedSize.width
+            return uiView.boundingSize(for: width)
+        }
     }
 
 #elseif canImport(AppKit)
@@ -69,6 +78,15 @@ import SwiftUI
             let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: theme)
             nsView.setMarkdownManually(content)
             nsView.invalidateIntrinsicContentSize()
+        }
+
+        public func sizeThatFits(
+            _ proposal: ProposedViewSize,
+            nsView: MarkdownTextView,
+            context _: Context
+        ) -> CGSize {
+            let width = proposal.width ?? NSView.noIntrinsicMetric
+            return nsView.boundingSize(for: width)
         }
     }
 #endif

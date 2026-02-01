@@ -20,14 +20,14 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Lakr233/MarkdownView", from: "3.5.6"),
+    .package(url: "https://github.com/Lakr233/MarkdownView", from: "3.6.0"),
 ]
 ```
 
 Platform compatibility:
-- iOS 15.0+
-- macOS 12.0+
-- Mac Catalyst 15.0+
+- iOS 16.0+
+- macOS 13.0+
+- Mac Catalyst 16.0+
 - visionOS 1.0+
 
 ## Usage
