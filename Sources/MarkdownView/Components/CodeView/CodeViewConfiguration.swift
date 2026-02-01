@@ -245,6 +245,13 @@ enum CodeViewConfiguration {
             scrollView.hasVerticalScroller = false
             scrollView.hasHorizontalScroller = false
             scrollView.drawsBackground = false
+            scrollView.automaticallyAdjustsContentInsets = false
+            scrollView.contentInsets = NSEdgeInsets(
+                top: CodeViewConfiguration.codePadding,
+                left: CodeViewConfiguration.codePadding,
+                bottom: CodeViewConfiguration.codePadding,
+                right: CodeViewConfiguration.codePadding
+            )
             addSubview(scrollView)
         }
 
@@ -335,8 +342,8 @@ enum CodeViewConfiguration {
             )
 
             textView.frame = CGRect(
-                x: CodeViewConfiguration.codePadding,
-                y: CodeViewConfiguration.codePadding,
+                x: 0,
+                y: 0,
                 width: max(scrollView.bounds.width - CodeViewConfiguration.codePadding * 2, textContentSize.width),
                 height: textContentSize.height
             )
