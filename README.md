@@ -12,7 +12,7 @@ A powerful pure UIKit framework for rendering Markdown documents with real-time 
 - 🖥️ **Specialized for Mobile Display**: Optimized layout that extracts complex elements from lists for better readability
 - 🎨 **Syntax Highlighting**: Beautiful code syntax highlighting with Splash
 - 📊 **Math Rendering**: LaTeX math formula rendering with SwiftMath
-- 📱 **iOS Optimized**: Native UIKit implementation for optimal performance
+- 📱 **Cross-Platform**: Native support for iOS, macOS, Mac Catalyst, and visionOS
 
 ## Installation
 
@@ -20,15 +20,37 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Lakr233/MarkdownView", from: "3.4.0"),
+    .package(url: "https://github.com/Lakr233/MarkdownView", from: "3.5.6"),
 ]
 ```
 
 Platform compatibility:
-- iOS 13.0+
-- Mac Catalyst 13.0+
+- iOS 15.0+
+- macOS 12.0+
+- Mac Catalyst 15.0+
+- visionOS 1.0+
 
 ## Usage
+
+### SwiftUI
+
+```swift
+import MarkdownView
+
+struct ContentView: View {
+    var body: some View {
+        MarkdownView("# Hello World")
+    }
+}
+```
+
+With custom theme:
+
+```swift
+MarkdownView("# Hello World", theme: .default)
+```
+
+### UIKit / AppKit
 
 ```swift
 import MarkdownView
