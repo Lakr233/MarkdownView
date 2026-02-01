@@ -137,22 +137,22 @@ extension MarkdownInlineNode {
                     )
 
                     context.saveGState()
-                    context.translateBy(x: 0, y: rect.origin.y + rect.size.height)
-                    context.scaleBy(x: 1, y: -1)
-                    context.translateBy(x: 0, y: -rect.origin.y)
 
                     #if canImport(UIKit)
+                        context.translateBy(x: 0, y: rect.origin.y + rect.size.height)
+                        context.scaleBy(x: 1, y: -1)
+                        context.translateBy(x: 0, y: -rect.origin.y)
                         image.draw(in: rect)
                     #else
-                        // Draw template image with current label color for proper light/dark mode support
-                        if image.isTemplate, let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
+                        assert(image.isTemplate)
+                        if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
                             // Resolve label color at draw time for dynamic appearance updates
                             let labelColor = NSColor.labelColor.cgColor
                             context.clip(to: rect, mask: cgImage)
                             context.setFillColor(labelColor)
                             context.fill(rect)
                         } else {
-                            image.draw(in: rect)
+                            assertionFailure()
                         }
                     #endif
 
