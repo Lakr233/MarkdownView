@@ -98,6 +98,7 @@ enum CodeViewConfiguration {
             textView.backgroundColor = .clear
             textView.preferredMaxLayoutWidth = .infinity
             textView.isSelectable = true
+            textView.selectionBackgroundColor = theme.colors.selectionBackground
             scrollView.addSubview(textView)
         }
 
@@ -252,6 +253,7 @@ enum CodeViewConfiguration {
             textView.layer?.backgroundColor = NSColor.clear.cgColor
             textView.preferredMaxLayoutWidth = .infinity
             textView.isSelectable = true
+            textView.selectionBackgroundColor = theme.colors.selectionBackground
             scrollView.documentView = textView
         }
 

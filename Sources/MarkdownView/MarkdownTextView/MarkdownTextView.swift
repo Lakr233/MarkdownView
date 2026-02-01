@@ -18,7 +18,10 @@ import MarkdownParser
         public internal(set) var document: PreprocessedContent = .init()
         public let textView: LTXLabel = .init()
         public var theme: MarkdownTheme = .default {
-            didSet { setMarkdown(document) } // update it
+            didSet {
+                textView.selectionBackgroundColor = theme.colors.selectionBackground
+                setMarkdown(document)
+            }
         }
 
         public internal(set) weak var trackedScrollView: UIScrollView? // for selection updating
@@ -37,6 +40,7 @@ import MarkdownParser
             super.init(frame: .zero)
             textView.isSelectable = true
             textView.backgroundColor = .clear
+            textView.selectionBackgroundColor = theme.colors.selectionBackground
             textView.delegate = self
             textView.translatesAutoresizingMaskIntoConstraints = false
             addSubview(textView)
@@ -99,7 +103,10 @@ import MarkdownParser
         public internal(set) var document: PreprocessedContent = .init()
         public let textView: LTXLabel = .init()
         public var theme: MarkdownTheme = .default {
-            didSet { setMarkdown(document) } // update it
+            didSet {
+                textView.selectionBackgroundColor = theme.colors.selectionBackground
+                setMarkdown(document)
+            }
         }
 
         public internal(set) weak var trackedScrollView: NSScrollView? // for selection updating
@@ -117,6 +124,7 @@ import MarkdownParser
             self.viewProvider = viewProvider
             super.init(frame: .zero)
             textView.isSelectable = true
+            textView.selectionBackgroundColor = theme.colors.selectionBackground
             wantsLayer = true
             layer?.backgroundColor = NSColor.clear.cgColor
             textView.translatesAutoresizingMaskIntoConstraints = false

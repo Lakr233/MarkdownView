@@ -69,6 +69,10 @@ public struct MarkdownTheme: Equatable {
                     ?? .systemOrange
             public var code = UIColor.label
             public var codeBackground = UIColor.gray.withAlphaComponent(0.25)
+            public var selectionBackground: UIColor? =
+                (UIColor(named: "AccentColor")
+                        ?? UIColor(named: "accentColor")
+                        ?? .systemOrange).withAlphaComponent(0.2)
         #elseif canImport(AppKit)
             public var body = NSColor.labelColor
             public var highlight =
@@ -81,6 +85,10 @@ public struct MarkdownTheme: Equatable {
                     ?? .systemOrange
             public var code = NSColor.labelColor
             public var codeBackground = NSColor.gray.withAlphaComponent(0.25)
+            public var selectionBackground: NSColor? =
+                (NSColor(named: "AccentColor")
+                        ?? NSColor(named: "accentColor")
+                        ?? .systemOrange).withAlphaComponent(0.2)
         #endif
     }
 

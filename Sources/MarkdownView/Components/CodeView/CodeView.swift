@@ -14,6 +14,7 @@ import Litext
         var theme: MarkdownTheme = .default {
             didSet {
                 languageLabel.font = theme.fonts.code
+                textView.selectionBackgroundColor = theme.colors.selectionBackground
                 updateLineNumberView()
             }
         }
@@ -145,6 +146,7 @@ import Litext
         var theme: MarkdownTheme = .default {
             didSet {
                 languageLabel.font = theme.fonts.code
+                textView.selectionBackgroundColor = theme.colors.selectionBackground
                 updateLineNumberView()
             }
         }

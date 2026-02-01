@@ -93,6 +93,7 @@ import Litext
                 cell = LTXLabel()
                 cell.isSelectable = true
                 cell.backgroundColor = .clear
+                cell.selectionBackgroundColor = theme.colors.selectionBackground
                 cell.preferredMaxLayoutWidth = maximumWidth
                 cell.delegate = delegate
                 containerView.addSubview(cell)
@@ -157,6 +158,7 @@ import Litext
 
         private func updateCellsAppearance() {
             for (index, cell) in cells.enumerated() {
+                cell.selectionBackgroundColor = theme.colors.selectionBackground
                 let numberOfColumns = widths.count
                 let row = index / numberOfColumns
                 let isHeaderCell = row == 0
@@ -245,6 +247,7 @@ import Litext
                 cell.isSelectable = true
                 cell.wantsLayer = true
                 cell.layer?.backgroundColor = NSColor.clear.cgColor
+                cell.selectionBackgroundColor = theme.colors.selectionBackground
                 cell.preferredMaxLayoutWidth = maximumWidth
                 cell.delegate = delegate
                 containerView.addSubview(cell)
@@ -309,6 +312,7 @@ import Litext
 
         private func updateCellsAppearance() {
             for (index, cell) in cells.enumerated() {
+                cell.selectionBackgroundColor = theme.colors.selectionBackground
                 let numberOfColumns = widths.count
                 let row = index / numberOfColumns
                 let isHeaderCell = row == 0
