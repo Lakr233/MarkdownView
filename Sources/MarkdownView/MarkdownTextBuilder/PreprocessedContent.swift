@@ -9,7 +9,7 @@ import Foundation
 import MarkdownParser
 
 public extension MarkdownTextView {
-    struct PreprocessedContent {
+    final class PreprocessedContent {
         public let blocks: [MarkdownBlockNode]
         public let rendered: RenderedTextContent.Map
         public let highlightMaps: [Int: CodeHighlighter.HighlightMap]
