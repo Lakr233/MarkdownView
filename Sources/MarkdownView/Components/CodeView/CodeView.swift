@@ -46,6 +46,7 @@ import Litext
 
         private let callerIdentifier = UUID()
         private var currentTaskIdentifier: UUID?
+        private weak var copyAlertController: UIAlertController?
 
         lazy var barView: UIView = .init()
         lazy var scrollView: UIScrollView = .init()
@@ -100,6 +101,7 @@ import Litext
             UIPasteboard.general.string = content
             #if !os(visionOS)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
+                presentCopyAlert()
             #endif
         }
 
@@ -108,6 +110,41 @@ import Litext
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             #endif
             previewAction?(language, textView.attributedText)
+        }
+
+        private func presentCopyAlert() {
+            guard let rootViewController = window?.rootViewController else { return }
+            guard let controller = topViewController(from: rootViewController) else { return }
+            if controller is UIAlertController { return }
+            copyAlertController?.dismiss(animated: false)
+
+            let alert = UIAlertController(
+                title: NSLocalizedString("Copied", comment: ""),
+                message: nil,
+                preferredStyle: .alert
+            )
+            copyAlertController = alert
+            controller.present(alert, animated: true)
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self, weak alert] in
+                guard let alert, alert.presentingViewController != nil else { return }
+                alert.dismiss(animated: true)
+                self?.copyAlertController = nil
+            }
+        }
+
+        private func topViewController(from controller: UIViewController?) -> UIViewController? {
+            guard let controller else { return nil }
+            if let navigationController = controller as? UINavigationController {
+                return topViewController(from: navigationController.visibleViewController)
+            }
+            if let tabBarController = controller as? UITabBarController {
+                return topViewController(from: tabBarController.selectedViewController)
+            }
+            if let presented = controller.presentedViewController {
+                return topViewController(from: presented)
+            }
+            return controller
         }
 
         func updateLineNumberView() {
@@ -176,6 +213,7 @@ import Litext
 
         private let callerIdentifier = UUID()
         private var currentTaskIdentifier: UUID?
+        private weak var copyAlertWindow: NSWindow?
 
         lazy var barView: NSView = .init()
         lazy var scrollView: NSScrollView = {
@@ -248,10 +286,37 @@ import Litext
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(content, forType: .string)
+            presentCopyAlert()
         }
 
         @objc func handlePreview(_: Any?) {
             previewAction?(language, textView.attributedText)
+        }
+
+        private func presentCopyAlert() {
+            guard let hostWindow = window else { return }
+            if let sheetWindow = copyAlertWindow {
+                hostWindow.endSheet(sheetWindow)
+                copyAlertWindow = nil
+            }
+
+            let alert = NSAlert()
+            alert.messageText = NSLocalizedString("Copied", comment: "")
+            alert.informativeText = ""
+            alert.alertStyle = .informational
+
+            let alertWindow = alert.window
+            copyAlertWindow = alertWindow
+
+            alert.beginSheetModal(for: hostWindow) { [weak self] _ in
+                self?.copyAlertWindow = nil
+            }
+
+            DispatchQueue.main.asyncAfter(deadline: .now() + 1.0) { [weak self, weak hostWindow, weak alertWindow] in
+                guard let hostWindow, let alertWindow else { return }
+                hostWindow.endSheet(alertWindow)
+                self?.copyAlertWindow = nil
+            }
         }
 
         func updateLineNumberView() {
