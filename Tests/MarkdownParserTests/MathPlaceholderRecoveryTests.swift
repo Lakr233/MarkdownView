@@ -59,21 +59,21 @@ private func containsMathPlaceholderCode(in blocks: [MarkdownBlockNode]) -> Bool
     blocks.contains { block in
         switch block {
         case let .blockquote(children):
-            return containsMathPlaceholderCode(in: children)
+            containsMathPlaceholderCode(in: children)
         case let .bulletedList(_, items):
-            return items.contains { containsMathPlaceholderCode(in: $0.children) }
+            items.contains { containsMathPlaceholderCode(in: $0.children) }
         case let .numberedList(_, _, items):
-            return items.contains { containsMathPlaceholderCode(in: $0.children) }
+            items.contains { containsMathPlaceholderCode(in: $0.children) }
         case let .taskList(_, items):
-            return items.contains { containsMathPlaceholderCode(in: $0.children) }
+            items.contains { containsMathPlaceholderCode(in: $0.children) }
         case let .paragraph(content), let .heading(_, content):
-            return containsMathPlaceholderCode(in: content)
+            containsMathPlaceholderCode(in: content)
         case let .table(_, rows):
-            return rows.contains { row in
+            rows.contains { row in
                 row.cells.contains { containsMathPlaceholderCode(in: $0.content) }
             }
         case .codeBlock, .thematicBreak:
-            return false
+            false
         }
     }
 }
@@ -82,13 +82,13 @@ private func containsMathPlaceholderCode(in nodes: [MarkdownInlineNode]) -> Bool
     nodes.contains { node in
         switch node {
         case let .code(content):
-            return MarkdownParser.typeForReplacementText(content) == .math
+            MarkdownParser.typeForReplacementText(content) == .math
         case let .emphasis(children), let .strong(children), let .strikethrough(children):
-            return containsMathPlaceholderCode(in: children)
+            containsMathPlaceholderCode(in: children)
         case let .link(_, children), let .image(_, children):
-            return containsMathPlaceholderCode(in: children)
+            containsMathPlaceholderCode(in: children)
         default:
-            return false
+            false
         }
     }
 }
@@ -97,21 +97,21 @@ private func containsMathNode(in blocks: [MarkdownBlockNode]) -> Bool {
     blocks.contains { block in
         switch block {
         case let .blockquote(children):
-            return containsMathNode(in: children)
+            containsMathNode(in: children)
         case let .bulletedList(_, items):
-            return items.contains { containsMathNode(in: $0.children) }
+            items.contains { containsMathNode(in: $0.children) }
         case let .numberedList(_, _, items):
-            return items.contains { containsMathNode(in: $0.children) }
+            items.contains { containsMathNode(in: $0.children) }
         case let .taskList(_, items):
-            return items.contains { containsMathNode(in: $0.children) }
+            items.contains { containsMathNode(in: $0.children) }
         case let .paragraph(content), let .heading(_, content):
-            return containsMathNode(in: content)
+            containsMathNode(in: content)
         case let .table(_, rows):
-            return rows.contains { row in
+            rows.contains { row in
                 row.cells.contains { containsMathNode(in: $0.content) }
             }
         case .codeBlock, .thematicBreak:
-            return false
+            false
         }
     }
 }
@@ -119,14 +119,14 @@ private func containsMathNode(in blocks: [MarkdownBlockNode]) -> Bool {
 private func containsMathNode(in nodes: [MarkdownInlineNode]) -> Bool {
     nodes.contains { node in
         switch node {
-        case .math(_, _):
-            return true
+        case .math:
+            true
         case let .emphasis(children), let .strong(children), let .strikethrough(children):
-            return containsMathNode(in: children)
+            containsMathNode(in: children)
         case let .link(_, children), let .image(_, children):
-            return containsMathNode(in: children)
+            containsMathNode(in: children)
         default:
-            return false
+            false
         }
     }
 }
