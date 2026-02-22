@@ -185,6 +185,16 @@ extension MarkdownParser {
                 } else {
                     result.append(node)
                 }
+            case let .emphasis(children):
+                result.append(.emphasis(children: finalizeInlineMathInNodes(children, mathContext: mathContext)))
+            case let .strong(children):
+                result.append(.strong(children: finalizeInlineMathInNodes(children, mathContext: mathContext)))
+            case let .strikethrough(children):
+                result.append(.strikethrough(children: finalizeInlineMathInNodes(children, mathContext: mathContext)))
+            case let .link(destination, children):
+                result.append(.link(destination: destination, children: finalizeInlineMathInNodes(children, mathContext: mathContext)))
+            case let .image(source, children):
+                result.append(.image(source: source, children: finalizeInlineMathInNodes(children, mathContext: mathContext)))
             default:
                 result.append(node)
             }
