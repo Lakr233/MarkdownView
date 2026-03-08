@@ -16,6 +16,7 @@ import SwiftMath
     import AppKit
 #endif
 
+@MainActor
 public enum MathRenderer {
     static let renderCache = LRUCache<String, PlatformImage>(countLimit: 256)
 

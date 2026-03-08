@@ -21,6 +21,7 @@ import OrderedCollections
 private let kMaxCacheSize = 64 // for each language
 private let kPrefixLength = 8
 
+@MainActor
 public final class CodeHighlighter {
     public typealias HighlightMap = [NSRange: PlatformColor]
 

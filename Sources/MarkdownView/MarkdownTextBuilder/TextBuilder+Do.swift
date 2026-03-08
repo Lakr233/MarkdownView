@@ -21,10 +21,10 @@ import Litext
         return templateImage.resized(to: .init(width: size, height: size))
     }
 
-    private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
-    private let kUncheckedBoxImage = builtinSystemImage("square")
+    @MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
+    @MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
 
-    private func kNumberCircleImage(_ number: Int) -> UIImage {
+    @MainActor private func kNumberCircleImage(_ number: Int) -> UIImage {
         builtinSystemImage("\(number).circle.fill")
     }
 
@@ -39,8 +39,8 @@ import Litext
         return image.withSymbolConfiguration(config) ?? image
     }
 
-    private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
-    private let kUncheckedBoxImage = builtinSystemImage("square")
+    @MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
+    @MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
 
     private func kNumberCircleImage(_ number: Int) -> NSImage {
         builtinSystemImage("\(number).circle.fill")

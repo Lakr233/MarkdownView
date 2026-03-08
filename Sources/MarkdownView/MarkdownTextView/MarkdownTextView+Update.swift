@@ -15,9 +15,6 @@ import Litext
         func updateTextExecute() {
             assert(Thread.isMainThread)
 
-            viewProvider.lockPool()
-            defer { viewProvider.unlockPool() }
-
             var oldViews: Set<UIView> = .init()
             for view in contextViews {
                 oldViews.insert(view)
@@ -63,9 +60,6 @@ import Litext
     extension MarkdownTextView {
         func updateTextExecute() {
             assert(Thread.isMainThread)
-
-            viewProvider.lockPool()
-            defer { viewProvider.unlockPool() }
 
             var oldViews: Set<NSView> = .init()
             for view in contextViews {

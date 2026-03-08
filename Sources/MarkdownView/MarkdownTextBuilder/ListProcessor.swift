@@ -14,6 +14,7 @@ import MarkdownParser
 
 // MARK: - ListProcessor
 
+@MainActor
 final class ListProcessor {
     private let theme: MarkdownTheme
     private let context: MarkdownTextView.PreprocessedContent

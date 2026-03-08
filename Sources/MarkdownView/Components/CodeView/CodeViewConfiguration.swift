@@ -11,12 +11,13 @@ import Litext
     import AppKit
 #endif
 
+@MainActor
 enum CodeViewConfiguration {
-    static let barPadding: CGFloat = 8
-    static let codePadding: CGFloat = 8
-    static let codeLineSpacing: CGFloat = 4
-    static let lineNumberWidth: CGFloat = 40
-    static let lineNumberPadding: CGFloat = 8
+    nonisolated static let barPadding: CGFloat = 8
+    nonisolated static let codePadding: CGFloat = 8
+    nonisolated static let codeLineSpacing: CGFloat = 4
+    nonisolated static let lineNumberWidth: CGFloat = 40
+    nonisolated static let lineNumberPadding: CGFloat = 8
 
     static func intrinsicHeight(
         for content: String,

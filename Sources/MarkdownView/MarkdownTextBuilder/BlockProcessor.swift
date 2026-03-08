@@ -14,6 +14,7 @@ import MarkdownParser
 
 // MARK: - BlockProcessor
 
+@MainActor
 final class BlockProcessor {
     private let theme: MarkdownTheme
     private let viewProvider: ReusableViewProvider

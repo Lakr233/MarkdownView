@@ -10,6 +10,7 @@ import DequeModule
     import AppKit
 #endif
 
+@MainActor
 private class ObjectPool<T: Equatable & Hashable> {
     private let factory: () -> T
     fileprivate lazy var objects: Deque<T> = .init()
@@ -43,6 +44,7 @@ private class ObjectPool<T: Equatable & Hashable> {
     }
 }
 
+@MainActor
 public final class ReusableViewProvider {
     private let codeViewPool: ObjectPool<CodeView> = .init {
         CodeView(frame: .zero)
@@ -52,17 +54,7 @@ public final class ReusableViewProvider {
         TableView(frame: .zero)
     }
 
-    private let lock = NSLock()
-
     public init() {}
-
-    func lockPool() {
-        lock.lock()
-    }
-
-    func unlockPool() {
-        lock.unlock()
-    }
 
     func removeAll() {
         codeViewPool.objects.removeAll()

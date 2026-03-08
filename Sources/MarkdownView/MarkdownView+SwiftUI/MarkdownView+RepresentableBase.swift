@@ -8,6 +8,7 @@
 import MarkdownParser
 import SwiftUI
 
+@MainActor
 protocol MarkdownViewRepresentableBase {
     var contentSource: MarkdownView.ContentSource { get }
     var theme: MarkdownTheme { get }

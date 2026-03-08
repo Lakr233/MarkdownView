@@ -73,9 +73,9 @@
 
     private class MathPreviewDataSource: NSObject, QLPreviewControllerDataSource {
         let item: MathPreviewItem
-        let cleanup: () -> Void
+        let cleanup: @Sendable () -> Void
 
-        init(item: MathPreviewItem, cleanup: @escaping () -> Void) {
+        init(item: MathPreviewItem, cleanup: @escaping @Sendable () -> Void) {
             self.item = item
             self.cleanup = cleanup
         }

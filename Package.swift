@@ -1,4 +1,4 @@
-// swift-tools-version: 5.9
+// swift-tools-version: 6.0
 // The swift-tools-version declares the minimum version of Swift required to build this package.
 
 import PackageDescription
@@ -17,7 +17,7 @@ let package = Package(
         .library(name: "MarkdownParser", targets: ["MarkdownParser"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Lakr233/Litext", from: "0.5.6"),
+        .package(url: "https://github.com/Lakr233/Litext", from: "1.1.0"),
         .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.7.3"),
         .package(url: "https://github.com/apple/swift-collections", from: "1.3.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.3.0"),

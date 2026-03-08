@@ -1,6 +1,6 @@
 import Foundation
 
-public enum MarkdownBlockNode: Hashable, Equatable, Codable {
+public enum MarkdownBlockNode: Hashable, Sendable, Equatable, Codable {
     case blockquote(children: [MarkdownBlockNode])
     case bulletedList(isTight: Bool, items: [RawListItem])
     case numberedList(isTight: Bool, start: Int, items: [RawListItem])
@@ -35,7 +35,7 @@ public extension MarkdownBlockNode {
     }
 }
 
-public struct RawListItem: Hashable, Equatable, Codable {
+public struct RawListItem: Hashable, Sendable, Equatable, Codable {
     public let children: [MarkdownBlockNode]
 
     public init(children: [MarkdownBlockNode]) {
@@ -43,7 +43,7 @@ public struct RawListItem: Hashable, Equatable, Codable {
     }
 }
 
-public struct RawTaskListItem: Hashable, Equatable, Codable {
+public struct RawTaskListItem: Hashable, Sendable, Equatable, Codable {
     public let isCompleted: Bool
     public let children: [MarkdownBlockNode]
 
@@ -53,14 +53,14 @@ public struct RawTaskListItem: Hashable, Equatable, Codable {
     }
 }
 
-public enum RawTableColumnAlignment: Character, Equatable, Codable {
+public enum RawTableColumnAlignment: Character, Sendable, Equatable, Codable {
     case none = "\0"
     case left = "l"
     case center = "c"
     case right = "r"
 }
 
-public struct RawTableRow: Hashable, Equatable, Codable {
+public struct RawTableRow: Hashable, Sendable, Equatable, Codable {
     public let cells: [RawTableCell]
 
     public init(cells: [RawTableCell]) {
@@ -68,7 +68,7 @@ public struct RawTableRow: Hashable, Equatable, Codable {
     }
 }
 
-public struct RawTableCell: Hashable, Equatable, Codable {
+public struct RawTableCell: Hashable, Sendable, Equatable, Codable {
     public let content: [MarkdownInlineNode]
 
     public init(content: [MarkdownInlineNode]) {

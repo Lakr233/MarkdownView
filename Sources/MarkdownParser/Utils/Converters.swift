@@ -195,7 +195,7 @@ extension UnsafeNode {
     }
 }
 
-public enum MarkdownNodeType: String {
+public enum MarkdownNodeType: String, Sendable {
     case document
     case blockquote = "block_quote"
     case list

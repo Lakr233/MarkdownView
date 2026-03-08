@@ -77,19 +77,15 @@ struct ContentView: View {
 
     func tik() {
         markdownText = ""
-        var copy = document
         playing = true
-        DispatchQueue.global().async {
+        Task {
+            var copy = document
             while !copy.isEmpty {
-                usleep(1000)
-                DispatchQueue.main.sync {
-                    let value = copy.removeFirst()
-                    markdownText += String(value)
-                }
+                try? await Task.sleep(for: .milliseconds(1))
+                let value = copy.removeFirst()
+                markdownText += String(value)
             }
-            DispatchQueue.main.async {
-                playing = false
-            }
+            playing = false
         }
     }
 }

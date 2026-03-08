@@ -7,6 +7,7 @@
 
 import Foundation
 
+@MainActor
 final class MarkdownViewCoordinator {
     var lastText: String = ""
     var lastPreprocessedContent: MarkdownTextView.PreprocessedContent?

@@ -16,6 +16,7 @@ import SwiftMath
 #endif
 
 extension [MarkdownInlineNode] {
+    @MainActor
     func render(theme: MarkdownTheme, context: MarkdownTextView.PreprocessedContent, viewProvider: ReusableViewProvider) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
         for node in self {
@@ -26,6 +27,7 @@ extension [MarkdownInlineNode] {
 }
 
 extension MarkdownInlineNode {
+    @MainActor
     func render(theme: MarkdownTheme, context: MarkdownTextView.PreprocessedContent, viewProvider: ReusableViewProvider) -> NSAttributedString {
         assert(Thread.isMainThread)
         switch self {

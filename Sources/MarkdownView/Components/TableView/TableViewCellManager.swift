@@ -11,6 +11,7 @@ import Litext
 #if canImport(UIKit)
     import UIKit
 
+    @MainActor
     final class TableViewCellManager {
         // MARK: - Properties
 
@@ -175,6 +176,7 @@ import Litext
 #elseif canImport(AppKit)
     import AppKit
 
+    @MainActor
     final class TableViewCellManager {
         private(set) var cells: [LTXLabel] = []
         private(set) var cellSizes: [CGSize] = []

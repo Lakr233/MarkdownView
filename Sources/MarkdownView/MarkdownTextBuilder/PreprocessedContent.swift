@@ -9,7 +9,7 @@ import Foundation
 import MarkdownParser
 
 public extension MarkdownTextView {
-    final class PreprocessedContent {
+    final class PreprocessedContent: @unchecked Sendable {
         public let blocks: [MarkdownBlockNode]
         public let rendered: RenderedTextContent.Map
         public let highlightMaps: [Int: CodeHighlighter.HighlightMap]
@@ -24,6 +24,7 @@ public extension MarkdownTextView {
             self.highlightMaps = highlightMaps
         }
 
+        @MainActor
         public init(parserResult: MarkdownParser.ParseResult, theme: MarkdownTheme) {
             blocks = parserResult.document
             rendered = parserResult.render(theme: theme)
@@ -39,6 +40,7 @@ public extension MarkdownTextView {
 }
 
 public extension MarkdownParser.ParseResult {
+    @MainActor
     fileprivate func renderMathContent(_ theme: MarkdownTheme, _ renderedContexts: inout [String: RenderedTextContent]) {
         for (key, value) in mathContext {
             var image = MathRenderer.renderToImage(
@@ -58,6 +60,7 @@ public extension MarkdownParser.ParseResult {
         }
     }
 
+    @MainActor
     func render(theme: MarkdownTheme) -> RenderedTextContent.Map {
         var renderedContexts: [String: RenderedTextContent] = [:]
         renderMathContent(theme, &renderedContexts)
@@ -66,6 +69,7 @@ public extension MarkdownParser.ParseResult {
 }
 
 public extension MarkdownParser.ParseResult {
+    @MainActor
     fileprivate func renderHighlighMap(_: MarkdownTheme, highlightMaps: inout [Int: CodeHighlighter.HighlightMap]) {
         var iterator: [Any] = document
         while !iterator.isEmpty {
@@ -112,6 +116,7 @@ public extension MarkdownParser.ParseResult {
         }
     }
 
+    @MainActor
     func render(theme: MarkdownTheme) -> [Int: CodeHighlighter.HighlightMap] {
         var highlightMap = [Int: CodeHighlighter.HighlightMap]()
         renderHighlighMap(theme, highlightMaps: &highlightMap)

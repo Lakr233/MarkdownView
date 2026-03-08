@@ -9,7 +9,7 @@ import cmark_gfm
 import cmark_gfm_extensions
 import Foundation
 
-public class MarkdownParser {
+public final class MarkdownParser: Sendable {
     public init() {}
 
     func withParser<T>(_ block: (UnsafeMutablePointer<cmark_parser>) -> T) -> T {
@@ -33,7 +33,7 @@ public class MarkdownParser {
         return block(parser)
     }
 
-    public struct ParseResult {
+    public struct ParseResult: Sendable {
         public let document: [MarkdownBlockNode]
         public let mathContext: [Int: String]
     }
@@ -53,7 +53,7 @@ public class MarkdownParser {
         return .init(document: blocks, mathContext: math.contents)
     }
 
-    public struct RootBlockRange {
+    public struct RootBlockRange: Sendable {
         public let type: MarkdownNodeType
         public let startIndex: String.Index
         public let endIndex: String.Index

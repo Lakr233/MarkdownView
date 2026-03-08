@@ -7,7 +7,7 @@
 
 import Foundation
 
-public enum LinkPayload {
+public enum LinkPayload: Sendable {
     case url(URL)
     case string(String)
 }

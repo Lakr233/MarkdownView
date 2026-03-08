@@ -15,12 +15,12 @@ import Litext
 #endif
 
 public extension MarkdownTheme {
-    static var `default`: MarkdownTheme = .init()
+    @MainActor static var `default`: MarkdownTheme = .init()
     static let codeScale = 0.85
 }
 
-public struct MarkdownTheme: Equatable {
-    public struct Fonts: Equatable {
+public struct MarkdownTheme: Equatable, @unchecked Sendable {
+    public struct Fonts: Equatable, @unchecked Sendable {
         #if canImport(UIKit)
             public var body = UIFont.preferredFont(forTextStyle: .body)
             public var codeInline = UIFont.monospacedSystemFont(
@@ -56,7 +56,7 @@ public struct MarkdownTheme: Equatable {
 
     public var fonts: Fonts = .init()
 
-    public struct Colors: Equatable {
+    public struct Colors: Equatable, @unchecked Sendable {
         #if canImport(UIKit)
             public var body = UIColor.label
             public var highlight =
@@ -94,7 +94,7 @@ public struct MarkdownTheme: Equatable {
 
     public var colors: Colors = .init()
 
-    public struct Spacings: Equatable {
+    public struct Spacings: Equatable, Sendable {
         public var final: CGFloat = 16
         public var general: CGFloat = 8
         public var list: CGFloat = 8
@@ -103,13 +103,13 @@ public struct MarkdownTheme: Equatable {
 
     public var spacings: Spacings = .init()
 
-    public struct Sizes: Equatable {
+    public struct Sizes: Equatable, Sendable {
         public var bullet: CGFloat = 4
     }
 
     public var sizes: Sizes = .init()
 
-    public struct Table: Equatable {
+    public struct Table: Equatable, @unchecked Sendable {
         public var cornerRadius: CGFloat = 8
         public var borderWidth: CGFloat = 1
         #if canImport(UIKit)
