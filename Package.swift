@@ -11,13 +11,15 @@ let package = Package(
         .macCatalyst(.v16),
         .macOS(.v13),
         .visionOS(.v1),
+        .watchOS(.v8),
     ],
     products: [
         .library(name: "MarkdownView", targets: ["MarkdownView"]),
         .library(name: "MarkdownParser", targets: ["MarkdownParser"]),
+        .library(name: "WatchMarkdownView", targets: ["WatchMarkdownView"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Lakr233/Litext", from: "1.1.0"),
+        .package(path: "../Litext"),
         .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.7.3"),
         .package(url: "https://github.com/apple/swift-collections", from: "1.3.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.3.0"),
@@ -37,6 +39,13 @@ let package = Package(
                 .product(name: "OrderedCollections", package: "swift-collections"),
             ],
             resources: [.process("Resources")]
+        ),
+        .target(
+            name: "WatchMarkdownView",
+            dependencies: [
+                "Litext",
+                "MarkdownParser",
+            ]
         ),
         .target(name: "MarkdownParser", dependencies: [
             .product(name: "cmark-gfm", package: "swift-cmark"),
