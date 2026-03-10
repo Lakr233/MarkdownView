@@ -49,7 +49,7 @@
     private class MathPreviewController: QLPreviewController {
         private let myDataSource: MathPreviewDataSource
 
-        init(item: MathPreviewItem, cleanup: @escaping () -> Void) {
+        init(item: MathPreviewItem, cleanup: @Sendable @escaping () -> Void) {
             myDataSource = MathPreviewDataSource(item: item, cleanup: cleanup)
             super.init(nibName: nil, bundle: nil)
             dataSource = myDataSource
