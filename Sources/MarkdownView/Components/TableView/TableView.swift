@@ -221,6 +221,45 @@ import Litext
 #elseif canImport(AppKit)
     import AppKit
 
+    /// NSScrollView subclass that passes vertical scroll events to the next
+    /// responder, allowing the parent chat list to scroll normally when the
+    /// user scrolls over a table that only needs horizontal scrolling.
+    ///
+    /// Axis is locked at gesture start so mixed-delta trackpad events don't
+    /// stutter between horizontal and vertical handling mid-gesture.
+    private final class TableScrollView: NSScrollView {
+        // nil = undecided; locked once first meaningful delta arrives
+        private var lockedToVertical: Bool?
+
+        override func scrollWheel(with event: NSEvent) {
+            // Reset at the start of each new gesture (deltas are 0 at .began,
+            // so don't lock yet — wait for first real movement below).
+            if event.phase.contains(.began) {
+                lockedToVertical = nil
+            }
+            // Release after momentum ends so the next gesture starts fresh.
+            if event.momentumPhase.contains(.ended) || event.momentumPhase.contains(.cancelled) {
+                lockedToVertical = nil
+            }
+
+            // Lock axis on first event that carries real movement.
+            let dx = abs(event.scrollingDeltaX)
+            let dy = abs(event.scrollingDeltaY)
+            if lockedToVertical == nil, dx > 0 || dy > 0 {
+                // Favour horizontal so tables are usable; vertical wins only
+                // when dy is clearly dominant.
+                lockedToVertical = dy > dx
+            }
+
+            let isVertical = lockedToVertical ?? false
+            if isVertical {
+                nextResponder?.scrollWheel(with: event)
+            } else {
+                super.scrollWheel(with: event)
+            }
+        }
+    }
+
     final class TableView: NSView {
         typealias Rows = [NSAttributedString]
 
@@ -232,10 +271,12 @@ import Litext
 
         // MARK: - UI Components
 
-        private lazy var scrollView: NSScrollView = {
-            let sv = NSScrollView()
+        private lazy var scrollView: TableScrollView = {
+            let sv = TableScrollView()
             sv.hasVerticalScroller = false
-            sv.hasHorizontalScroller = false
+            sv.hasHorizontalScroller = true
+            sv.autohidesScrollers = true
+            sv.scrollerStyle = .overlay
             sv.drawsBackground = false
             return sv
         }()
@@ -322,8 +363,14 @@ import Litext
             super.layout()
 
             scrollView.frame = bounds
-            gridView.frame = bounds
-
+            // Set document view to full content size so NSScrollView can
+            // scroll horizontally when the table is wider than the viewport.
+            let contentSize = intrinsicContentSize
+            gridView.frame = CGRect(
+                x: 0, y: 0,
+                width: max(contentSize.width, bounds.width),
+                height: max(contentSize.height, bounds.height)
+            )
             layoutCells()
         }
 
@@ -377,7 +424,7 @@ import Litext
             cellManager.setDelegate(self)
             cellManager.configureCells(
                 for: contents,
-                in: scrollView.documentView ?? self,
+                in: gridView,
                 cellPadding: cellPadding,
                 maximumCellWidth: maximumCellWidth
             )
