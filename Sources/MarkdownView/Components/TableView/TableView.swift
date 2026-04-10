@@ -83,6 +83,7 @@ import Litext
                     builder[x][y] = processedContent
                 }
             }
+            guard !contentsEqual(self.contents, builder) else { return }
             self.contents = builder
         }
 
@@ -103,10 +104,40 @@ import Litext
 
             scrollView.clipsToBounds = false
             scrollView.frame = bounds
-            scrollView.contentSize = intrinsicContentSize
-            gridView.frame = bounds
+            let contentSize = intrinsicContentSize
+            scrollView.contentSize = contentSize
+            gridView.frame = CGRect(origin: .zero, size: contentSize)
 
             layoutCells()
+        }
+
+        func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
+            for cell in cellManager.cells.reversed() {
+                let cellPoint = cell.convert(point, from: self)
+                guard cell.bounds.contains(cellPoint) else { continue }
+                if let target = cell.hitTest(cellPoint, with: event) {
+                    return target
+                }
+            }
+
+            let scrollPoint = scrollView.convert(point, from: self)
+            if scrollView.bounds.contains(scrollPoint),
+               scrollView.contentSize.width > scrollView.bounds.width + 1
+            {
+                return scrollView
+            }
+
+            return nil
+        }
+
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            guard isUserInteractionEnabled,
+                  !isHidden,
+                  alpha > 0.01,
+                  bounds.contains(point)
+            else { return nil }
+
+            return interactionTarget(at: point, event: event)
         }
 
         private func layoutCells() {
@@ -188,6 +219,19 @@ import Litext
                 mutableAttributedString.replaceCharacters(in: rangeOfStringToBeReplaced, with: replaced)
             }
             return mutableAttributedString
+        }
+
+        private func contentsEqual(_ lhs: [Rows], _ rhs: [Rows]) -> Bool {
+            guard lhs.count == rhs.count else { return false }
+            for rowIndex in lhs.indices {
+                guard lhs[rowIndex].count == rhs[rowIndex].count else { return false }
+                for columnIndex in lhs[rowIndex].indices {
+                    guard lhs[rowIndex][columnIndex].isEqual(to: rhs[rowIndex][columnIndex]) else {
+                        return false
+                    }
+                }
+            }
+            return true
         }
     }
 
@@ -303,6 +347,7 @@ import Litext
                     builder[x][y] = processedContent
                 }
             }
+            guard !contentsEqual(self.contents, builder) else { return }
             self.contents = builder
         }
 
@@ -322,9 +367,26 @@ import Litext
             super.layout()
 
             scrollView.frame = bounds
-            gridView.frame = bounds
+            gridView.frame = CGRect(origin: .zero, size: intrinsicContentSize)
 
             layoutCells()
+        }
+
+        func interactionTarget(at point: CGPoint) -> NSView? {
+            let scrollPoint = scrollView.convert(point, from: self)
+            if scrollView.bounds.contains(scrollPoint),
+               let documentView = scrollView.documentView,
+               documentView.bounds.width > scrollView.bounds.width + 1
+            {
+                return scrollView
+            }
+
+            return nil
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            guard !isHidden, bounds.contains(point) else { return nil }
+            return interactionTarget(at: point)
         }
 
         private func layoutCells() {
@@ -405,6 +467,19 @@ import Litext
                 mutableAttributedString.replaceCharacters(in: rangeOfStringToBeReplaced, with: replaced)
             }
             return mutableAttributedString
+        }
+
+        private func contentsEqual(_ lhs: [Rows], _ rhs: [Rows]) -> Bool {
+            guard lhs.count == rhs.count else { return false }
+            for rowIndex in lhs.indices {
+                guard lhs[rowIndex].count == rhs[rowIndex].count else { return false }
+                for columnIndex in lhs[rowIndex].indices {
+                    guard lhs[rowIndex][columnIndex].isEqual(to: rhs[rowIndex][columnIndex]) else {
+                        return false
+                    }
+                }
+            }
+            return true
         }
     }
 

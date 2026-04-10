@@ -32,23 +32,11 @@ extension MarkdownInlineNode {
         assert(Thread.isMainThread)
         switch self {
         case let .text(string):
-            return NSMutableAttributedString(
-                string: string,
-                attributes: [
-                    .font: theme.fonts.body,
-                    .foregroundColor: theme.colors.body,
-                ]
-            )
+            return context.cachedBodyText(string, theme: theme)
         case .softBreak:
-            return NSAttributedString(string: " ", attributes: [
-                .font: theme.fonts.body,
-                .foregroundColor: theme.colors.body,
-            ])
+            return context.cachedBodyText(" ", theme: theme)
         case .lineBreak:
-            return NSAttributedString(string: "\n", attributes: [
-                .font: theme.fonts.body,
-                .foregroundColor: theme.colors.body,
-            ])
+            return context.cachedBodyText("\n", theme: theme)
         case let .code(string), let .html(string):
             let controlAttributes: [NSAttributedString.Key: Any] = [
                 .font: theme.fonts.codeInline,

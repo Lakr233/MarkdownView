@@ -17,6 +17,7 @@ let package = Package(
         .library(name: "MarkdownView", targets: ["MarkdownView"]),
         .library(name: "MarkdownParser", targets: ["MarkdownParser"]),
         .library(name: "WatchMarkdownView", targets: ["WatchMarkdownView"]),
+        .executable(name: "MarkdownViewBenchmark", targets: ["MarkdownViewBenchmark"]),
     ],
     dependencies: [
         .package(url: "https://github.com/Lakr233/Litext", from: "1.2.1"),
@@ -47,6 +48,13 @@ let package = Package(
                 "MarkdownParser",
             ]
         ),
+        .executableTarget(
+            name: "MarkdownViewBenchmark",
+            dependencies: [
+                "MarkdownView",
+                "MarkdownParser",
+            ]
+        ),
         .target(name: "MarkdownParser", dependencies: [
             .product(name: "cmark-gfm", package: "swift-cmark"),
             .product(name: "cmark-gfm-extensions", package: "swift-cmark"),
@@ -56,6 +64,14 @@ let package = Package(
             dependencies: [
                 "MarkdownParser",
             ]
+        ),
+        .testTarget(
+            name: "MarkdownViewTests",
+            dependencies: [
+                "MarkdownView",
+                "MarkdownParser",
+            ],
+            resources: [.process("Fixtures")]
         ),
     ]
 )

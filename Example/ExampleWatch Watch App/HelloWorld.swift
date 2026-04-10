@@ -5,8 +5,6 @@
 //  Created by qaq on 10/3/2026.
 //
 
-
-
 let document = """
 This is a **demo** of the `WatchMarkdownView` component. Lorem Ipsum is simply dummy text of the printing and typesetting industry.
 

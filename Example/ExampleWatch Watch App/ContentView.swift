@@ -22,19 +22,18 @@ struct ContentView: View {
                 VStack(alignment: .center, spacing: 12) {
                     WatchMarkdownView(markdown: displayMarkdown)
                         .id(displayMarkdown)
-                    
-                        if playing {
-                            ProgressView()
-                                .tint(.white)
-                        } else {
-                            Button {
-                                startStreaming(with: proxy)
-                            } label: {
-                                Image(systemName: "play.fill")
-                                    .font(.system(size: 18, weight: .semibold))
-                            }
-                        }
 
+                    if playing {
+                        ProgressView()
+                            .tint(.white)
+                    } else {
+                        Button {
+                            startStreaming(with: proxy)
+                        } label: {
+                            Image(systemName: "play.fill")
+                                .font(.system(size: 18, weight: .semibold))
+                        }
+                    }
                 }
                 .padding()
             }
@@ -43,7 +42,7 @@ struct ContentView: View {
     }
 
     @MainActor
-    private func startStreaming(with proxy: ScrollViewProxy) {
+    private func startStreaming(with _: ScrollViewProxy) {
         guard !playing else { return }
 
         markdownText = ""
