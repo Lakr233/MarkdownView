@@ -80,9 +80,10 @@ This project is licensed under the MIT License. See the [LICENSE](LICENSE) file 
 
 This project includes code adapted from [swift-markdown-ui](https://github.com/gonzalezreal/swift-markdown-ui) by Guillermo Gonzalez, used under the MIT License.
 
----
-
-Copyright 2025 © Lakr Aream. All rights reserved.
 ## Sponsor
 
 [LookInside](https://lookinside-app.com/) helps you inspect a running iOS or macOS app UI from your Mac.
+
+---
+
+Copyright 2025 © Lakr Aream. All rights reserved.
