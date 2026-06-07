@@ -76,6 +76,33 @@ import Litext
             updateLineNumberView()
         }
 
+        func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
+            for button in [previewButton, copyButton] where !button.isHidden {
+                let buttonPoint = button.convert(point, from: self)
+                guard button.bounds.contains(buttonPoint) else { continue }
+                return button.hitTest(buttonPoint, with: event) ?? button
+            }
+
+            let scrollPoint = scrollView.convert(point, from: self)
+            if scrollView.bounds.contains(scrollPoint),
+               scrollView.contentSize.width > scrollView.bounds.width + 1
+            {
+                return scrollView
+            }
+
+            return nil
+        }
+
+        override func hitTest(_ point: CGPoint, with event: UIEvent?) -> UIView? {
+            guard isUserInteractionEnabled,
+                  !isHidden,
+                  alpha > 0.01,
+                  bounds.contains(point)
+            else { return nil }
+
+            return interactionTarget(at: point, event: event)
+        }
+
         override var intrinsicContentSize: CGSize {
             let labelSize = languageLabel.intrinsicContentSize
             let barHeight = labelSize.height + CodeViewConfiguration.barPadding * 2
@@ -222,6 +249,29 @@ import Litext
             super.layout()
             performLayout()
             updateLineNumberView()
+        }
+
+        func interactionTarget(at point: CGPoint) -> NSView? {
+            for button in [previewButton, copyButton] where !button.isHidden {
+                let buttonPoint = button.convert(point, from: self)
+                guard button.bounds.contains(buttonPoint) else { continue }
+                return button.hitTest(buttonPoint) ?? button
+            }
+
+            let scrollPoint = scrollView.convert(point, from: self)
+            if scrollView.bounds.contains(scrollPoint),
+               let documentView = scrollView.documentView,
+               documentView.bounds.width > scrollView.bounds.width + 1
+            {
+                return scrollView
+            }
+
+            return nil
+        }
+
+        override func hitTest(_ point: NSPoint) -> NSView? {
+            guard !isHidden, bounds.contains(point) else { return nil }
+            return interactionTarget(at: point)
         }
 
         override var intrinsicContentSize: CGSize {

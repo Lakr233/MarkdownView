@@ -10,32 +10,97 @@ import MarkdownParser
 
 public extension MarkdownTextView {
     final class PreprocessedContent: @unchecked Sendable {
+        private struct InlineRenderCacheKey: Hashable {
+            let text: String
+            let localeIdentifier: String
+            let themeSignature: String
+        }
+
         public let blocks: [MarkdownBlockNode]
         public let rendered: RenderedTextContent.Map
         public let highlightMaps: [Int: CodeHighlighter.HighlightMap]
+        public let locale: Locale
+        @MainActor private var inlineRenderCache: [InlineRenderCacheKey: NSAttributedString] = [:]
 
         public init(
             blocks: [MarkdownBlockNode],
             rendered: RenderedTextContent.Map,
-            highlightMaps: [Int: CodeHighlighter.HighlightMap]
+            highlightMaps: [Int: CodeHighlighter.HighlightMap],
+            locale: Locale = .autoupdatingCurrent
         ) {
             self.blocks = blocks
             self.rendered = rendered
             self.highlightMaps = highlightMaps
+            self.locale = locale
         }
 
         @MainActor
-        public init(parserResult: MarkdownParser.ParseResult, theme: MarkdownTheme) {
+        public init(
+            parserResult: MarkdownParser.ParseResult,
+            theme: MarkdownTheme,
+            locale: Locale = .autoupdatingCurrent
+        ) {
             blocks = parserResult.document
             rendered = parserResult.render(theme: theme)
             highlightMaps = parserResult.render(theme: theme)
+            self.locale = locale
         }
 
         public init() {
             blocks = .init()
             rendered = .init()
             highlightMaps = .init()
+            locale = .autoupdatingCurrent
         }
+
+        @MainActor
+        func cachedBodyText(_ text: String, theme: MarkdownTheme) -> NSAttributedString {
+            let key = InlineRenderCacheKey(
+                text: text,
+                localeIdentifier: locale.identifier,
+                themeSignature: theme.inlineBodyCacheSignature
+            )
+            if let cached = inlineRenderCache[key] {
+                return cached
+            }
+
+            let rendered = NSMutableAttributedString(
+                string: text,
+                attributes: [
+                    .font: theme.fonts.body,
+                    .foregroundColor: theme.colors.body,
+                ]
+            )
+            MarkdownContentLocale.applyLanguageAttributes(
+                to: rendered,
+                fallbackLocale: locale
+            )
+            let cached = rendered.copy() as! NSAttributedString
+            inlineRenderCache[key] = cached
+            return cached
+        }
+    }
+}
+
+private extension MarkdownTheme {
+    var inlineBodyCacheSignature: String {
+        [
+            fonts.body.fontName,
+            String(format: "%.4f", Double(fonts.body.pointSize)),
+            colors.body.cacheDescription,
+        ].joined(separator: "|")
+    }
+}
+
+private extension PlatformColor {
+    var cacheDescription: String {
+        #if canImport(UIKit)
+            guard let components = cgColor.components else { return description }
+        #elseif canImport(AppKit)
+            guard let converted = usingColorSpace(.deviceRGB) else { return description }
+            guard let components = converted.cgColor.components else { return description }
+        #endif
+        return components.map { String(format: "%.4f", $0) }.joined(separator: ",")
     }
 }
 

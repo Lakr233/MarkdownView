@@ -10,6 +10,10 @@
 		50A560892F2E68F800762F0F /* MarkdownView in Frameworks */ = {isa = PBXBuildFile; productRef = 50A560882F2E68F800762F0F /* MarkdownView */; };
 		50A560902F2E68F800762F0F /* WatchMarkdownView in Frameworks */ = {isa = PBXBuildFile; productRef = 50A560912F2E68F800762F0F /* WatchMarkdownView */; };
 		50F259092F5F143000DE874B /* ExampleWatch Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 50F259082F5F143000DE874B /* ExampleWatch Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
+		51A1000A2F90000100AAA001 /* MarkdownView in Frameworks */ = {isa = PBXBuildFile; productRef = 51A100082F90000100AAA001 /* MarkdownView */; };
+		51A1000B2F90000100AAA001 /* MarkdownParser in Frameworks */ = {isa = PBXBuildFile; productRef = 51A100092F90000100AAA001 /* MarkdownParser */; };
+		51A100142F90000100AAA001 /* Litext in Frameworks */ = {isa = PBXBuildFile; productRef = 51A100152F90000100AAA001 /* Litext */; };
+		CEC412AB953519504ACA57EC /* LookInsideServer in Frameworks */ = {isa = PBXBuildFile; productRef = 8155B0F4083D31F6F63E4AC1 /* LookInsideServer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -19,6 +23,13 @@
 			proxyType = 1;
 			remoteGlobalIDString = 50F259072F5F143000DE874B;
 			remoteInfo = "ExampleWatch Watch App";
+		};
+		51A1000C2F90000100AAA001 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 505E99E22D26D8380014A6D3 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 50A5607C2F2E687B00762F0F;
+			remoteInfo = Example;
 		};
 /* End PBXContainerItemProxy section */
 
@@ -40,17 +51,29 @@
 		50A5607D2F2E687B00762F0F /* Example.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = Example.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		50F259032F5F143000DE874B /* ExampleWatch.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ExampleWatch.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		50F259082F5F143000DE874B /* ExampleWatch Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "ExampleWatch Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
+		51A100032F90000100AAA001 /* MarkdownViewCatalystTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = MarkdownViewCatalystTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		50A5607E2F2E687B00762F0F /* Example */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = Example;
 			sourceTree = "<group>";
 		};
 		50F2590C2F5F143000DE874B /* ExampleWatch Watch App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
 			path = "ExampleWatch Watch App";
+			sourceTree = "<group>";
+		};
+		51A100042F90000100AAA001 /* MarkdownViewCatalystTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			path = MarkdownViewCatalystTests;
 			sourceTree = "<group>";
 		};
 /* End PBXFileSystemSynchronizedRootGroup section */
@@ -61,6 +84,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				50A560892F2E68F800762F0F /* MarkdownView in Frameworks */,
+				CEC412AB953519504ACA57EC /* LookInsideServer in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -69,6 +93,16 @@
 			buildActionMask = 2147483647;
 			files = (
 				50A560902F2E68F800762F0F /* WatchMarkdownView in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		51A100052F90000100AAA001 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				51A1000A2F90000100AAA001 /* MarkdownView in Frameworks */,
+				51A1000B2F90000100AAA001 /* MarkdownParser in Frameworks */,
+				51A100142F90000100AAA001 /* Litext in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -86,6 +120,7 @@
 			isa = PBXGroup;
 			children = (
 				50A5607E2F2E687B00762F0F /* Example */,
+				51A100042F90000100AAA001 /* MarkdownViewCatalystTests */,
 				50F2590C2F5F143000DE874B /* ExampleWatch Watch App */,
 				5015F6D32D26DCFB005FA7D2 /* Frameworks */,
 				505E99EB2D26D8380014A6D3 /* Products */,
@@ -96,6 +131,7 @@
 			isa = PBXGroup;
 			children = (
 				50A5607D2F2E687B00762F0F /* Example.app */,
+				51A100032F90000100AAA001 /* MarkdownViewCatalystTests.xctest */,
 				50F259032F5F143000DE874B /* ExampleWatch.app */,
 				50F259082F5F143000DE874B /* ExampleWatch Watch App.app */,
 			);
@@ -123,6 +159,7 @@
 			name = Example;
 			packageProductDependencies = (
 				50A560882F2E68F800762F0F /* MarkdownView */,
+				8155B0F4083D31F6F63E4AC1 /* LookInsideServer */,
 			);
 			productName = Example;
 			productReference = 50A5607D2F2E687B00762F0F /* Example.app */;
@@ -141,8 +178,6 @@
 				50F2590B2F5F143000DE874B /* PBXTargetDependency */,
 			);
 			name = ExampleWatch;
-			packageProductDependencies = (
-			);
 			productName = ExampleWatch;
 			productReference = 50F259032F5F143000DE874B /* ExampleWatch.app */;
 			productType = "com.apple.product-type.application.watchapp2-container";
@@ -170,6 +205,32 @@
 			productReference = 50F259082F5F143000DE874B /* ExampleWatch Watch App.app */;
 			productType = "com.apple.product-type.application";
 		};
+		51A100022F90000100AAA001 /* MarkdownViewCatalystTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 51A100132F90000100AAA001 /* Build configuration list for PBXNativeTarget "MarkdownViewCatalystTests" */;
+			buildPhases = (
+				51A100062F90000100AAA001 /* Sources */,
+				51A100052F90000100AAA001 /* Frameworks */,
+				51A100072F90000100AAA001 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				51A1000D2F90000100AAA001 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				51A100042F90000100AAA001 /* MarkdownViewCatalystTests */,
+			);
+			name = MarkdownViewCatalystTests;
+			packageProductDependencies = (
+				51A100082F90000100AAA001 /* MarkdownView */,
+				51A100092F90000100AAA001 /* MarkdownParser */,
+				51A100152F90000100AAA001 /* Litext */,
+			);
+			productName = MarkdownViewCatalystTests;
+			productReference = 51A100032F90000100AAA001 /* MarkdownViewCatalystTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
 /* End PBXNativeTarget section */
 
 /* Begin PBXProject section */
@@ -189,6 +250,10 @@
 					50F259072F5F143000DE874B = {
 						CreatedOnToolsVersion = 26.3;
 					};
+					51A100022F90000100AAA001 = {
+						CreatedOnToolsVersion = 26.3;
+						TestTargetID = 50A5607C2F2E687B00762F0F;
+					};
 				};
 			};
 			buildConfigurationList = 505E99E52D26D8380014A6D3 /* Build configuration list for PBXProject "Example" */;
@@ -201,12 +266,15 @@
 			mainGroup = 505E99E12D26D8380014A6D3;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				0AD8B6BEB2233A9950678FB5 /* XCRemoteSwiftPackageReference "LookInside-Release" */,
 			);
 			preferredProjectObjectVersion = 77;
+			productRefGroup = 505E99EB2D26D8380014A6D3 /* Products */;
 			projectDirPath = "";
 			projectRoot = "";
 			targets = (
 				50A5607C2F2E687B00762F0F /* Example */,
+				51A100022F90000100AAA001 /* MarkdownViewCatalystTests */,
 				50F259022F5F143000DE874B /* ExampleWatch */,
 				50F259072F5F143000DE874B /* ExampleWatch Watch App */,
 			);
@@ -235,6 +303,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		51A100072F90000100AAA001 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -252,6 +327,13 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		51A100062F90000100AAA001 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
 
 /* Begin PBXTargetDependency section */
@@ -259,6 +341,11 @@
 			isa = PBXTargetDependency;
 			target = 50F259072F5F143000DE874B /* ExampleWatch Watch App */;
 			targetProxy = 50F2590A2F5F143000DE874B /* PBXContainerItemProxy */;
+		};
+		51A1000D2F90000100AAA001 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 50A5607C2F2E687B00762F0F /* Example */;
+			targetProxy = 51A1000C2F90000100AAA001 /* PBXContainerItemProxy */;
 		};
 /* End PBXTargetDependency section */
 
@@ -445,6 +532,10 @@
 				ENABLE_HARDENED_RUNTIME = YES;
 				ENABLE_PREVIEWS = YES;
 				ENABLE_USER_SELECTED_FILES = readonly;
+				EXCLUDED_SOURCE_FILE_NAMES = (
+					"$(inherited)",
+					"LookInsideServer*",
+				);
 				GENERATE_INFOPLIST_FILE = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphoneos*]" = YES;
 				"INFOPLIST_KEY_UIApplicationSceneManifest_Generation[sdk=iphonesimulator*]" = YES;
@@ -578,6 +669,58 @@
 			};
 			name = Release;
 		};
+		51A100112F90000100AAA001 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 964G86XT2P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.MarkdownViewCatalystTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example";
+			};
+			name = Debug;
+		};
+		51A100122F90000100AAA001 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = 964G86XT2P;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 16.0;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = wiki.qaq.MarkdownViewCatalystTests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = auto;
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SUPPORTED_PLATFORMS = "iphoneos iphonesimulator";
+				SUPPORTS_MACCATALYST = YES;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_DEFAULT_ACTOR_ISOLATION = MainActor;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = "1,2,7";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Example.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Example";
+			};
+			name = Release;
+		};
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
@@ -617,7 +760,27 @@
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
 		};
+		51A100132F90000100AAA001 /* Build configuration list for PBXNativeTarget "MarkdownViewCatalystTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				51A100112F90000100AAA001 /* Debug */,
+				51A100122F90000100AAA001 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		0AD8B6BEB2233A9950678FB5 /* XCRemoteSwiftPackageReference "LookInside-Release" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/LookInsideApp/LookInside-Release.git";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 0.2.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
 		50A560882F2E68F800762F0F /* MarkdownView */ = {
@@ -627,6 +790,23 @@
 		50A560912F2E68F800762F0F /* WatchMarkdownView */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = WatchMarkdownView;
+		};
+		51A100082F90000100AAA001 /* MarkdownView */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MarkdownView;
+		};
+		51A100092F90000100AAA001 /* MarkdownParser */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = MarkdownParser;
+		};
+		51A100152F90000100AAA001 /* Litext */ = {
+			isa = XCSwiftPackageProductDependency;
+			productName = Litext;
+		};
+		8155B0F4083D31F6F63E4AC1 /* LookInsideServer */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 0AD8B6BEB2233A9950678FB5 /* XCRemoteSwiftPackageReference "LookInside-Release" */;
+			productName = LookInsideServer;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

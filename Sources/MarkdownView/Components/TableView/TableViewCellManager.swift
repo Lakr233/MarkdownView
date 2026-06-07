@@ -32,15 +32,13 @@ import Litext
         ) {
             let numberOfRows = contents.count
             let numberOfColumns = contents.first?.count ?? 0
+            let requiredCellCount = contents.reduce(0) { $0 + $1.count }
 
-            // Reset arrays
             cellSizes = Array(repeating: .zero, count: numberOfRows * numberOfColumns)
-            cells.forEach { $0.removeFromSuperview() }
-            cells.removeAll()
             widths = Array(repeating: 0, count: numberOfColumns)
             heights = Array(repeating: 0, count: numberOfRows)
+            trimSurplusCells(keeping: requiredCellCount)
 
-            // Configure cells for each row and column
             for (row, rowContent) in contents.enumerated() {
                 var rowHeight: CGFloat = 0
 
@@ -92,10 +90,9 @@ import Litext
 
             if index >= cells.count {
                 cell = LTXLabel()
-                cell.isSelectable = true
+                cell.isSelectable = false
                 cell.backgroundColor = .clear
                 cell.selectionBackgroundColor = theme.colors.selectionBackground
-                cell.preferredMaxLayoutWidth = maximumWidth
                 cell.delegate = delegate
                 containerView.addSubview(cell)
                 cells.append(cell)
@@ -103,15 +100,28 @@ import Litext
                 cell = cells[index]
             }
 
-            cell.attributedText = attributedText
+            let needsTextUpdate = cell.preferredMaxLayoutWidth != maximumWidth
+                || !cell.attributedText.isEqual(to: attributedText)
+            if needsTextUpdate {
+                cell.preferredMaxLayoutWidth = maximumWidth
+                cell.attributedText = attributedText
 
-            if isHeader {
-                applyCellHeaderStyling(to: cell)
-            } else {
-                applyCellNormalStyling(to: cell)
+                if isHeader {
+                    applyCellHeaderStyling(to: cell)
+                } else {
+                    applyCellNormalStyling(to: cell)
+                }
             }
 
             return cell
+        }
+
+        private func trimSurplusCells(keeping requiredCellCount: Int) {
+            guard cells.count > requiredCellCount else { return }
+            for index in stride(from: cells.count - 1, through: requiredCellCount, by: -1) {
+                cells[index].removeFromSuperview()
+                cells.remove(at: index)
+            }
         }
 
         private func calculateCellSize(for cell: LTXLabel, cellPadding: CGFloat) -> CGSize {
@@ -193,12 +203,12 @@ import Litext
         ) {
             let numberOfRows = contents.count
             let numberOfColumns = contents.first?.count ?? 0
+            let requiredCellCount = contents.reduce(0) { $0 + $1.count }
 
             cellSizes = Array(repeating: .zero, count: numberOfRows * numberOfColumns)
-            cells.forEach { $0.removeFromSuperview() }
-            cells.removeAll()
             widths = Array(repeating: 0, count: numberOfColumns)
             heights = Array(repeating: 0, count: numberOfRows)
+            trimSurplusCells(keeping: requiredCellCount)
 
             for (row, rowContent) in contents.enumerated() {
                 var rowHeight: CGFloat = 0
@@ -246,11 +256,10 @@ import Litext
 
             if index >= cells.count {
                 cell = LTXLabel()
-                cell.isSelectable = true
+                cell.isSelectable = false
                 cell.wantsLayer = true
                 cell.layer?.backgroundColor = NSColor.clear.cgColor
                 cell.selectionBackgroundColor = theme.colors.selectionBackground
-                cell.preferredMaxLayoutWidth = maximumWidth
                 cell.delegate = delegate
                 containerView.addSubview(cell)
                 cells.append(cell)
@@ -258,15 +267,28 @@ import Litext
                 cell = cells[index]
             }
 
-            cell.attributedText = attributedText
+            let needsTextUpdate = cell.preferredMaxLayoutWidth != maximumWidth
+                || !cell.attributedText.isEqual(to: attributedText)
+            if needsTextUpdate {
+                cell.preferredMaxLayoutWidth = maximumWidth
+                cell.attributedText = attributedText
 
-            if isHeader {
-                applyCellHeaderStyling(to: cell)
-            } else {
-                applyCellNormalStyling(to: cell)
+                if isHeader {
+                    applyCellHeaderStyling(to: cell)
+                } else {
+                    applyCellNormalStyling(to: cell)
+                }
             }
 
             return cell
+        }
+
+        private func trimSurplusCells(keeping requiredCellCount: Int) {
+            guard cells.count > requiredCellCount else { return }
+            for index in stride(from: cells.count - 1, through: requiredCellCount, by: -1) {
+                cells[index].removeFromSuperview()
+                cells.remove(at: index)
+            }
         }
 
         private func calculateCellSize(for cell: LTXLabel, cellPadding: CGFloat) -> CGSize {
