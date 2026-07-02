@@ -20,12 +20,12 @@ let package = Package(
         .executable(name: "MarkdownViewBenchmark", targets: ["MarkdownViewBenchmark"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Lakr233/Litext", from: "2.1.3"),
-        .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.7.3"),
-        .package(url: "https://github.com/apple/swift-collections", from: "1.3.0"),
-        .package(url: "https://github.com/raspu/Highlightr", from: "2.3.0"),
-        .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.7.1"),
-        .package(url: "https://github.com/nicklockwood/LRUCache", from: "1.0.7"),
+        .package(url: "https://github.com/Lakr233/Litext", exact: "2.1.3"),
+        .package(url: "https://github.com/mgriebling/SwiftMath", exact: "1.7.3"),
+        .package(url: "https://github.com/apple/swift-collections", exact: "1.6.0"),
+        .package(url: "https://github.com/raspu/Highlightr", exact: "2.3.0"),
+        .package(url: "https://github.com/swiftlang/swift-cmark", exact: "0.8.0"),
+        .package(url: "https://github.com/nicklockwood/LRUCache", exact: "1.2.1"),
     ],
     targets: [
         .target(
