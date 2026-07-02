@@ -1,6 +1,9 @@
 # MarkdownView
 
-A powerful pure UIKit framework for rendering Markdown documents with real-time parsing and rendering capabilities. Battle tested in [FlowDown](https://github.com/Lakr233/FlowDown).
+A pure UIKit/AppKit framework for rendering Markdown with real-time parsing and rendering. Battle tested in [FlowDown](https://github.com/Lakr233/FlowDown).
+
+> [!IMPORTANT]
+> MarkdownView is **not a full-spec CommonMark renderer**. It deliberately trades spec completeness for the best possible typography and layout on phone-sized screens: complex elements (tables, code blocks) are lifted out of lists and rendered as first-class blocks, line spacing and fonts follow platform text styles, and rendering stays smooth while streaming tokens from an LLM. If you need byte-exact CommonMark output, use a spec-focused renderer instead.
 
 ## Preview
 
@@ -8,11 +11,15 @@ A powerful pure UIKit framework for rendering Markdown documents with real-time 
 
 ## Features
 
-- 🚀 **Real-time Rendering**: Live Markdown parsing and rendering as you type
-- 🖥️ **Specialized for Mobile Display**: Optimized layout that extracts complex elements from lists for better readability
-- 🎨 **Syntax Highlighting**: Beautiful code syntax highlighting with Splash
-- 📊 **Math Rendering**: LaTeX math formula rendering with SwiftMath
-- 📱 **Cross-Platform**: Native support for iOS, macOS, Mac Catalyst, and visionOS
+- 🚀 **Real-time Rendering**: designed for streaming — updates are throttled and views are reused, so calling it on every token is fine
+- 📱 **Mobile-first Layout**: complex elements are extracted from lists and laid out for readability on small screens
+- 🎨 **Syntax Highlighting**: code blocks highlighted asynchronously with Highlightr
+- 📊 **Math Rendering**: LaTeX formulas rendered with SwiftMath, with tap-to-preview
+- 🖥️ **Cross-Platform**: native iOS, macOS, Mac Catalyst, visionOS, and watchOS (via `WatchMarkdownView`)
+
+## Supported Markdown
+
+GitHub-flavored basics: headings, paragraphs, emphasis, lists (ordered/unordered/task), blockquotes, fenced code blocks, tables, links, images-as-links, inline and block math (`$...$`, `$$...$$`). HTML blocks and other long-tail CommonMark constructs are rendered as plain text or simplified — by design.
 
 ## Installation
 
@@ -20,7 +27,7 @@ Add the following to your `Package.swift` file:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/Lakr233/MarkdownView", from: "3.6.0"),
+    .package(url: "https://github.com/Lakr233/MarkdownView", from: "4.0.0"),
 ]
 ```
 
@@ -29,6 +36,7 @@ Platform compatibility:
 - macOS 13.0+
 - Mac Catalyst 16.0+
 - visionOS 1.0+
+- watchOS 8.0+ (`WatchMarkdownView` product)
 
 ## Usage
 
@@ -52,24 +60,64 @@ MarkdownView("# Hello World", theme: .default)
 
 ### UIKit / AppKit
 
+One-shot rendering:
+
+```swift
+import MarkdownView
+
+let markdownTextView = MarkdownTextView()
+markdownTextView.setMarkdown("# Hello World")
+```
+
+Streaming (parse off the main path you control, display throttled):
+
 ```swift
 import MarkdownView
 import MarkdownParser
 
 let markdownTextView = MarkdownTextView()
-let parser = MarkdownParser()
-let result = parser.parse("# Hello World")
-let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: .default)
-markdownTextView.setMarkdown(content)
+
+// on every incoming chunk:
+let result = MarkdownParser().parse(accumulatedText)
+let content = MarkdownContent(parserResult: result, theme: .default)
+markdownTextView.setContent(content) // coalesced by throttleInterval (default 20 fps)
 ```
+
+Immediate, unthrottled replacement:
+
+```swift
+markdownTextView.setContentImmediately(content)
+```
+
+### watchOS
+
+```swift
+import WatchMarkdownView
+
+WatchMarkdownView(markdown: "# Hello World")
+```
+
+## Migrating to 4.0
+
+MarkdownView 4.0 adopts Litext 2.0 and renames the core API. Deprecated shims are provided for one release:
+
+| 3.x | 4.0 |
+| --- | --- |
+| `MarkdownTextView.PreprocessedContent` | `MarkdownContent` |
+| `setMarkdown(_: PreprocessedContent)` | `setContent(_:)` |
+| `setMarkdownManually(_:)` | `setContentImmediately(_:)` |
+| `bindContentOffset(from:)` | `trackedScrollView = ...` |
+| `markdownTextView.textView` | `markdownTextView.textLabelView` |
+| `ParseResult.render(theme:)` (two overloads) | `renderedContent(theme:)` / `highlightMaps(theme:)` |
+
+New: `setMarkdown(_ text: String)` parses and displays a markdown string in one call; `MarkdownContent(markdown:theme:locale:)` does the same for content objects.
 
 ## Example
 
 Check out the included example project to see MarkdownView in action:
 
 ```bash
-cd Example
-open Example.xcodeproj
+open Example.xcworkspace
 ```
 
 ## License

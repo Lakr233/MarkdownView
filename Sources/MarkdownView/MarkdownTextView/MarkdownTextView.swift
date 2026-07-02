@@ -15,21 +15,28 @@ import MarkdownParser
         public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
         public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
-        public internal(set) var document: PreprocessedContent = .init()
-        public let textView: TextLabelView = .init()
+        public internal(set) var content: MarkdownContent = .init()
+
+        @available(*, deprecated, renamed: "content")
+        public var document: MarkdownContent { content }
+        public let textLabelView: TextLabelView = .init()
+
+        @available(*, deprecated, renamed: "textLabelView")
+        public var textView: TextLabelView { textLabelView }
         public var theme: MarkdownTheme = .default {
             didSet {
                 guard oldValue != theme else { return }
-                textView.selectionBackgroundColor = theme.colors.selectionBackground
-                use(document)
+                textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+                use(content)
             }
         }
 
-        public internal(set) weak var trackedScrollView: UIScrollView? // for selection updating
+        /// Scroll view used for auto-scrolling while the user drags a text selection.
+        public weak var trackedScrollView: UIScrollView?
 
         var contextViews: [UIView] = []
         var cancellables = Set<AnyCancellable>()
-        let contentSubject = CurrentValueSubject<PreprocessedContent, Never>(.init())
+        let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
             didSet { setupCombine() }
         }
@@ -39,17 +46,17 @@ import MarkdownParser
         public init(viewProvider: ReusableViewProvider = .init()) {
             self.viewProvider = viewProvider
             super.init(frame: .zero)
-            textView.isSelectable = true
-            textView.backgroundColor = .clear
-            textView.selectionBackgroundColor = theme.colors.selectionBackground
-            textView.delegate = self
-            textView.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(textView)
+            textLabelView.isSelectable = true
+            textLabelView.backgroundColor = .clear
+            textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+            textLabelView.delegate = self
+            textLabelView.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(textLabelView)
             NSLayoutConstraint.activate([
-                textView.leadingAnchor.constraint(equalTo: leadingAnchor),
-                textView.trailingAnchor.constraint(equalTo: trailingAnchor),
-                textView.topAnchor.constraint(equalTo: topAnchor),
-                textView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                textLabelView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                textLabelView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                textLabelView.topAnchor.constraint(equalTo: topAnchor),
+                textLabelView.bottomAnchor.constraint(equalTo: bottomAnchor),
             ])
             setupCombine()
         }
@@ -61,27 +68,48 @@ import MarkdownParser
 
         override public func layoutSubviews() {
             super.layoutSubviews()
-            textView.preferredMaxLayoutWidth = bounds.width
+            textLabelView.preferredMaxLayoutWidth = bounds.width
         }
 
         override public var intrinsicContentSize: CGSize {
-            textView.intrinsicContentSize
+            textLabelView.intrinsicContentSize
         }
 
         public func boundingSize(for width: CGFloat) -> CGSize {
-            textView.preferredMaxLayoutWidth = width
-            return textView.intrinsicContentSize
+            textLabelView.preferredMaxLayoutWidth = width
+            return textLabelView.intrinsicContentSize
         }
 
-        public func setMarkdownManually(_ content: PreprocessedContent) {
+        /// Replaces the displayed content immediately, bypassing the update throttle.
+        public func setContentImmediately(_ content: MarkdownContent) {
             assert(Thread.isMainThread)
             resetCombine()
             contentSubject.send(content)
             use(content)
+            setupCombine()
         }
 
-        public func setMarkdown(_ content: PreprocessedContent) {
+        /// Replaces the displayed content, coalesced by ``throttleInterval``.
+        /// Safe to call at high frequency (e.g. while streaming).
+        public func setContent(_ content: MarkdownContent) {
             contentSubject.send(content)
+        }
+
+        /// Parses and displays markdown text in one step.
+        /// For streaming or off-main-thread parsing, build a ``MarkdownContent``
+        /// yourself and use ``setContent(_:)``.
+        public func setMarkdown(_ markdown: String) {
+            setContentImmediately(.init(markdown: markdown, theme: theme))
+        }
+
+        @available(*, deprecated, renamed: "setContentImmediately(_:)")
+        public func setMarkdownManually(_ content: MarkdownContent) {
+            setContentImmediately(content)
+        }
+
+        @available(*, deprecated, renamed: "setContent(_:)")
+        public func setMarkdown(_ content: MarkdownContent) {
+            setContent(content)
         }
 
         public func reset() {
@@ -92,6 +120,7 @@ import MarkdownParser
             setupCombine()
         }
 
+        @available(*, deprecated, renamed: "trackedScrollView")
         public func bindContentOffset(from scrollView: UIScrollView?) {
             trackedScrollView = scrollView
         }
@@ -104,21 +133,28 @@ import MarkdownParser
         public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
         public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
-        public internal(set) var document: PreprocessedContent = .init()
-        public let textView: TextLabelView = .init()
+        public internal(set) var content: MarkdownContent = .init()
+
+        @available(*, deprecated, renamed: "content")
+        public var document: MarkdownContent { content }
+        public let textLabelView: TextLabelView = .init()
+
+        @available(*, deprecated, renamed: "textLabelView")
+        public var textView: TextLabelView { textLabelView }
         public var theme: MarkdownTheme = .default {
             didSet {
                 guard oldValue != theme else { return }
-                textView.selectionBackgroundColor = theme.colors.selectionBackground
-                use(document)
+                textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+                use(content)
             }
         }
 
-        public internal(set) weak var trackedScrollView: NSScrollView? // for selection updating
+        /// Scroll view used for auto-scrolling while the user drags a text selection.
+        public weak var trackedScrollView: NSScrollView?
 
         var contextViews: [NSView] = []
         var cancellables = Set<AnyCancellable>()
-        let contentSubject = CurrentValueSubject<PreprocessedContent, Never>(.init())
+        let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
             didSet { setupCombine() }
         }
@@ -128,18 +164,18 @@ import MarkdownParser
         public init(viewProvider: ReusableViewProvider = .init()) {
             self.viewProvider = viewProvider
             super.init(frame: .zero)
-            textView.isSelectable = true
-            textView.selectionBackgroundColor = theme.colors.selectionBackground
-            textView.delegate = self
+            textLabelView.isSelectable = true
+            textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+            textLabelView.delegate = self
             wantsLayer = true
             layer?.backgroundColor = NSColor.clear.cgColor
-            textView.translatesAutoresizingMaskIntoConstraints = false
-            addSubview(textView)
+            textLabelView.translatesAutoresizingMaskIntoConstraints = false
+            addSubview(textLabelView)
             NSLayoutConstraint.activate([
-                textView.leadingAnchor.constraint(equalTo: leadingAnchor),
-                textView.trailingAnchor.constraint(equalTo: trailingAnchor),
-                textView.topAnchor.constraint(equalTo: topAnchor),
-                textView.bottomAnchor.constraint(equalTo: bottomAnchor),
+                textLabelView.leadingAnchor.constraint(equalTo: leadingAnchor),
+                textLabelView.trailingAnchor.constraint(equalTo: trailingAnchor),
+                textLabelView.topAnchor.constraint(equalTo: topAnchor),
+                textLabelView.bottomAnchor.constraint(equalTo: bottomAnchor),
             ])
             setupCombine()
         }
@@ -155,32 +191,53 @@ import MarkdownParser
 
         override public func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
-            use(document)
+            use(content)
         }
 
         override public func layout() {
             super.layout()
-            textView.preferredMaxLayoutWidth = bounds.width
+            textLabelView.preferredMaxLayoutWidth = bounds.width
         }
 
         override public var intrinsicContentSize: CGSize {
-            textView.intrinsicContentSize
+            textLabelView.intrinsicContentSize
         }
 
         public func boundingSize(for width: CGFloat) -> CGSize {
-            textView.preferredMaxLayoutWidth = width
-            return textView.intrinsicContentSize
+            textLabelView.preferredMaxLayoutWidth = width
+            return textLabelView.intrinsicContentSize
         }
 
-        public func setMarkdownManually(_ content: PreprocessedContent) {
+        /// Replaces the displayed content immediately, bypassing the update throttle.
+        public func setContentImmediately(_ content: MarkdownContent) {
             assert(Thread.isMainThread)
             resetCombine()
             contentSubject.send(content)
             use(content)
+            setupCombine()
         }
 
-        public func setMarkdown(_ content: PreprocessedContent) {
+        /// Replaces the displayed content, coalesced by ``throttleInterval``.
+        /// Safe to call at high frequency (e.g. while streaming).
+        public func setContent(_ content: MarkdownContent) {
             contentSubject.send(content)
+        }
+
+        /// Parses and displays markdown text in one step.
+        /// For streaming or off-main-thread parsing, build a ``MarkdownContent``
+        /// yourself and use ``setContent(_:)``.
+        public func setMarkdown(_ markdown: String) {
+            setContentImmediately(.init(markdown: markdown, theme: theme))
+        }
+
+        @available(*, deprecated, renamed: "setContentImmediately(_:)")
+        public func setMarkdownManually(_ content: MarkdownContent) {
+            setContentImmediately(content)
+        }
+
+        @available(*, deprecated, renamed: "setContent(_:)")
+        public func setMarkdown(_ content: MarkdownContent) {
+            setContent(content)
         }
 
         public func reset() {
@@ -191,6 +248,7 @@ import MarkdownParser
             setupCombine()
         }
 
+        @available(*, deprecated, renamed: "trackedScrollView")
         public func bindContentOffset(from scrollView: NSScrollView?) {
             trackedScrollView = scrollView
         }

@@ -9,11 +9,12 @@ import MarkdownParser
 import SwiftUI
 
 public struct MarkdownView: View {
-    public typealias PreprocessedContent = MarkdownTextView.PreprocessedContent
+    @available(*, deprecated, renamed: "MarkdownContent")
+    public typealias PreprocessedContent = MarkdownContent
 
     enum ContentSource {
         case text(String)
-        case preprocessed(PreprocessedContent)
+        case content(MarkdownContent)
     }
 
     let contentSource: ContentSource
@@ -26,8 +27,8 @@ public struct MarkdownView: View {
         self.theme = theme
     }
 
-    public init(_ preprocessedContent: PreprocessedContent, theme: MarkdownTheme = .default) {
-        contentSource = .preprocessed(preprocessedContent)
+    public init(_ content: MarkdownContent, theme: MarkdownTheme = .default) {
+        contentSource = .content(content)
         self.theme = theme
     }
 

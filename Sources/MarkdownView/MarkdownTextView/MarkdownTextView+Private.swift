@@ -18,7 +18,7 @@ extension MarkdownTextView {
             .publisher(for: CodeHighlighter.highlightDidUpdateNotification)
             .sink { [weak self] _ in
                 guard let self else { return }
-                use(document)
+                use(content)
             }
             .store(in: &cancellables)
     }
@@ -39,9 +39,9 @@ extension MarkdownTextView {
         }
     }
 
-    func use(_ content: PreprocessedContent) {
+    func use(_ content: MarkdownContent) {
         assert(Thread.isMainThread)
-        document = content
+        self.content = content
         // due to a bug in model gemini-flash
         // there might be a large of unknown empty whitespace inside the table
         // thus we hereby call the autoreleasepool to avoid large memory consumption

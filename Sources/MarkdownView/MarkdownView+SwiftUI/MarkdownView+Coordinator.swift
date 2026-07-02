@@ -14,7 +14,7 @@ final class MarkdownViewCoordinator {
     static let throttleInterval: TimeInterval = 1 / 20
 
     var lastText: String = ""
-    var lastPreprocessedContent: MarkdownTextView.PreprocessedContent?
+    var lastContent: MarkdownContent?
     var lastTheme: MarkdownTheme = .default
     var lastParseResult: MarkdownParser.ParseResult?
 
@@ -73,12 +73,12 @@ final class MarkdownViewCoordinator {
         } else {
             result = MarkdownParser().parse(text)
         }
-        let content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: theme)
+        let content = MarkdownContent(parserResult: result, theme: theme)
         lastText = text
         lastParseResult = result
-        lastPreprocessedContent = nil
+        lastContent = nil
         view.theme = theme
-        view.setMarkdownManually(content)
+        view.setContentImmediately(content)
         view.invalidateIntrinsicContentSize()
         lastTheme = theme
         lastApplyDate = Date()

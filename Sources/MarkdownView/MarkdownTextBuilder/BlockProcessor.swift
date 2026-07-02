@@ -18,7 +18,7 @@ import MarkdownParser
 final class BlockProcessor {
     private let theme: MarkdownTheme
     private let viewProvider: ReusableViewProvider
-    private let context: MarkdownTextView.PreprocessedContent
+    private let context: MarkdownContent
     private let thematicBreakDrawing: TextBuilder.DrawingCallback?
     private let codeDrawing: TextBuilder.DrawingCallback?
     private let tableDrawing: TextBuilder.DrawingCallback?
@@ -28,7 +28,7 @@ final class BlockProcessor {
     init(
         theme: MarkdownTheme,
         viewProvider: ReusableViewProvider,
-        context: MarkdownTextView.PreprocessedContent,
+        context: MarkdownContent,
         thematicBreakDrawing: TextBuilder.DrawingCallback?,
         codeDrawing: TextBuilder.DrawingCallback?,
         tableDrawing: TextBuilder.DrawingCallback?,

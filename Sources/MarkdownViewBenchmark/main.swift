@@ -40,11 +40,11 @@ struct MarkdownViewBenchmark {
         let parser = MarkdownParser()
         let parsed = parser.parse(markdown)
         let tableHeavyParsed = parser.parse(tableHeavyMarkdown)
-        let preprocessed = MarkdownTextView.PreprocessedContent(
+        let preprocessed = MarkdownContent(
             parserResult: parsed,
             theme: theme
         )
-        let tableHeavyPreprocessed = MarkdownTextView.PreprocessedContent(
+        let tableHeavyPreprocessed = MarkdownContent(
             parserResult: tableHeavyParsed,
             theme: theme
         )
@@ -61,7 +61,7 @@ struct MarkdownViewBenchmark {
                 for _ in 0 ..< iterations {
                     autoreleasepool {
                         let result = parser.parse(markdown)
-                        _ = MarkdownTextView.PreprocessedContent(
+                        _ = MarkdownContent(
                             parserResult: result,
                             theme: theme
                         )
@@ -72,7 +72,7 @@ struct MarkdownViewBenchmark {
                 for _ in 0 ..< iterations {
                     autoreleasepool {
                         let view = MarkdownTextView()
-                        view.setMarkdownManually(preprocessed)
+                        view.setContentImmediately(preprocessed)
                         _ = view.boundingSize(for: 480)
                         _ = view.boundingSize(for: 320)
                         _ = view.boundingSize(for: 200)
@@ -83,7 +83,7 @@ struct MarkdownViewBenchmark {
                 let view = MarkdownTextView()
                 for _ in 0 ..< iterations {
                     autoreleasepool {
-                        view.setMarkdownManually(preprocessed)
+                        view.setContentImmediately(preprocessed)
                         _ = view.boundingSize(for: 320)
                     }
                 }
@@ -92,7 +92,7 @@ struct MarkdownViewBenchmark {
                 let view = MarkdownTextView()
                 for _ in 0 ..< iterations {
                     autoreleasepool {
-                        view.setMarkdownManually(tableHeavyPreprocessed)
+                        view.setContentImmediately(tableHeavyPreprocessed)
                         _ = view.boundingSize(for: 320)
                     }
                 }

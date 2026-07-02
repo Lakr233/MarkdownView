@@ -17,7 +17,7 @@ import MarkdownParser
 @MainActor
 final class ListProcessor {
     private let theme: MarkdownTheme
-    private let context: MarkdownTextView.PreprocessedContent
+    private let context: MarkdownContent
     private let viewProvider: ReusableViewProvider
     private let bulletDrawing: TextBuilder.BulletDrawingCallback?
     private let numberedDrawing: TextBuilder.NumberedDrawingCallback?
@@ -26,7 +26,7 @@ final class ListProcessor {
     init(
         theme: MarkdownTheme,
         viewProvider: ReusableViewProvider,
-        context: MarkdownTextView.PreprocessedContent,
+        context: MarkdownContent,
         bulletDrawing: TextBuilder.BulletDrawingCallback?,
         numberedDrawing: TextBuilder.NumberedDrawingCallback?,
         checkboxDrawing: TextBuilder.CheckboxDrawingCallback?

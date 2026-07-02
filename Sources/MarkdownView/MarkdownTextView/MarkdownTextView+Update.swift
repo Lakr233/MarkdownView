@@ -33,7 +33,7 @@ import Litext
             contextViews.removeAll()
 
             let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
-            textView.attributedText = artifacts.document
+            textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
 
             for view in artifacts.subviews {
@@ -46,10 +46,10 @@ import Litext
                 goneView.removeFromSuperview()
             }
 
-            textView.setNeedsLayout()
+            textLabelView.setNeedsLayout()
             setNeedsLayout()
 
-            textView.setNeedsDisplay()
+            textLabelView.setNeedsDisplay()
             setNeedsDisplay()
         }
     }
@@ -79,7 +79,7 @@ import Litext
             contextViews.removeAll()
 
             let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
-            textView.attributedText = artifacts.document
+            textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
 
             for view in artifacts.subviews {
@@ -92,10 +92,10 @@ import Litext
                 goneView.removeFromSuperview()
             }
 
-            textView.needsLayout = true
+            textLabelView.needsLayout = true
             needsLayout = true
 
-            textView.needsDisplay = true
+            textLabelView.needsDisplay = true
             needsDisplay = true
         }
     }

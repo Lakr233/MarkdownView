@@ -68,7 +68,7 @@ extension TextBuilder {
     }
 
     static func build(view: MarkdownTextView, viewProvider: ReusableViewProvider) -> BuildResult {
-        let context: MarkdownTextView.PreprocessedContent = view.document
+        let context: MarkdownContent = view.content
         let theme: MarkdownTheme = view.theme
 
         var blockquoteMarkingStorage: CGFloat? = nil

@@ -212,7 +212,7 @@ struct MarkdownViewLayoutTests {
     func markdownTextViewHeightGrowsAsWidthShrinks() {
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 320, height: 1)
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         This is a long paragraph with enough words to wrap several times when the width becomes narrow.
         """))
 
@@ -230,14 +230,14 @@ struct MarkdownViewLayoutTests {
     func markdownTextViewReusesTableContextViews() throws {
         let view = MarkdownTextView()
 
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         | Name | Value |
         | --- | --- |
         | Alpha | One |
         """))
         let original = try #require(view.contextViews.first as? TableView)
 
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         | Name | Value |
         | --- | --- |
         | Beta | Two |
@@ -250,7 +250,7 @@ struct MarkdownViewLayoutTests {
     @MainActor
     @Test("Mixed CJK and RTL text gets stable CoreText language attributes")
     func mixedCJKAndRTLTextGetsStableCoreTextLanguageAttributes() {
-        let context = MarkdownTextView.PreprocessedContent(
+        let context = MarkdownContent(
             blocks: [],
             rendered: [:],
             highlightMaps: [:],
@@ -269,7 +269,7 @@ struct MarkdownViewLayoutTests {
     @MainActor
     @Test("Preprocessed content preserves explicit locale")
     func preprocessedContentPreservesExplicitLocale() {
-        let content = MarkdownTextView.PreprocessedContent(
+        let content = MarkdownContent(
             parserResult: MarkdownParser().parse("中文と日本語かな"),
             theme: .default,
             locale: Locale(identifier: "ja")
@@ -287,14 +287,14 @@ struct MarkdownViewLayoutTests {
         ))
         let markdown = try String(contentsOf: markdownURL, encoding: .utf8)
         let parserResult = MarkdownParser().parse(markdown)
-        let content = MarkdownTextView.PreprocessedContent(
+        let content = MarkdownContent(
             parserResult: parserResult,
             theme: .default,
             locale: Locale(identifier: "zh-Hans")
         )
         let view = MarkdownTextView()
 
-        view.setMarkdownManually(content)
+        view.setContentImmediately(content)
         let size = view.boundingSize(for: 320)
 
         #expect(content.blocks.count >= 5)
@@ -311,14 +311,14 @@ struct MarkdownViewLayoutTests {
     func markdownTextViewReusesCodeContextViews() throws {
         let view = MarkdownTextView()
 
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         ```swift
         let value = 1
         ```
         """))
         let original = try #require(view.contextViews.first as? CodeView)
 
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         ```swift
         let value = 2
         ```
@@ -333,7 +333,7 @@ struct MarkdownViewLayoutTests {
     func markdownTextViewKeepsRootTextHittableThroughPlainTable() throws {
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 320, height: 400)
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         Before
 
         | Name | Value |
@@ -346,7 +346,7 @@ struct MarkdownViewLayoutTests {
         let tableView = try #require(view.contextViews.first as? TableView)
         let probe = CGPoint(x: tableView.frame.midX, y: tableView.frame.midY)
         let overlayTarget = tableView.interactionTarget(at: tableView.convert(probe, from: view))
-        let rootTarget = view.textView.hitTest(view.textView.convert(probe, from: view))
+        let rootTarget = view.textLabelView.hitTest(view.textLabelView.convert(probe, from: view))
 
         #expect(overlayTarget == nil)
         #expect(rootTarget != nil)
@@ -357,7 +357,7 @@ struct MarkdownViewLayoutTests {
     func markdownTextViewKeepsRootTextHittableThroughPlainCode() throws {
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 320, height: 400)
-        view.setMarkdownManually(preprocessedContent(for: """
+        view.setContentImmediately(preprocessedContent(for: """
         Before
 
         ```swift
@@ -370,7 +370,7 @@ struct MarkdownViewLayoutTests {
         let codeView = try #require(view.contextViews.first as? CodeView)
         let probe = CGPoint(x: codeView.frame.midX, y: codeView.frame.midY)
         let overlayTarget = codeView.interactionTarget(at: codeView.convert(probe, from: view))
-        let rootTarget = view.textView.hitTest(view.textView.convert(probe, from: view))
+        let rootTarget = view.textLabelView.hitTest(view.textLabelView.convert(probe, from: view))
 
         #expect(overlayTarget == nil)
         #expect(rootTarget != nil)
@@ -388,8 +388,8 @@ private func makeText(_ string: String) -> NSAttributedString {
 }
 
 @MainActor
-private func preprocessedContent(for markdown: String) -> MarkdownTextView.PreprocessedContent {
-    MarkdownTextView.PreprocessedContent(
+private func preprocessedContent(for markdown: String) -> MarkdownContent {
+    MarkdownContent(
         parserResult: MarkdownParser().parse(markdown),
         theme: .default
     )

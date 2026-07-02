@@ -39,16 +39,16 @@ extension MarkdownViewRepresentableBase {
                 coordinator.setTextThrottled(text, theme: theme, on: view)
             }
 
-        case let .preprocessed(preprocessedContent):
-            let needsUpdate = coordinator.lastPreprocessedContent !== preprocessedContent
+        case let .content(markdownContent):
+            let needsUpdate = coordinator.lastContent !== markdownContent
                 || coordinator.lastTheme != theme
             if needsUpdate {
                 coordinator.cancelScheduledApply()
                 coordinator.lastText = ""
                 coordinator.lastParseResult = nil
-                coordinator.lastPreprocessedContent = preprocessedContent
+                coordinator.lastContent = markdownContent
                 view.theme = theme
-                view.setMarkdownManually(preprocessedContent)
+                view.setContentImmediately(markdownContent)
                 view.invalidateIntrinsicContentSize()
                 coordinator.lastTheme = theme
             }

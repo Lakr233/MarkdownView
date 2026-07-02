@@ -18,7 +18,7 @@ final class TextBuilder {
     private let viewProvider: ReusableViewProvider
     private var theme: MarkdownTheme = .default
     private let text: NSMutableAttributedString = .init()
-    private let context: MarkdownTextView.PreprocessedContent
+    private let context: MarkdownContent
 
     private var bulletDrawing: BulletDrawingCallback?
     private var numberedDrawing: NumberedDrawingCallback?
@@ -31,7 +31,7 @@ final class TextBuilder {
 
     init(
         nodes: [MarkdownBlockNode],
-        context: MarkdownTextView.PreprocessedContent,
+        context: MarkdownContent,
         viewProvider: ReusableViewProvider
     ) {
         self.nodes = nodes
@@ -112,7 +112,7 @@ final class TextBuilder {
 extension TextBuilder {
     private func processBlock(
         _ node: MarkdownBlockNode,
-        context: MarkdownTextView.PreprocessedContent,
+        context: MarkdownContent,
         subviews: inout [PlatformView]
     ) -> NSAttributedString {
         let blockProcessor = BlockProcessor(

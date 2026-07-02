@@ -52,7 +52,7 @@ import Testing
         @MainActor
         @Test("Mixed CJK and RTL text gets stable CoreText language attributes")
         func mixedCJKAndRTLTextGetsStableCoreTextLanguageAttributes() {
-            let context = MarkdownTextView.PreprocessedContent(
+            let context = MarkdownContent(
                 blocks: [],
                 rendered: [:],
                 highlightMaps: [:],
@@ -88,14 +88,14 @@ import Testing
             After table and code.
             """
             let parserResult = MarkdownParser().parse(markdown)
-            let content = MarkdownTextView.PreprocessedContent(
+            let content = MarkdownContent(
                 parserResult: parserResult,
                 theme: .default,
                 locale: Locale(identifier: "zh-Hans")
             )
             let view = MarkdownTextView()
 
-            view.setMarkdownManually(content)
+            view.setContentImmediately(content)
             let size = view.boundingSize(for: 320)
 
             #expect(content.blocks.count >= 4)
@@ -112,7 +112,7 @@ import Testing
         func markdownTextViewReusesContextViews() throws {
             let view = MarkdownTextView()
 
-            view.setMarkdownManually(preprocessedContent(for: """
+            view.setContentImmediately(preprocessedContent(for: """
             | Name | Value |
             | --- | --- |
             | Alpha | One |
@@ -124,7 +124,7 @@ import Testing
             let originalTable = try #require(view.contextViews.first { $0 is TableView } as? TableView)
             let originalCode = try #require(view.contextViews.first { $0 is CodeView } as? CodeView)
 
-            view.setMarkdownManually(preprocessedContent(for: """
+            view.setContentImmediately(preprocessedContent(for: """
             | Name | Value |
             | --- | --- |
             | Beta | Two |
@@ -145,7 +145,7 @@ import Testing
         func markdownTextViewKeepsRootTextHittable() throws {
             let view = MarkdownTextView()
             view.frame = .init(x: 0, y: 0, width: 320, height: 480)
-            view.setMarkdownManually(preprocessedContent(for: """
+            view.setContentImmediately(preprocessedContent(for: """
             Before
 
             | Name | Value |
@@ -167,8 +167,8 @@ import Testing
 
             let tableOverlayTarget = tableView.interactionTarget(at: tableView.convert(tableProbe, from: view))
             let codeOverlayTarget = codeView.interactionTarget(at: codeView.convert(codeProbe, from: view))
-            let tableRootTarget = view.textView.hitTest(view.textView.convert(tableProbe, from: view), with: nil)
-            let codeRootTarget = view.textView.hitTest(view.textView.convert(codeProbe, from: view), with: nil)
+            let tableRootTarget = view.textLabelView.hitTest(view.textLabelView.convert(tableProbe, from: view), with: nil)
+            let codeRootTarget = view.textLabelView.hitTest(view.textLabelView.convert(codeProbe, from: view), with: nil)
 
             #expect(tableOverlayTarget == nil)
             #expect(codeOverlayTarget == nil)
@@ -188,8 +188,8 @@ import Testing
     }
 
     @MainActor
-    private func preprocessedContent(for markdown: String) -> MarkdownTextView.PreprocessedContent {
-        MarkdownTextView.PreprocessedContent(
+    private func preprocessedContent(for markdown: String) -> MarkdownContent {
+        MarkdownContent(
             parserResult: MarkdownParser().parse(markdown),
             theme: .default
         )
