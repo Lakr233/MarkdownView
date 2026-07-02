@@ -81,7 +81,7 @@ struct ContentView: View {
         Task {
             var copy = document
             while !copy.isEmpty {
-                try? await Task.sleep(for: .milliseconds(1))
+                try? await Task.sleep(for: .nanoseconds(500_000)) // 0.5ms
                 let value = copy.removeFirst()
                 markdownText += String(value)
             }
