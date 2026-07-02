@@ -57,11 +57,9 @@ private extension MarkdownParser.SpecializeContext {
             }
         case let .numberedList(isTight, start, items):
             let processedItems = processItems(items, using: rawListItemByCherryPick)
-            let containsExtractedNodes = processedItems.contains { !$0.picks.isEmpty }
-            let builder: ([RawListItem]) -> MarkdownBlockNode = containsExtractedNodes
-                ? { .bulletedList(isTight: isTight, items: $0) }
-                : { .numberedList(isTight: isTight, start: start, items: $0) }
-            return buildBlocks(from: processedItems, using: builder)
+            return buildBlocks(from: processedItems) { processedItems, emittedItemCount in
+                .numberedList(isTight: isTight, start: start + emittedItemCount, items: processedItems)
+            }
         case let .taskList(isTight, items):
             let processedItems = processItems(items, using: rawTaskListItemByCherryPick)
             return buildBlocks(from: processedItems) { processedItems in
@@ -117,22 +115,33 @@ private extension MarkdownParser.SpecializeContext {
         from processedItems: [ProcessedListItem<Item>],
         using makeList: ([Item]) -> MarkdownBlockNode
     ) -> [MarkdownBlockNode] {
+        buildBlocks(from: processedItems) { items, _ in makeList(items) }
+    }
+
+    /// Splits a list around extracted block nodes. `makeList` receives the number
+    /// of items emitted in earlier segments so ordered lists can keep numbering.
+    func buildBlocks<Item>(
+        from processedItems: [ProcessedListItem<Item>],
+        using makeList: ([Item], _ emittedItemCount: Int) -> MarkdownBlockNode
+    ) -> [MarkdownBlockNode] {
         guard !processedItems.isEmpty else { return [] }
 
         var result: [MarkdownBlockNode] = []
         var currentItems: [Item] = []
+        var emittedItemCount = 0
 
         for (index, element) in processedItems.enumerated() {
             currentItems.append(element.item)
 
             if !element.picks.isEmpty {
                 if !currentItems.isEmpty {
-                    result.append(makeList(currentItems))
+                    result.append(makeList(currentItems, emittedItemCount))
+                    emittedItemCount += currentItems.count
                     currentItems.removeAll(keepingCapacity: true)
                 }
                 result.append(contentsOf: element.picks)
             } else if index == processedItems.count - 1, !currentItems.isEmpty {
-                result.append(makeList(currentItems))
+                result.append(makeList(currentItems, emittedItemCount))
             }
         }
 

@@ -34,6 +34,50 @@ private struct MathMatch {
     let source: String
 }
 
+/// Ranges spanned by paired backtick runs, following cmark's rule that a code
+/// span opener pairs with the next backtick run of the same length.
+private func backtickDelimitedRanges(in text: String) -> [NSRange] {
+    guard text.utf8.contains(UInt8(ascii: "`")) else { return [] }
+
+    let backtick = unichar(UInt8(ascii: "`"))
+    let nsText = text as NSString
+    var runs: [NSRange] = []
+    var index = 0
+    while index < nsText.length {
+        guard nsText.character(at: index) == backtick else {
+            index += 1
+            continue
+        }
+        var end = index + 1
+        while end < nsText.length, nsText.character(at: end) == backtick {
+            end += 1
+        }
+        runs.append(NSRange(location: index, length: end - index))
+        index = end
+    }
+
+    var ranges: [NSRange] = []
+    var openerIndex = 0
+    while openerIndex < runs.count {
+        let opener = runs[openerIndex]
+        var closerIndex = openerIndex + 1
+        while closerIndex < runs.count, runs[closerIndex].length != opener.length {
+            closerIndex += 1
+        }
+        guard closerIndex < runs.count else {
+            openerIndex += 1
+            continue
+        }
+        let closer = runs[closerIndex]
+        ranges.append(NSRange(
+            location: opener.location,
+            length: closer.location + closer.length - opener.location
+        ))
+        openerIndex = closerIndex + 1
+    }
+    return ranges
+}
+
 private func extractMathMatches(in text: String, using regex: NSRegularExpression) -> [MathMatch] {
     let nsText = text as NSString
     return regex.matches(in: text, range: NSRange(location: 0, length: nsText.length)).compactMap { match in
@@ -68,7 +112,12 @@ public extension MarkdownParser {
                 return
             }
 
-            let matches = extractMathMatches(in: document, using: regex)
+            // Backtick-delimited regions (inline code spans and fenced blocks)
+            // are literal — math markers inside them must not be replaced.
+            let literalRanges = backtickDelimitedRanges(in: document)
+            let matches = extractMathMatches(in: document, using: regex).filter { match in
+                !literalRanges.contains { NSIntersectionRange($0, match.range).length > 0 }
+            }
             if matches.isEmpty { return }
 
             let nsText = document as NSString
@@ -179,7 +228,7 @@ extension MarkdownParser {
             if let mathNode = mathContext.inlineNode(forReplacementText: content) {
                 [mathNode]
             } else {
-                [node]
+                [.code(mathContext.restore(content: content))]
             }
         default:
             [node]

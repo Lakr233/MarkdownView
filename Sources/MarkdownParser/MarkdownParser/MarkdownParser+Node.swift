@@ -17,7 +17,7 @@ extension MarkdownParser {
         }
         assert(root.pointee.type == CMARK_NODE_DOCUMENT.rawValue)
         let nodeList = root.children
-            .compactMap(MarkdownBlockNode.init(unsafeNode:))
+            .flatMap(MarkdownBlockNode.makeBlocks(unsafeNode:))
             .rewrite { node -> [MarkdownBlockNode] in
                 guard case let .codeBlock(language, content) = node else {
                     return [node]

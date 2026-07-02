@@ -10,11 +10,13 @@
 
     public extension UIFont {
         var bold: UIFont {
-            UIFont(descriptor: fontDescriptor.withSymbolicTraits(.traitBold)!, size: 0)
+            guard let descriptor = fontDescriptor.withSymbolicTraits(.traitBold) else { return self }
+            return UIFont(descriptor: descriptor, size: 0)
         }
 
         var italic: UIFont {
-            UIFont(descriptor: fontDescriptor.withSymbolicTraits(.traitItalic)!, size: 0)
+            guard let descriptor = fontDescriptor.withSymbolicTraits(.traitItalic) else { return self }
+            return UIFont(descriptor: descriptor, size: 0)
         }
 
         var monospaced: UIFont {

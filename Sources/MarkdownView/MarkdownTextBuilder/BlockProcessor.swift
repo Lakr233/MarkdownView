@@ -181,6 +181,7 @@ final class BlockProcessor {
             .map { $0.map(\.string).joined(separator: "\t") }
             .joined(separator: "\n")
         let representedText = NSAttributedString(string: allContent + "\n")
+        tableView.setTheme(theme)
         tableView.setContents(contents)
         let drawer = tableDrawing!
 

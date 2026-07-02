@@ -5,10 +5,47 @@ import Foundation
 typealias UnsafeNode = UnsafeMutablePointer<cmark_node>
 
 extension MarkdownBlockNode {
+    /// Converts one cmark node into block nodes, splitting lists that mix
+    /// task items with plain items into consecutive homogeneous segments so
+    /// plain items never render with a phantom checkbox.
+    static func makeBlocks(unsafeNode: UnsafeNode) -> [MarkdownBlockNode] {
+        guard unsafeNode.nodeType == .list else {
+            return MarkdownBlockNode(unsafeNode: unsafeNode).map { [$0] } ?? []
+        }
+        let children = Array(unsafeNode.children)
+        let taskFlags = children.map(\.isTaskListItem)
+        guard taskFlags.contains(true), taskFlags.contains(false) else {
+            return MarkdownBlockNode(unsafeNode: unsafeNode).map { [$0] } ?? []
+        }
+
+        let isTight = unsafeNode.isTightList
+        var blocks: [MarkdownBlockNode] = []
+        var ordinal = unsafeNode.listStart
+        var runStart = 0
+        while runStart < children.count {
+            let isTask = taskFlags[runStart]
+            var runEnd = runStart + 1
+            while runEnd < children.count, taskFlags[runEnd] == isTask {
+                runEnd += 1
+            }
+            let run = children[runStart ..< runEnd]
+            if isTask {
+                blocks.append(.taskList(isTight: isTight, items: run.map(RawTaskListItem.init(unsafeNode:))))
+            } else if unsafeNode.listType == CMARK_ORDERED_LIST {
+                blocks.append(.numberedList(isTight: isTight, start: ordinal, items: run.map(RawListItem.init(unsafeNode:))))
+            } else {
+                blocks.append(.bulletedList(isTight: isTight, items: run.map(RawListItem.init(unsafeNode:))))
+            }
+            ordinal += run.count
+            runStart = runEnd
+        }
+        return blocks
+    }
+
     init?(unsafeNode: UnsafeNode) {
         switch unsafeNode.nodeType {
         case .blockquote:
-            self = .blockquote(children: unsafeNode.children.compactMap(MarkdownBlockNode.init(unsafeNode:)))
+            self = .blockquote(children: unsafeNode.children.flatMap(MarkdownBlockNode.makeBlocks(unsafeNode:)))
         case .list:
             if unsafeNode.children.contains(where: \.isTaskListItem) {
                 self = .taskList(

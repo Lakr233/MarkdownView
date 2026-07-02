@@ -13,7 +13,7 @@
 		51A1000A2F90000100AAA001 /* MarkdownView in Frameworks */ = {isa = PBXBuildFile; productRef = 51A100082F90000100AAA001 /* MarkdownView */; };
 		51A1000B2F90000100AAA001 /* MarkdownParser in Frameworks */ = {isa = PBXBuildFile; productRef = 51A100092F90000100AAA001 /* MarkdownParser */; };
 		51A100142F90000100AAA001 /* Litext in Frameworks */ = {isa = PBXBuildFile; productRef = 51A100152F90000100AAA001 /* Litext */; };
-		CEC412AB953519504ACA57EC /* LookInsideServer in Frameworks */ = {isa = PBXBuildFile; productRef = 8155B0F4083D31F6F63E4AC1 /* LookInsideServer */; };
+		CEC412AB953519504ACA57EC /* LookInsideServer in Frameworks */ = {isa = PBXBuildFile; platformFilters = (ios, maccatalyst, macos, ); productRef = 8155B0F4083D31F6F63E4AC1 /* LookInsideServer */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */

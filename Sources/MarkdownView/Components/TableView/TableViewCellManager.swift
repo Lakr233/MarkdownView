@@ -92,7 +92,6 @@ import Litext
 
             if index >= cells.count {
                 cell = TextLabelView()
-                cell.isSelectable = false
                 cell.backgroundColor = .clear
                 cell.selectionBackgroundColor = theme.colors.selectionBackground
                 cell.delegate = delegate
@@ -101,6 +100,8 @@ import Litext
             } else {
                 cell = cells[index]
             }
+
+            cell.isSelectable = true
 
             let needsTextUpdate = cell.preferredMaxLayoutWidth != maximumWidth
                 || index >= rawTexts.count
@@ -269,7 +270,6 @@ import Litext
 
             if index >= cells.count {
                 cell = TextLabelView()
-                cell.isSelectable = false
                 cell.wantsLayer = true
                 cell.layer?.backgroundColor = NSColor.clear.cgColor
                 cell.selectionBackgroundColor = theme.colors.selectionBackground
@@ -279,6 +279,8 @@ import Litext
             } else {
                 cell = cells[index]
             }
+
+            cell.isSelectable = true
 
             let needsTextUpdate = cell.preferredMaxLayoutWidth != maximumWidth
                 || index >= rawTexts.count

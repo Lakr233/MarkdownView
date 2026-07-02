@@ -99,6 +99,13 @@ import Litext
                 return button.hitTest(buttonPoint, with: event) ?? button
             }
 
+            let textPoint = textView.convert(point, from: self)
+            if textView.bounds.contains(textPoint),
+               let target = textView.hitTest(textPoint, with: event)
+            {
+                return target
+            }
+
             let scrollPoint = scrollView.convert(point, from: self)
             if scrollView.bounds.contains(scrollPoint),
                scrollView.contentSize.width > scrollView.bounds.width + 1
@@ -286,6 +293,13 @@ import Litext
                 let buttonPoint = button.convert(point, from: self)
                 guard button.bounds.contains(buttonPoint) else { continue }
                 return button.hitTest(buttonPoint) ?? button
+            }
+
+            let textPoint = textView.convert(point, from: self)
+            if textView.bounds.contains(textPoint),
+               let target = textView.hitTest(textPoint)
+            {
+                return target
             }
 
             let scrollPoint = scrollView.convert(point, from: self)

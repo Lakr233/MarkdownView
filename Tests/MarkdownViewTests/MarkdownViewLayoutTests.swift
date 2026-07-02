@@ -160,8 +160,8 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
-    @Test("Plain table surface passes selection through")
-    func plainTableSurfacePassesSelectionThrough() {
+    @Test("Plain table surface routes selection to table cell")
+    func plainTableSurfaceRoutesSelectionToTableCell() throws {
         let tableView = TableView(frame: .init(x: 0, y: 0, width: 260, height: 120))
         tableView.setContents([
             [makeText("Plain header"), makeText("Value")],
@@ -169,7 +169,9 @@ struct MarkdownViewLayoutTests {
         ])
         layout(view: tableView)
 
-        #expect(tableView.interactionTarget(at: CGPoint(x: 24, y: 24)) == nil)
+        let target = try #require(tableView.interactionTarget(at: CGPoint(x: 24, y: 24)))
+
+        #expect(target.isDescendant(of: tableView))
     }
 
     @MainActor
@@ -186,14 +188,20 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
-    @Test("Plain code surface passes selection through")
-    func plainCodeSurfacePassesSelectionThrough() {
+    @Test("Plain code surface routes selection to code text")
+    func plainCodeSurfaceRoutesSelectionToCodeText() throws {
         let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
         codeView.theme = .default
         codeView.content = "let value = 1"
         layout(view: codeView)
 
-        #expect(codeView.interactionTarget(at: CGPoint(x: 24, y: 80)) == nil)
+        let probe = codeView.convert(
+            CGPoint(x: codeView.textView.bounds.midX, y: codeView.textView.bounds.midY),
+            from: codeView.textView
+        )
+        let target = try #require(codeView.interactionTarget(at: probe))
+
+        #expect(target === codeView.textView || target.isDescendant(of: codeView.textView))
     }
 
     @MainActor
@@ -329,8 +337,8 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
-    @Test("MarkdownTextView keeps root text hittable through plain table")
-    func markdownTextViewKeepsRootTextHittableThroughPlainTable() throws {
+    @Test("MarkdownTextView routes table hits to nested table cell")
+    func markdownTextViewRoutesTableHitsToNestedTableCell() throws {
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 320, height: 400)
         view.setContentImmediately(preprocessedContent(for: """
@@ -344,17 +352,16 @@ struct MarkdownViewLayoutTests {
         """))
 
         let tableView = try #require(view.contextViews.first as? TableView)
-        let probe = CGPoint(x: tableView.frame.midX, y: tableView.frame.midY)
-        let overlayTarget = tableView.interactionTarget(at: tableView.convert(probe, from: view))
-        let rootTarget = view.textLabelView.hitTest(view.textLabelView.convert(probe, from: view))
+        layout(view: tableView)
+        let overlayTarget = tableView.interactionTarget(at: CGPoint(x: 24, y: 24))
+        let target = try #require(overlayTarget)
 
-        #expect(overlayTarget == nil)
-        #expect(rootTarget != nil)
+        #expect(target.isDescendant(of: tableView))
     }
 
     @MainActor
-    @Test("MarkdownTextView keeps root text hittable through plain code")
-    func markdownTextViewKeepsRootTextHittableThroughPlainCode() throws {
+    @Test("MarkdownTextView routes code hits to nested code text")
+    func markdownTextViewRoutesCodeHitsToNestedCodeText() throws {
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 320, height: 400)
         view.setContentImmediately(preprocessedContent(for: """
@@ -368,12 +375,15 @@ struct MarkdownViewLayoutTests {
         """))
 
         let codeView = try #require(view.contextViews.first as? CodeView)
-        let probe = CGPoint(x: codeView.frame.midX, y: codeView.frame.midY)
+        layout(view: codeView)
+        let probe = view.convert(
+            CGPoint(x: codeView.textView.bounds.midX, y: codeView.textView.bounds.midY),
+            from: codeView.textView
+        )
         let overlayTarget = codeView.interactionTarget(at: codeView.convert(probe, from: view))
-        let rootTarget = view.textLabelView.hitTest(view.textLabelView.convert(probe, from: view))
+        let target = try #require(overlayTarget)
 
-        #expect(overlayTarget == nil)
-        #expect(rootTarget != nil)
+        #expect(target === codeView.textView || target.isDescendant(of: codeView.textView))
     }
 }
 

@@ -48,6 +48,7 @@ public final class MarkdownParser: Sendable {
                 return cmark_parser_finish(parser)
             }
         }
+        defer { if let nodes { cmark_node_free(nodes) } }
         var blocks = dumpBlocks(root: nodes, mathContext: math)
         blocks = finalizeMathBlocks(blocks, mathContext: math)
         return .init(document: blocks, mathContext: math.contents)
@@ -72,6 +73,7 @@ public final class MarkdownParser: Sendable {
             assertionFailure()
             return ranges
         }
+        defer { cmark_node_free(root) }
 
         assert(root.pointee.type == CMARK_NODE_DOCUMENT.rawValue)
         for block in root.children {

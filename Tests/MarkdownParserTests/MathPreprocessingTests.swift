@@ -34,6 +34,26 @@ struct MathPreprocessingTests {
         #expect(codeBlock.content == "$$x+y$$\n")
         #expect(!codeBlock.content.contains("md://content"))
     }
+
+    @Test("Inline code spans preserve escaped math source text")
+    func inlineCodeSpansPreserveEscapedMathSourceText() throws {
+        let result = MarkdownParser().parse("`\\(x\\)` and \\(y\\)")
+        let paragraph = try #require(firstParagraph(in: result.document))
+
+        guard case let .code(codeContent) = paragraph.first else {
+            Issue.record("Expected the first inline node to remain code")
+            return
+        }
+
+        #expect(codeContent == "\\(x\\)")
+        #expect(!codeContent.contains("md://content"))
+        #expect(paragraph.contains { node in
+            if case let .math(content, _) = node {
+                return content == "y"
+            }
+            return false
+        })
+    }
 }
 
 private func firstParagraph(in blocks: [MarkdownBlockNode]) -> [MarkdownInlineNode]? {
