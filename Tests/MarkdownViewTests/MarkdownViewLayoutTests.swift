@@ -188,6 +188,31 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
+    @Test("Table forwards cell selection events")
+    func tableForwardsCellSelectionEvents() throws {
+        let tableView = TableView(frame: .init(x: 0, y: 0, width: 260, height: 120))
+        let probe = TextSelectionProbe()
+        tableView.textSelectionDelegate = probe
+        tableView.setContents([
+            [makeText("Plain header"), makeText("Value")],
+            [makeText("Plain cell"), makeText("Another cell")],
+        ])
+        layout(view: tableView)
+
+        let target = try #require(tableView.interactionTarget(at: CGPoint(x: 24, y: 24)) as? TextLabelView)
+        let selection = NSRange(location: 0, length: 4)
+        let dragLocation = CGPoint(x: 6, y: 8)
+
+        tableView.textLabelView(target, didChangeSelection: selection)
+        tableView.textLabelView(target, didDragSelectionAt: dragLocation)
+
+        #expect(probe.changedLabel === target)
+        #expect(probe.changedSelection == selection)
+        #expect(probe.draggedLabel === target)
+        #expect(probe.dragLocation == dragLocation)
+    }
+
+    @MainActor
     @Test("Plain code surface routes selection to code text")
     func plainCodeSurfaceRoutesSelectionToCodeText() throws {
         let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
@@ -253,6 +278,42 @@ struct MarkdownViewLayoutTests {
         let updated = try #require(view.contextViews.first as? TableView)
 
         #expect(original === updated)
+    }
+
+    @MainActor
+    @Test("MarkdownTextView connects table selection delegate")
+    func markdownTextViewConnectsTableSelectionDelegate() throws {
+        let view = MarkdownTextView()
+
+        view.setContentImmediately(preprocessedContent(for: """
+        | Name | Value |
+        | --- | --- |
+        | Alpha | One |
+        """))
+
+        let tableView = try #require(view.contextViews.first as? TableView)
+
+        #expect(tableView.textSelectionDelegate === view)
+    }
+
+    @MainActor
+    @Test("MarkdownTextView lays out table context views without drawing")
+    func markdownTextViewLaysOutTableContextViewsWithoutDrawing() throws {
+        let view = MarkdownTextView()
+        view.frame = .init(x: 0, y: 0, width: 320, height: 400)
+
+        view.setContentImmediately(preprocessedContent(for: """
+        | Name | Value |
+        | --- | --- |
+        | Alpha | One |
+        """))
+
+        let tableView = try #require(view.contextViews.first as? TableView)
+        layout(view: view)
+
+        #expect(tableView.superview === view)
+        #expect(tableView.frame.width == view.bounds.width)
+        #expect(tableView.frame.height > 0)
     }
 
     @MainActor
@@ -337,6 +398,26 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
+    @Test("MarkdownTextView lays out code context views without drawing")
+    func markdownTextViewLaysOutCodeContextViewsWithoutDrawing() throws {
+        let view = MarkdownTextView()
+        view.frame = .init(x: 0, y: 0, width: 320, height: 400)
+
+        view.setContentImmediately(preprocessedContent(for: """
+        ```swift
+        let value = 1
+        ```
+        """))
+
+        let codeView = try #require(view.contextViews.first as? CodeView)
+        layout(view: view)
+
+        #expect(codeView.superview === view)
+        #expect(codeView.frame.width == view.bounds.width)
+        #expect(codeView.frame.height > 0)
+    }
+
+    @MainActor
     @Test("MarkdownTextView routes table hits to nested table cell")
     func markdownTextViewRoutesTableHitsToNestedTableCell() throws {
         let view = MarkdownTextView()
@@ -398,6 +479,24 @@ private func makeText(_ string: String) -> NSAttributedString {
 }
 
 @MainActor
+private final class TextSelectionProbe: TextLabelViewDelegate {
+    weak var changedLabel: TextLabelView?
+    var changedSelection: NSRange?
+    weak var draggedLabel: TextLabelView?
+    var dragLocation: CGPoint?
+
+    func textLabelView(_ textLabelView: TextLabelView, didChangeSelection selection: NSRange?) {
+        changedLabel = textLabelView
+        changedSelection = selection
+    }
+
+    func textLabelView(_ textLabelView: TextLabelView, didDragSelectionAt location: CGPoint) {
+        draggedLabel = textLabelView
+        dragLocation = location
+    }
+}
+
+@MainActor
 private func preprocessedContent(for markdown: String) -> MarkdownContent {
     MarkdownContent(
         parserResult: MarkdownParser().parse(markdown),
@@ -420,6 +519,17 @@ private func layout(view: CodeView) {
         view.layoutIfNeeded()
     #elseif canImport(AppKit)
         view.layoutSubtreeIfNeeded()
+    #endif
+}
+
+@MainActor
+private func layout(view: MarkdownTextView) {
+    #if canImport(UIKit)
+        view.setNeedsLayout()
+        view.layoutIfNeeded()
+    #elseif canImport(AppKit)
+        view.needsLayout = true
+        view.layout()
     #endif
 }
 

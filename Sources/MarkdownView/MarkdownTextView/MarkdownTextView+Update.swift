@@ -40,6 +40,9 @@ import Litext
                 if let view = view as? CodeView {
                     view.textView.delegate = self
                 }
+                if let view = view as? TableView {
+                    view.textSelectionDelegate = self
+                }
             }
 
             for goneView in oldViews where !artifacts.subviews.contains(goneView) {
@@ -85,6 +88,9 @@ import Litext
             for view in artifacts.subviews {
                 if let view = view as? CodeView {
                     view.textView.delegate = self
+                }
+                if let view = view as? TableView {
+                    view.textSelectionDelegate = self
                 }
             }
 

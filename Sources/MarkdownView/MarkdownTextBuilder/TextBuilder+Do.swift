@@ -190,54 +190,6 @@ extension TextBuilder {
                 context.addLine(to: .init(x: boundingBox.minX + view.bounds.width, y: boundingBox.midY))
                 context.strokePath()
             }
-            .withCodeDrawing { [weak view] _, line, lineOrigin in
-                guard let view else { return }
-                guard let firstRun = line.glyphRuns().first else { return }
-                let attributes = firstRun.attributes
-                guard let codeView = attributes[.contextView] as? CodeView else {
-                    assertionFailure()
-                    return
-                }
-
-                if codeView.superview != view { view.addSubview(codeView) }
-                let intrinsicContentSize = codeView.intrinsicContentSize
-                let lineBoundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                var leftIndent: CGFloat = 0
-                if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle {
-                    leftIndent = paragraphStyle.headIndent
-                }
-
-                codeView.frame = .init(
-                    origin: .init(x: lineOrigin.x + leftIndent, y: view.bounds.height - lineBoundingBox.maxY),
-                    size: .init(width: view.bounds.width - leftIndent, height: intrinsicContentSize.height)
-                )
-                codeView.previewAction = view.codePreviewHandler
-            }
-            .withTableDrawing { [weak view] _, line, lineOrigin in
-                guard let view else { return }
-                guard let firstRun = line.glyphRuns().first else { return }
-                let attributes = firstRun.attributes
-                guard let tableView = attributes[.contextView] as? TableView else {
-                    assertionFailure()
-                    return
-                }
-
-                if tableView.superview != view { view.addSubview(tableView) }
-                tableView.linkHandler = view.linkHandler
-                let lineBoundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                let intrinsicContentSize = tableView.intrinsicContentSize
-                var leftIndent: CGFloat = 0
-                if let paragraphStyle = attributes[.paragraphStyle] as? NSParagraphStyle {
-                    leftIndent = paragraphStyle.headIndent
-                }
-
-                tableView.frame = .init(
-                    x: lineOrigin.x + leftIndent,
-                    y: view.bounds.height - lineBoundingBox.maxY,
-                    width: view.bounds.width - leftIndent,
-                    height: intrinsicContentSize.height
-                )
-            }
             .withBlockquoteMarking { _, line, lineOrigin in
                 let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
                 blockquoteMarkingStorage = boundingBox.maxY

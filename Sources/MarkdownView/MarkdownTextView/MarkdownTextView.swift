@@ -69,6 +69,8 @@ import MarkdownParser
         override public func layoutSubviews() {
             super.layoutSubviews()
             textLabelView.preferredMaxLayoutWidth = bounds.width
+            textLabelView.layoutIfNeeded()
+            syncContextViewLayout()
         }
 
         override public var intrinsicContentSize: CGSize {
@@ -197,6 +199,8 @@ import MarkdownParser
         override public func layout() {
             super.layout()
             textLabelView.preferredMaxLayoutWidth = bounds.width
+            textLabelView.layoutSubtreeIfNeeded()
+            syncContextViewLayout()
         }
 
         override public var intrinsicContentSize: CGSize {

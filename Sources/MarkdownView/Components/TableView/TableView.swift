@@ -35,6 +35,7 @@ import Litext
         private var widths: [CGFloat] = []
         private var heights: [CGFloat] = []
         private var theme: MarkdownTheme = .default
+        weak var textSelectionDelegate: TextLabelViewDelegate?
         var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
 
         // MARK: - Computed Properties
@@ -240,12 +241,12 @@ import Litext
     // MARK: - TextLabelViewDelegate
 
     extension TableView: TextLabelViewDelegate {
-        func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {
-            // Reserved for future use
+        func textLabelView(_ label: TextLabelView, didChangeSelection selection: NSRange?) {
+            textSelectionDelegate?.textLabelView(label, didChangeSelection: selection)
         }
 
-        func textLabelView(_: TextLabelView, didDragSelectionAt _: CGPoint) {
-            // Reserved for future use
+        func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
+            textSelectionDelegate?.textLabelView(label, didDragSelectionAt: location)
         }
 
         func textLabelView(_ label: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
@@ -346,6 +347,7 @@ import Litext
         private var widths: [CGFloat] = []
         private var heights: [CGFloat] = []
         private var theme: MarkdownTheme = .default
+        weak var textSelectionDelegate: TextLabelViewDelegate?
         var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
 
         // MARK: - Computed Properties
@@ -570,9 +572,13 @@ import Litext
     // MARK: - TextLabelViewDelegate
 
     extension TableView: TextLabelViewDelegate {
-        func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {}
+        func textLabelView(_ label: TextLabelView, didChangeSelection selection: NSRange?) {
+            textSelectionDelegate?.textLabelView(label, didChangeSelection: selection)
+        }
 
-        func textLabelView(_: TextLabelView, didDragSelectionAt _: CGPoint) {}
+        func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
+            textSelectionDelegate?.textLabelView(label, didDragSelectionAt: location)
+        }
 
         func textLabelView(_ label: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
             let link = highlightRegion.attributes[NSAttributedString.Key.link]

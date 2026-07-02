@@ -24,8 +24,6 @@ final class TextBuilder {
     private var numberedDrawing: NumberedDrawingCallback?
     private var checkboxDrawing: CheckboxDrawingCallback?
     private var thematicBreakDrawing: DrawingCallback?
-    private var codeDrawing: DrawingCallback?
-    private var tableDrawing: DrawingCallback?
     private var blockquoteMarking: BlockquoteMarkingCallback?
     private var blockquoteDrawing: BlockquoteDrawingCallback?
 
@@ -61,16 +59,6 @@ final class TextBuilder {
 
     func withThematicBreakDrawing(_ drawing: @escaping DrawingCallback) -> TextBuilder {
         thematicBreakDrawing = drawing
-        return self
-    }
-
-    func withCodeDrawing(_ drawing: @escaping DrawingCallback) -> TextBuilder {
-        codeDrawing = drawing
-        return self
-    }
-
-    func withTableDrawing(_ drawing: @escaping DrawingCallback) -> TextBuilder {
-        tableDrawing = drawing
         return self
     }
 
@@ -120,8 +108,6 @@ extension TextBuilder {
             viewProvider: viewProvider,
             context: context,
             thematicBreakDrawing: thematicBreakDrawing,
-            codeDrawing: codeDrawing,
-            tableDrawing: tableDrawing,
             blockquoteMarking: blockquoteMarking,
             blockquoteDrawing: blockquoteDrawing
         )

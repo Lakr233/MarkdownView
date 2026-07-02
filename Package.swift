@@ -20,7 +20,7 @@ let package = Package(
         .executable(name: "MarkdownViewBenchmark", targets: ["MarkdownViewBenchmark"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Lakr233/Litext", from: "2.0.0"),
+        .package(url: "https://github.com/Lakr233/Litext", from: "2.1.3"),
         .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.7.3"),
         .package(url: "https://github.com/apple/swift-collections", from: "1.3.0"),
         .package(url: "https://github.com/raspu/Highlightr", from: "2.3.0"),

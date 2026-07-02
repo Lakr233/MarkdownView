@@ -20,8 +20,6 @@ final class BlockProcessor {
     private let viewProvider: ReusableViewProvider
     private let context: MarkdownContent
     private let thematicBreakDrawing: TextBuilder.DrawingCallback?
-    private let codeDrawing: TextBuilder.DrawingCallback?
-    private let tableDrawing: TextBuilder.DrawingCallback?
     private let blockquoteMarking: TextBuilder.BlockquoteMarkingCallback?
     private let blockquoteDrawing: TextBuilder.BlockquoteDrawingCallback?
 
@@ -30,8 +28,6 @@ final class BlockProcessor {
         viewProvider: ReusableViewProvider,
         context: MarkdownContent,
         thematicBreakDrawing: TextBuilder.DrawingCallback?,
-        codeDrawing: TextBuilder.DrawingCallback?,
-        tableDrawing: TextBuilder.DrawingCallback?,
         blockquoteMarking: TextBuilder.BlockquoteMarkingCallback?,
         blockquoteDrawing: TextBuilder.BlockquoteDrawingCallback?
     ) {
@@ -39,8 +35,6 @@ final class BlockProcessor {
         self.viewProvider = viewProvider
         self.context = context
         self.thematicBreakDrawing = thematicBreakDrawing
-        self.codeDrawing = codeDrawing
-        self.tableDrawing = tableDrawing
         self.blockquoteMarking = blockquoteMarking
         self.blockquoteDrawing = blockquoteDrawing
     }
@@ -98,7 +92,6 @@ final class BlockProcessor {
         codeView.language = language ?? ""
         codeView.highlightMap = highlightMap
         codeView.content = content
-        let drawer = codeDrawing!
         let text = buildWithParagraphSync { paragraph in
             let height = CodeView.intrinsicHeight(for: content, theme: theme)
             paragraph.minimumLineHeight = height
@@ -106,7 +99,6 @@ final class BlockProcessor {
             .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
                 .litextAttachment: TextLabel.Attachment.hold(attrString: .init(string: content + "\n")),
-                .litextLineDrawingAction: TextLabel.LineDrawingAction { drawer($0, $1, $2) },
                 .contextView: codeView,
             ])
         }
@@ -183,7 +175,6 @@ final class BlockProcessor {
         let representedText = NSAttributedString(string: allContent + "\n")
         tableView.setTheme(theme)
         tableView.setContents(contents)
-        let drawer = tableDrawing!
 
         let text = buildWithParagraphSync { paragraph in
             paragraph.minimumLineHeight = tableView.intrinsicContentHeight
@@ -191,7 +182,6 @@ final class BlockProcessor {
             .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
                 .litextAttachment: TextLabel.Attachment.hold(attrString: representedText),
-                .litextLineDrawingAction: TextLabel.LineDrawingAction { drawer($0, $1, $2) },
                 .contextView: tableView,
             ])
         }
