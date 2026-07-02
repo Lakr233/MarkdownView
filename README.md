@@ -135,3 +135,5 @@ This project includes code adapted from [swift-markdown-ui](https://github.com/g
 ---
 
 Copyright 2025 © Lakr Aream. All rights reserved.
+
+<img src="./Artworks/fable5.jpg" alt="Fable 5 Verified" width="240">
