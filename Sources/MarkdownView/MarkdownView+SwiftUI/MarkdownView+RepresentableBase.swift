@@ -12,7 +12,6 @@ import SwiftUI
 protocol MarkdownViewRepresentableBase {
     var contentSource: MarkdownView.ContentSource { get }
     var theme: MarkdownTheme { get }
-    var width: CGFloat { get }
     var heightBinding: Binding<CGFloat> { get }
 }
 
@@ -28,7 +27,6 @@ extension MarkdownViewRepresentableBase {
     }
 
     func updateMarkdownTextView(_ view: MarkdownTextView, coordinator: MarkdownViewCoordinator) {
-        coordinator.width = width
         coordinator.heightBinding = heightBinding
 
         switch contentSource {

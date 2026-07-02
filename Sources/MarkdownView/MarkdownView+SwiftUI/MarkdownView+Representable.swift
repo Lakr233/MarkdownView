@@ -13,7 +13,6 @@ import SwiftUI
     struct MarkdownViewRepresentable: UIViewRepresentable, MarkdownViewRepresentableBase {
         let contentSource: MarkdownView.ContentSource
         let theme: MarkdownTheme
-        let width: CGFloat
         @Binding var measuredHeight: CGFloat
 
         var heightBinding: Binding<CGFloat> {
@@ -28,6 +27,14 @@ import SwiftUI
             updateMarkdownTextView(uiView, coordinator: context.coordinator)
         }
 
+        func sizeThatFits(
+            _ proposal: ProposedViewSize,
+            uiView: MarkdownTextView,
+            context: Context
+        ) -> CGSize? {
+            context.coordinator.sizeThatFits(proposal, for: uiView)
+        }
+
         func makeCoordinator() -> MarkdownViewCoordinator {
             MarkdownViewCoordinator()
         }
@@ -39,7 +46,6 @@ import SwiftUI
     struct MarkdownViewRepresentable: NSViewRepresentable, MarkdownViewRepresentableBase {
         let contentSource: MarkdownView.ContentSource
         let theme: MarkdownTheme
-        let width: CGFloat
         @Binding var measuredHeight: CGFloat
 
         var heightBinding: Binding<CGFloat> {
@@ -52,6 +58,14 @@ import SwiftUI
 
         func updateNSView(_ nsView: MarkdownTextView, context: Context) {
             updateMarkdownTextView(nsView, coordinator: context.coordinator)
+        }
+
+        func sizeThatFits(
+            _ proposal: ProposedViewSize,
+            nsView: MarkdownTextView,
+            context: Context
+        ) -> CGSize? {
+            context.coordinator.sizeThatFits(proposal, for: nsView)
         }
 
         func makeCoordinator() -> MarkdownViewCoordinator {

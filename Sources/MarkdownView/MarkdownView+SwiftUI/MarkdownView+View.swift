@@ -33,21 +33,17 @@ public struct MarkdownView: View {
     }
 
     public var body: some View {
-        GeometryReader { proxy in
-            ZStack(alignment: .topLeading) {
-                MarkdownViewRepresentable(
-                    contentSource: contentSource,
-                    theme: theme,
-                    width: proxy.size.width,
-                    measuredHeight: $measuredHeight
-                )
-                .frame(
-                    width: proxy.size.width,
-                    height: measuredHeight,
-                    alignment: .topLeading
-                )
-            }
-        }
-        .frame(height: measuredHeight)
+        MarkdownViewRepresentable(
+            contentSource: contentSource,
+            theme: theme,
+            measuredHeight: $measuredHeight
+        )
+        .frame(
+            maxWidth: .infinity,
+            minHeight: measuredHeight,
+            idealHeight: measuredHeight > 0 ? measuredHeight : nil,
+            maxHeight: measuredHeight > 0 ? measuredHeight : nil,
+            alignment: .topLeading
+        )
     }
 }

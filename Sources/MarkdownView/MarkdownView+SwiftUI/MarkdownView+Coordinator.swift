@@ -56,9 +56,38 @@ final class MarkdownViewCoordinator {
     }
 
     func updateMeasuredHeight(for view: MarkdownTextView) {
-        guard let heightBinding, width.isFinite, width > 0 else { return }
+        guard width.isFinite, width > 0 else { return }
+        guard let heightBinding else { return }
+        let height = measuredHeight(for: view, width: width)
+        guard abs(height - heightBinding.wrappedValue) > 0.5 else { return }
+        DispatchQueue.main.async {
+            heightBinding.wrappedValue = height
+        }
+    }
+
+    func sizeThatFits(_ proposal: ProposedViewSize, for view: MarkdownTextView) -> CGSize? {
+        let proposedWidth = proposal.width ?? width
+        let fallbackWidth = view.bounds.width
+        let fittingWidth: CGFloat
+        if proposedWidth.isFinite, proposedWidth > 0 {
+            fittingWidth = proposedWidth
+        } else {
+            fittingWidth = fallbackWidth
+        }
+        guard fittingWidth.isFinite, fittingWidth > 0 else { return nil }
+        width = fittingWidth
+        let height = measuredHeight(for: view, width: fittingWidth)
+        updateMeasuredHeight(height)
+        return CGSize(width: fittingWidth, height: height)
+    }
+
+    private func measuredHeight(for view: MarkdownTextView, width: CGFloat) -> CGFloat {
         let size = view.boundingSize(for: width)
-        let height = ceil(size.height)
+        return ceil(size.height)
+    }
+
+    private func updateMeasuredHeight(_ height: CGFloat) {
+        guard let heightBinding else { return }
         guard abs(height - heightBinding.wrappedValue) > 0.5 else { return }
         DispatchQueue.main.async {
             heightBinding.wrappedValue = height

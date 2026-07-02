@@ -1,5 +1,6 @@
 import MarkdownParser
 @testable import MarkdownView
+import SwiftUI
 import Testing
 
 #if canImport(UIKit)
@@ -256,6 +257,53 @@ struct MarkdownViewLayoutTests {
         #expect(wide.height > 0)
         #expect(wide.height <= medium.height)
         #expect(medium.height <= narrow.height)
+    }
+
+    @MainActor
+    @Test("MarkdownView coordinator sizes representable to full content height")
+    func markdownViewCoordinatorSizesRepresentableToFullContentHeight() async throws {
+        var measuredHeight: CGFloat = 0
+        let view = MarkdownTextView()
+        view.frame = .init(x: 0, y: 0, width: 388, height: 925)
+        let filler = Array(
+            repeating: "This paragraph keeps the table below the first viewport so sizing must grow beyond the initial view height.",
+            count: 18
+        ).joined(separator: "\n\n")
+
+        view.setContentImmediately(preprocessedContent(for: """
+        \(filler)
+
+        ```swift
+        let value = 1
+        ```
+
+        | Feature | Status |
+        | --- | --- |
+        | Table | Visible |
+        """))
+        let tableView = try #require(view.contextViews.first { $0 is TableView } as? TableView)
+
+        let coordinator = MarkdownViewCoordinator()
+        coordinator.heightBinding = Binding(
+            get: { measuredHeight },
+            set: { measuredHeight = $0 }
+        )
+
+        let size = try #require(coordinator.sizeThatFits(
+            ProposedViewSize(width: 388, height: nil),
+            for: view
+        ))
+        try await Task.sleep(nanoseconds: 10_000_000)
+
+        #expect(size.width == 388)
+        #expect(size.height > view.bounds.height)
+        #expect(abs(measuredHeight - size.height) <= 0.5)
+
+        view.frame = .init(x: 0, y: 0, width: size.width, height: size.height)
+        layout(view: view)
+
+        #expect(tableView.superview === view)
+        #expect(tableView.frame.maxY <= view.bounds.maxY)
     }
 
     @MainActor
