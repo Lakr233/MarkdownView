@@ -14,7 +14,17 @@ enum MarkdownContentLocale {
         }
     }
 
+    private struct LanguageToken {
+        var range: NSRange
+        var containsKana: Bool
+        var containsHangul: Bool
+    }
+
     private static let cache = NSCache<NSString, CachedLanguageRuns>()
+
+    private static let tokenBoundaryCharacters = CharacterSet.whitespacesAndNewlines
+        .union(.punctuationCharacters)
+        .union(.symbols)
 
     static func applyLanguageAttributes(
         to attributedString: NSMutableAttributedString,
@@ -51,31 +61,37 @@ enum MarkdownContentLocale {
     }
 
     private static func languageIdentifier(
-        for text: String,
-        range: NSRange,
-        in fullText: String,
+        for character: Character,
+        token: LanguageToken?,
         fallbackLocale: Locale
     ) -> String? {
-        if text.unicodeScalars.contains(where: { isHan($0.value) }) {
-            if hasKanaNear(range: range, in: fullText) {
+        if let token, character.unicodeScalars.contains(where: { isHan($0.value) }) {
+            if token.containsKana {
                 return "ja"
             }
-            if hasHangulNear(range: range, in: fullText) {
+            if token.containsHangul {
                 return "ko"
             }
         }
-        return scriptLanguageIdentifier(for: text, fallbackLocale: fallbackLocale)
+        return scriptLanguageIdentifier(scalars: character.unicodeScalars, fallbackLocale: fallbackLocale)
     }
 
     private static func scriptLanguageIdentifier(
         for text: String,
         fallbackLocale: Locale
     ) -> String? {
+        scriptLanguageIdentifier(scalars: text.unicodeScalars, fallbackLocale: fallbackLocale)
+    }
+
+    private static func scriptLanguageIdentifier(
+        scalars: some Sequence<Unicode.Scalar>,
+        fallbackLocale: Locale
+    ) -> String? {
         var containsHan = false
         var containsArabic = false
         var containsHebrew = false
 
-        for scalar in text.unicodeScalars {
+        for scalar in scalars {
             let value = scalar.value
             if isHiragana(value) || isKatakana(value) {
                 return "ja"
@@ -140,22 +156,29 @@ enum MarkdownContentLocale {
             return cached.runs
         }
 
-        let nsString = string as NSString
+        let ranges = characterRanges(in: string)
+        let tokens = languageTokens(in: string, ranges: ranges)
         var runs = [(NSRange, String)]()
         var currentLanguage: String?
         var runStart = 0
+        var tokenIndex = 0
 
         func flush(until location: Int) {
             guard let currentLanguage, location > runStart else { return }
             runs.append((NSRange(location: runStart, length: location - runStart), currentLanguage))
         }
 
-        for range in characterRanges(in: string) {
-            let character = nsString.substring(with: range)
+        for (character, range) in zip(string, ranges) {
+            while tokenIndex < tokens.count, tokens[tokenIndex].range.upperBound <= range.location {
+                tokenIndex += 1
+            }
+            var token: LanguageToken?
+            if tokenIndex < tokens.count, NSLocationInRange(range.location, tokens[tokenIndex].range) {
+                token = tokens[tokenIndex]
+            }
             let language = languageIdentifier(
                 for: character,
-                range: range,
-                in: string,
+                token: token,
                 fallbackLocale: fallbackLocale
             )
             if language != currentLanguage {
@@ -165,58 +188,58 @@ enum MarkdownContentLocale {
             }
         }
 
-        flush(until: nsString.length)
+        flush(until: string.utf16.count)
         cache.setObject(CachedLanguageRuns(runs: runs), forKey: key)
         return runs
     }
 
-    private static func hasKanaNear(range: NSRange, in string: String) -> Bool {
-        hasNearbyScalar(range: range, in: string) { isHiragana($0) || isKatakana($0) }
-    }
+    private static func languageTokens(in string: String, ranges: [NSRange]) -> [LanguageToken] {
+        var tokens = [LanguageToken]()
+        var currentToken: LanguageToken?
 
-    private static func hasHangulNear(range: NSRange, in string: String) -> Bool {
-        hasNearbyScalar(range: range, in: string, matching: isHangul)
-    }
+        for (character, range) in zip(string, ranges) {
+            var isBoundary = true
+            var containsKana = false
+            var containsHangul = false
+            for scalar in character.unicodeScalars {
+                let value = scalar.value
+                if isHiragana(value) || isKatakana(value) {
+                    containsKana = true
+                }
+                if isHangul(value) {
+                    containsHangul = true
+                }
+                if isBoundary, !tokenBoundaryCharacters.contains(scalar) {
+                    isBoundary = false
+                }
+            }
 
-    private static func hasNearbyScalar(
-        range: NSRange,
-        in string: String,
-        matching predicate: (UInt32) -> Bool
-    ) -> Bool {
-        let nsString = string as NSString
-        let tokenRange = tokenRange(containing: range, in: nsString)
-        let lower = tokenRange.location
-        let upper = tokenRange.location + tokenRange.length
-        guard upper > lower else { return false }
-        let nearby = nsString.substring(with: NSRange(location: lower, length: upper - lower))
-        return nearby.unicodeScalars.contains { predicate($0.value) }
-    }
+            if isBoundary {
+                if let token = currentToken {
+                    tokens.append(token)
+                    currentToken = nil
+                }
+                continue
+            }
 
-    private static func tokenRange(containing range: NSRange, in string: NSString) -> NSRange {
-        var lower = range.location
-        var upper = range.location + range.length
-
-        while lower > 0 {
-            let previousRange = NSRange(location: lower - 1, length: 1)
-            guard !isTokenBoundary(string.substring(with: previousRange)) else { break }
-            lower -= 1
+            if var token = currentToken {
+                token.range.length = range.upperBound - token.range.location
+                token.containsKana = token.containsKana || containsKana
+                token.containsHangul = token.containsHangul || containsHangul
+                currentToken = token
+            } else {
+                currentToken = LanguageToken(
+                    range: range,
+                    containsKana: containsKana,
+                    containsHangul: containsHangul
+                )
+            }
         }
 
-        while upper < string.length {
-            let nextRange = NSRange(location: upper, length: 1)
-            guard !isTokenBoundary(string.substring(with: nextRange)) else { break }
-            upper += 1
+        if let token = currentToken {
+            tokens.append(token)
         }
-
-        return NSRange(location: lower, length: upper - lower)
-    }
-
-    private static func isTokenBoundary(_ string: String) -> Bool {
-        string.unicodeScalars.allSatisfy {
-            CharacterSet.whitespacesAndNewlines.contains($0)
-                || CharacterSet.punctuationCharacters.contains($0)
-                || CharacterSet.symbols.contains($0)
-        }
+        return tokens
     }
 
     private static func isHan(_ value: UInt32) -> Bool {

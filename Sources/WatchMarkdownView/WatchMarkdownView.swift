@@ -5,7 +5,7 @@
 //  Read-only markdown renderer for watchOS.
 //
 //  Architecture:
-//  - A single LitextLabel on watchOS
+//  - A single TextLabel on watchOS
 //  - Block elements lowered into one attributed string
 //  - Lists, blockquotes, rules, code blocks, and tables rendered via draw actions
 //
@@ -26,11 +26,20 @@ import SwiftUI
 /// }
 /// ```
 public struct WatchMarkdownView: View {
-    private let blocks: [MarkdownBlockNode]
+    private enum Content {
+        case markdown(String)
+        case blocks([MarkdownBlockNode])
+    }
+
+    private let content: Content
     private let theme: WatchMarkdownTheme
     private let contentWidth: CGFloat
 
     @Environment(\.displayScale) private var displayScale
+
+    @MainActor
+    private static var parseCache: [(key: String, blocks: [MarkdownBlockNode])] = []
+    private static let parseCacheLimit = 4
 
     // MARK: - Initializers
 
@@ -42,7 +51,7 @@ public struct WatchMarkdownView: View {
     ) {
         self.theme = theme
         self.contentWidth = contentWidth
-        blocks = MarkdownParser().parse(markdown).document
+        content = .markdown(markdown)
     }
 
     /// Display pre-parsed blocks (e.g. when you already hold a ParseResult).
@@ -51,7 +60,7 @@ public struct WatchMarkdownView: View {
         theme: WatchMarkdownTheme = .default,
         contentWidth: CGFloat = 200
     ) {
-        self.blocks = blocks
+        content = .blocks(blocks)
         self.theme = theme
         self.contentWidth = contentWidth
     }
@@ -59,17 +68,43 @@ public struct WatchMarkdownView: View {
     // MARK: - Body
 
     public var body: some View {
-        LitextLabel(attributedString: attributedString)
+        TextLabel(attributedString: attributedString)
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 
+    @MainActor
     private var attributedString: NSAttributedString {
         WatchTextBuilder(
-            blocks: blocks,
+            blocks: resolvedBlocks,
             theme: theme,
             maxWidth: contentWidth,
             scale: displayScale
         )
         .build()
+    }
+
+    @MainActor
+    private var resolvedBlocks: [MarkdownBlockNode] {
+        switch content {
+        case let .blocks(blocks):
+            return blocks
+        case let .markdown(markdown):
+            return Self.parsedBlocks(for: markdown)
+        }
+    }
+
+    @MainActor
+    private static func parsedBlocks(for markdown: String) -> [MarkdownBlockNode] {
+        if let index = parseCache.firstIndex(where: { $0.key == markdown }) {
+            let entry = parseCache.remove(at: index)
+            parseCache.insert(entry, at: 0)
+            return entry.blocks
+        }
+        let blocks = MarkdownParser().parse(markdown).document
+        parseCache.insert((key: markdown, blocks: blocks), at: 0)
+        if parseCache.count > parseCacheLimit {
+            parseCache.removeLast()
+        }
+        return blocks
     }
 }

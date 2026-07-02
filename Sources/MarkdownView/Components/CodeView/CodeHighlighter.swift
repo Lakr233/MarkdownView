@@ -21,12 +21,24 @@ import OrderedCollections
 private let kMaxCacheSize = 64 // for each language
 private let kPrefixLength = 8
 
+struct CodeHighlightRequest {
+    let key: Int
+    let content: String
+    let language: String?
+}
+
 @MainActor
 public final class CodeHighlighter {
     public typealias HighlightMap = [NSRange: PlatformColor]
 
     public private(set) var renderCache = LRUCache<Int, HighlightMap>(countLimit: 256)
     private let highlightr = Highlightr()
+
+    static let highlightDidUpdateNotification = Notification.Name("wiki.qaq.MarkdownView.CodeHighlighter.highlightDidUpdate")
+
+    private let worker = HighlightWorker()
+    private var pendingRequests: OrderedDictionary<Int, CodeHighlightRequest> = [:]
+    private var inflightKey: Int?
 
     private init() {
         highlightr?.setTheme(to: "xcode")
@@ -37,7 +49,7 @@ public final class CodeHighlighter {
     // MARK: - Dynamic Color Mapping
 
     /// Maps light mode colors from Xcode theme to dynamic light/dark pairs
-    private static let colorMapping: [String: (light: PlatformColor, dark: PlatformColor)] = [
+    private nonisolated static let colorMapping: [String: (light: PlatformColor, dark: PlatformColor)] = [
         // Background and default text
         "#000000": (light: .black, dark: .white),
         "#ffffff": (light: .white, dark: .black),
@@ -104,7 +116,7 @@ public final class CodeHighlighter {
     ]
 
     /// Creates a dynamic color that adapts to light/dark mode
-    static func dynamicColor(light: PlatformColor, dark: PlatformColor) -> PlatformColor {
+    nonisolated static func dynamicColor(light: PlatformColor, dark: PlatformColor) -> PlatformColor {
         #if canImport(UIKit)
             return UIColor { traitCollection in
                 traitCollection.userInterfaceStyle == .dark ? dark : light
@@ -121,7 +133,7 @@ public final class CodeHighlighter {
     }
 
     /// Converts a static color to a dynamic color if it matches a known light mode color
-    static func makeDynamic(_ color: PlatformColor) -> PlatformColor {
+    nonisolated static func makeDynamic(_ color: PlatformColor) -> PlatformColor {
         // Get the hex representation of the color
         let hexKey = color.hexString.lowercased()
 
@@ -135,7 +147,7 @@ public final class CodeHighlighter {
     }
 
     /// Creates an adaptive color by adjusting brightness for dark mode
-    private static func createAdaptiveColor(from color: PlatformColor) -> PlatformColor {
+    private nonisolated static func createAdaptiveColor(from color: PlatformColor) -> PlatformColor {
         var hue: CGFloat = 0
         var saturation: CGFloat = 0
         var brightness: CGFloat = 0
@@ -213,9 +225,45 @@ public extension CodeHighlighter {
             content: content,
             theme: theme
         )
-        let map = extractColorAttributes(from: highlightedAttributeString)
+        let map = Self.extractColorAttributes(from: highlightedAttributeString)
         renderCache.setValue(map, forKey: key)
         return map
+    }
+}
+
+extension CodeHighlighter {
+    func cachedHighlightMap(for key: Int) -> HighlightMap? {
+        renderCache.value(forKey: key)
+    }
+
+    func scheduleHighlight(requests: [CodeHighlightRequest]) {
+        var pending: OrderedDictionary<Int, CodeHighlightRequest> = [:]
+        for request in requests {
+            guard request.key != inflightKey else { continue }
+            guard renderCache.value(forKey: request.key) == nil else { continue }
+            pending[request.key] = request
+        }
+        pendingRequests = pending
+        processNextRequestIfNeeded()
+    }
+
+    private func processNextRequestIfNeeded() {
+        guard inflightKey == nil else { return }
+        guard let next = pendingRequests.elements.first else { return }
+        pendingRequests.removeValue(forKey: next.key)
+        let request = next.value
+        inflightKey = request.key
+        worker.highlight(content: request.content, language: request.language) { [weak self] map in
+            self?.finishHighlight(key: request.key, map: map)
+        }
+    }
+
+    private func finishHighlight(key: Int, map: HighlightMap) {
+        inflightKey = nil
+        defer { processNextRequestIfNeeded() }
+        guard renderCache.value(forKey: key) == nil else { return }
+        renderCache.setValue(map, forKey: key)
+        NotificationCenter.default.post(name: Self.highlightDidUpdateNotification, object: nil)
     }
 }
 
@@ -239,8 +287,9 @@ private extension CodeHighlighter {
         return finalizer
     }
 
-    func extractColorAttributes(from attributedString: NSAttributedString) -> HighlightMap {
+    nonisolated static func extractColorAttributes(from attributedString: NSAttributedString) -> HighlightMap {
         var attributes: [NSRange: PlatformColor] = [:]
+        var dynamicColorCache: [PlatformColor: PlatformColor] = [:]
 
         attributedString.enumerateAttribute(
             .foregroundColor,
@@ -248,11 +297,48 @@ private extension CodeHighlighter {
         ) { value, range, _ in
             guard let color = value as? PlatformColor else { return }
             // Convert to dynamic color for dark mode support
-            let dynamicColor = CodeHighlighter.makeDynamic(color)
+            let dynamicColor: PlatformColor
+            if let cached = dynamicColorCache[color] {
+                dynamicColor = cached
+            } else {
+                dynamicColor = CodeHighlighter.makeDynamic(color)
+                dynamicColorCache[color] = dynamicColor
+            }
             attributes[range] = dynamicColor
         }
 
         return attributes
+    }
+}
+
+private final class HighlightWorker: @unchecked Sendable {
+    private let queue = DispatchQueue(label: "wiki.qaq.MarkdownView.CodeHighlighter", qos: .userInitiated)
+    private lazy var highlightr: Highlightr? = {
+        let highlightr = Highlightr()
+        highlightr?.setTheme(to: "xcode")
+        return highlightr
+    }()
+
+    func highlight(
+        content: String,
+        language: String?,
+        completion: @escaping @MainActor (CodeHighlighter.HighlightMap) -> Void
+    ) {
+        queue.async { [self] in
+            let map = makeHighlightMap(content: content, language: language)
+            Task { @MainActor in
+                completion(map)
+            }
+        }
+    }
+
+    private func makeHighlightMap(content: String, language: String?) -> CodeHighlighter.HighlightMap {
+        let language = language ?? ""
+        let lang = language.isEmpty ? "plaintext" : language.lowercased()
+        guard let highlightr,
+              let highlighted = highlightr.highlight(content, as: lang)
+        else { return [:] }
+        return CodeHighlighter.extractColorAttributes(from: highlighted)
     }
 }
 

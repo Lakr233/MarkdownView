@@ -9,6 +9,7 @@
 import CoreGraphics
 import CoreText
 import Foundation
+import LRUCache
 import MarkdownParser
 
 // MARK: - CoreGraphics renderer (pure, no SwiftUI)
@@ -20,7 +21,49 @@ enum WatchTableRenderer {
     }
 
     @MainActor
+    private static let cache = LRUCache<Int, Result>(countLimit: 16)
+
+    @MainActor
     static func render(
+        rows: [RawTableRow],
+        columnAlignments: [RawTableColumnAlignment],
+        theme: WatchMarkdownTheme,
+        maxWidth: CGFloat,
+        scale: CGFloat
+    ) -> Result {
+        var hasher = Hasher()
+        hasher.combine(rows)
+        hasher.combine(columnAlignments)
+        hasher.combine(maxWidth)
+        hasher.combine(scale)
+        hasher.combine(theme.bodySize)
+        hasher.combine(theme.codeScale)
+        hasher.combine(theme.tableCellPadding)
+        hasher.combine(theme.tableMaxColumnWidth)
+        hashColor(theme.textColor, into: &hasher)
+        hashColor(theme.linkColor, into: &hasher)
+        hashColor(theme.accentColor, into: &hasher)
+        hashColor(theme.codeColor, into: &hasher)
+        hashColor(theme.tableBorderColor, into: &hasher)
+        hashColor(theme.tableHeaderBackgroundColor, into: &hasher)
+        hashColor(theme.tableStripeColor, into: &hasher)
+        let key = hasher.finalize()
+        if let cached = cache.value(forKey: key) {
+            return cached
+        }
+        let result = renderImage(
+            rows: rows,
+            columnAlignments: columnAlignments,
+            theme: theme,
+            maxWidth: maxWidth,
+            scale: scale
+        )
+        cache.setValue(result, forKey: key)
+        return result
+    }
+
+    @MainActor
+    private static func renderImage(
         rows: [RawTableRow],
         columnAlignments: [RawTableColumnAlignment],
         theme: WatchMarkdownTheme,
@@ -45,10 +88,42 @@ enum WatchTableRenderer {
             })
         }
 
+        for c in 0 ..< numCols {
+            let paragraphStyle: CTParagraphStyle
+            switch columnAlignments[safe: c] ?? .none {
+            case .center:
+                paragraphStyle = centerParagraphStyle
+            case .right:
+                paragraphStyle = rightParagraphStyle
+            default:
+                continue
+            }
+            for r in 0 ..< cellStrings.count where c < cellStrings[r].count {
+                let mutable = NSMutableAttributedString(attributedString: cellStrings[r][c])
+                mutable.addAttribute(
+                    kCTParagraphStyleAttributeName as NSAttributedString.Key,
+                    value: paragraphStyle,
+                    range: NSRange(location: 0, length: mutable.length)
+                )
+                cellStrings[r][c] = mutable
+            }
+        }
+
+        let cellFramesetters: [[CTFramesetter?]] = cellStrings.map { row in
+            row.map { attrStr in
+                guard attrStr.length > 0 else { return nil }
+                return CTFramesetterCreateWithAttributedString(attrStr as CFAttributedString)
+            }
+        }
+
         // MARK: Measure cells
 
         let availableForCells = maxWidth - borderWidth * CGFloat(numCols + 1)
-        let maxColWidth = min(theme.tableMaxColumnWidth, availableForCells / CGFloat(numCols))
+        let minInnerWidth: CGFloat = 8
+        let maxColWidth = max(
+            padding * 2 + minInnerWidth,
+            min(theme.tableMaxColumnWidth, availableForCells / CGFloat(numCols))
+        )
         let innerWidth = maxColWidth - padding * 2
 
         var colWidths = Array(repeating: CGFloat(0), count: numCols)
@@ -56,8 +131,8 @@ enum WatchTableRenderer {
 
         for r in 0 ..< numRows {
             for c in 0 ..< numCols {
-                guard r < cellStrings.count, c < cellStrings[r].count else { continue }
-                let measured = measureSize(cellStrings[r][c], maxWidth: max(1, innerWidth))
+                guard r < cellFramesetters.count, c < cellFramesetters[r].count else { continue }
+                let measured = measureSize(cellFramesetters[r][c], maxWidth: max(1, innerWidth))
                 colWidths[c] = max(colWidths[c], min(measured.width + padding * 2, maxColWidth))
                 rowHeights[r] = max(rowHeights[r], measured.height + padding * 2)
             }
@@ -104,7 +179,7 @@ enum WatchTableRenderer {
 
             var leftX = borderWidth
             for c in 0 ..< numCols {
-                guard r < cellStrings.count, c < cellStrings[r].count else { continue }
+                guard r < cellFramesetters.count, c < cellFramesetters[r].count else { continue }
                 let colW = colWidths[c]
                 let cellRect = CGRect(
                     x: leftX + padding,
@@ -112,8 +187,7 @@ enum WatchTableRenderer {
                     width: colW - padding * 2,
                     height: rowH - padding * 2
                 )
-                drawText(cellStrings[r][c], in: cellRect,
-                         alignment: columnAlignments[safe: c] ?? .none, ctx: ctx)
+                drawText(cellFramesetters[r][c], in: cellRect, ctx: ctx)
                 leftX += colW + borderWidth
             }
 
@@ -147,36 +221,24 @@ enum WatchTableRenderer {
     // MARK: - Text drawing
 
     private static func drawText(
-        _ attrStr: NSAttributedString,
+        _ framesetter: CTFramesetter?,
         in rect: CGRect,
-        alignment: RawTableColumnAlignment,
         ctx: CGContext
     ) {
-        guard attrStr.length > 0, rect.width > 0, rect.height > 0 else { return }
-
-        let attributed: NSAttributedString
-        if alignment != .none {
-            let mutable = NSMutableAttributedString(attributedString: attrStr)
-            let paragraphStyle = makeParagraphStyle(for: alignment)
-            mutable.addAttribute(
-                kCTParagraphStyleAttributeName as NSAttributedString.Key,
-                value: paragraphStyle,
-                range: NSRange(location: 0, length: mutable.length)
-            )
-            attributed = mutable
-        } else {
-            attributed = attrStr
-        }
+        guard let framesetter, rect.width > 0, rect.height > 0 else { return }
 
         let path = CGPath(rect: rect, transform: nil)
-        let framesetter = CTFramesetterCreateWithAttributedString(attributed as CFAttributedString)
         let frame = CTFramesetterCreateFrame(framesetter, CFRangeMake(0, 0), path, nil)
         CTFrameDraw(frame, ctx)
     }
 
-    private static func measureSize(_ attrStr: NSAttributedString, maxWidth: CGFloat) -> CGSize {
-        guard attrStr.length > 0 else { return .zero }
-        let framesetter = CTFramesetterCreateWithAttributedString(attrStr as CFAttributedString)
+    private static func hashColor(_ color: CGColor, into hasher: inout Hasher) {
+        hasher.combine(color.components ?? [])
+        hasher.combine((color.colorSpace?.name).map { $0 as String })
+    }
+
+    private static func measureSize(_ framesetter: CTFramesetter?, maxWidth: CGFloat) -> CGSize {
+        guard let framesetter else { return .zero }
         let constraints = CGSize(width: maxWidth, height: .greatestFiniteMagnitude)
         let size = CTFramesetterSuggestFrameSizeWithConstraints(
             framesetter,
@@ -187,6 +249,12 @@ enum WatchTableRenderer {
         )
         return CGSize(width: ceil(size.width), height: ceil(size.height))
     }
+
+    @MainActor
+    private static let centerParagraphStyle = makeParagraphStyle(for: .center)
+
+    @MainActor
+    private static let rightParagraphStyle = makeParagraphStyle(for: .right)
 
     private static func makeParagraphStyle(for alignment: RawTableColumnAlignment) -> CTParagraphStyle {
         var value: CTTextAlignment = switch alignment {

@@ -7,6 +7,8 @@
 
 import Foundation
 
+private let backtickCharacterSet = CharacterSet(charactersIn: "`")
+
 public extension MarkdownParser {
     static func replacementText(for contentType: String, identifier: String) -> String {
         "`" + "md://content?type=\(contentType)&identifier=\(identifier)" + "`"
@@ -25,7 +27,8 @@ public extension MarkdownParser {
         if !allowEnclosingCharacterMismatch {
             guard text.hasPrefix("`"), text.hasSuffix("`") else { return .unknown }
         }
-        let text = text.trimmingCharacters(in: .init(charactersIn: "`"))
+        let text = text.trimmingCharacters(in: backtickCharacterSet)
+        guard text.hasPrefix("md://content?") else { return .unknown }
         guard let comps = URLComponents(string: text) else {
             return .unknown
         }
@@ -41,7 +44,7 @@ public extension MarkdownParser {
         if !allowEnclosingCharacterMismatch {
             guard text.hasPrefix("`"), text.hasSuffix("`") else { return nil }
         }
-        let text = text.trimmingCharacters(in: .init(charactersIn: "`"))
+        let text = text.trimmingCharacters(in: backtickCharacterSet)
         assert(text.hasPrefix("md://content?type="))
         guard let comps = URLComponents(string: text) else {
             assertionFailure()

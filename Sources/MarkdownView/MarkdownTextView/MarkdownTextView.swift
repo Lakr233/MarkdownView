@@ -16,11 +16,12 @@ import MarkdownParser
         public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
         public internal(set) var document: PreprocessedContent = .init()
-        public let textView: LTXLabel = .init()
+        public let textView: TextLabelView = .init()
         public var theme: MarkdownTheme = .default {
             didSet {
+                guard oldValue != theme else { return }
                 textView.selectionBackgroundColor = theme.colors.selectionBackground
-                setMarkdown(document)
+                use(document)
             }
         }
 
@@ -75,6 +76,7 @@ import MarkdownParser
         public func setMarkdownManually(_ content: PreprocessedContent) {
             assert(Thread.isMainThread)
             resetCombine()
+            contentSubject.send(content)
             use(content)
         }
 
@@ -84,6 +86,8 @@ import MarkdownParser
 
         public func reset() {
             assert(Thread.isMainThread)
+            resetCombine()
+            contentSubject.send(.init())
             use(.init())
             setupCombine()
         }
@@ -101,11 +105,12 @@ import MarkdownParser
         public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
         public internal(set) var document: PreprocessedContent = .init()
-        public let textView: LTXLabel = .init()
+        public let textView: TextLabelView = .init()
         public var theme: MarkdownTheme = .default {
             didSet {
+                guard oldValue != theme else { return }
                 textView.selectionBackgroundColor = theme.colors.selectionBackground
-                setMarkdown(document)
+                use(document)
             }
         }
 
@@ -125,6 +130,7 @@ import MarkdownParser
             super.init(frame: .zero)
             textView.isSelectable = true
             textView.selectionBackgroundColor = theme.colors.selectionBackground
+            textView.delegate = self
             wantsLayer = true
             layer?.backgroundColor = NSColor.clear.cgColor
             textView.translatesAutoresizingMaskIntoConstraints = false
@@ -149,7 +155,7 @@ import MarkdownParser
 
         override public func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
-            setMarkdown(document)
+            use(document)
         }
 
         override public func layout() {
@@ -169,6 +175,7 @@ import MarkdownParser
         public func setMarkdownManually(_ content: PreprocessedContent) {
             assert(Thread.isMainThread)
             resetCombine()
+            contentSubject.send(content)
             use(content)
         }
 
@@ -178,6 +185,8 @@ import MarkdownParser
 
         public func reset() {
             assert(Thread.isMainThread)
+            resetCombine()
+            contentSubject.send(.init())
             use(.init())
             setupCombine()
         }

@@ -24,8 +24,13 @@ import Litext
     @MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
     @MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
 
+    @MainActor private var kNumberCircleImageCache: [Int: UIImage] = [:]
+
     @MainActor private func kNumberCircleImage(_ number: Int) -> UIImage {
-        builtinSystemImage("\(number).circle.fill")
+        if let cached = kNumberCircleImageCache[number] { return cached }
+        let image = builtinSystemImage("\(number).circle.fill")
+        kNumberCircleImageCache[number] = image
+        return image
     }
 
 #elseif canImport(AppKit)
@@ -42,8 +47,14 @@ import Litext
     @MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
     @MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
 
-    private func kNumberCircleImage(_ number: Int) -> NSImage {
-        builtinSystemImage("\(number).circle.fill")
+    @MainActor private var kNumberCircleImageCache: [Int: (image: NSImage, cgImage: CGImage?)] = [:]
+
+    @MainActor private func kNumberCircleImageEntry(_ number: Int) -> (image: NSImage, cgImage: CGImage?) {
+        if let cached = kNumberCircleImageCache[number] { return cached }
+        let image = builtinSystemImage("\(number).circle.fill")
+        let entry = (image: image, cgImage: image.cgImage(forProposedRect: nil, context: nil, hints: nil))
+        kNumberCircleImageCache[number] = entry
+        return entry
     }
 #endif
 
@@ -100,23 +111,48 @@ extension TextBuilder {
                 let rect = lineBoundingBox(line, lineOrigin: lineOrigin)
                     .offsetBy(dx: -16, dy: 0)
                     .offsetBy(dx: -8, dy: 0)
-                let image = kNumberCircleImage(num)
-                #if canImport(UIKit)
-                    guard let cgImage = image.cgImage else { return }
-                #elseif canImport(AppKit)
-                    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
-                #endif
-                let imageSize = image.size
-                let targetRect: CGRect = .init(
-                    x: rect.minX,
-                    y: rect.midY - imageSize.height / 2,
-                    width: imageSize.width,
-                    height: imageSize.height
-                )
                 let textColor = populateContextColorFromFirstRun(context: context, line: line)
-                context.clip(to: targetRect, mask: cgImage)
-                context.setFillColor(textColor.cgColor)
-                context.fill(targetRect)
+                context.saveGState()
+                defer { context.restoreGState() }
+                if (0 ... 50).contains(num) {
+                    #if canImport(UIKit)
+                        let image = kNumberCircleImage(num)
+                        let cgImage = image.cgImage
+                    #elseif canImport(AppKit)
+                        let (image, cgImage) = kNumberCircleImageEntry(num)
+                    #endif
+                    if let cgImage {
+                        let imageSize = image.size
+                        let targetRect: CGRect = .init(
+                            x: rect.minX,
+                            y: rect.midY - imageSize.height / 2,
+                            width: imageSize.width,
+                            height: imageSize.height
+                        )
+                        context.clip(to: targetRect, mask: cgImage)
+                        context.setFillColor(textColor.cgColor)
+                        context.fill(targetRect)
+                        return
+                    }
+                }
+                let font = PlatformFont.monospacedDigitSystemFont(
+                    ofSize: theme.fonts.footnote.pointSize,
+                    weight: .regular
+                )
+                let attributedText = NSAttributedString(string: "\(num).", attributes: [
+                    .font: font,
+                    .foregroundColor: textColor,
+                ])
+                let textLine = CTLineCreateWithAttributedString(attributedText)
+                var ascent: CGFloat = 0
+                var descent: CGFloat = 0
+                let width = CTLineGetTypographicBounds(textLine, &ascent, &descent, nil)
+                context.textMatrix = .identity
+                context.textPosition = .init(
+                    x: rect.minX + 16 - width,
+                    y: rect.midY - (ascent - descent) / 2
+                )
+                CTLineDraw(textLine, context)
             }
             .withCheckboxDrawing { context, line, lineOrigin, isChecked in
                 let rect = lineBoundingBox(line, lineOrigin: lineOrigin)
@@ -209,10 +245,11 @@ extension TextBuilder {
             .withBlockquoteDrawing { context, line, lineOrigin in
                 let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
                 defer { blockquoteMarkingStorage = nil }
-                let quotingLineHeight: CGFloat = blockquoteMarkingStorage! - boundingBox.minY
+                guard let markedTop = blockquoteMarkingStorage else { return }
+                let quotingLineHeight: CGFloat = markedTop - boundingBox.minY
                 let lineRect = CGRect(
                     x: 0,
-                    y: blockquoteMarkingStorage! - quotingLineHeight,
+                    y: markedTop - quotingLineHeight,
                     width: 4,
                     height: quotingLineHeight
                 )

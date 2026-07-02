@@ -89,6 +89,8 @@ final class TextBuilder {
         let subviews: [PlatformView]
     }
 
+    private var pendingHighlightRequests: [CodeHighlightRequest] = []
+
     private var previouslyBuilt = false
     func build() -> BuildResult {
         assert(!previouslyBuilt, "TextBuilder can only be built once.")
@@ -98,6 +100,9 @@ final class TextBuilder {
             text.append(processBlock(node, context: context, subviews: &subviewCollector))
         }
         text.fixAttributes(in: .init(location: 0, length: text.length))
+        if !pendingHighlightRequests.isEmpty {
+            CodeHighlighter.current.scheduleHighlight(requests: pendingHighlightRequests)
+        }
         return .init(document: text, subviews: subviewCollector)
     }
 }
@@ -145,7 +150,13 @@ extension TextBuilder {
             return blockProcessor.processThematicBreak()
         case let .codeBlock(language, content):
             let highlightKey = CodeHighlighter.current.key(for: content, language: language)
-            let highlightMap = context.highlightMaps[highlightKey]
+            var highlightMap = context.highlightMaps[highlightKey]
+            if highlightMap == nil {
+                highlightMap = CodeHighlighter.current.cachedHighlightMap(for: highlightKey)
+                if highlightMap == nil {
+                    pendingHighlightRequests.append(.init(key: highlightKey, content: content, language: language))
+                }
+            }
             let result = blockProcessor.processCodeBlock(
                 language: language,
                 content: content,

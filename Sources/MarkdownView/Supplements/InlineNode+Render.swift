@@ -59,10 +59,24 @@ extension MarkdownInlineNode {
         case let .strong(children):
             let ans = NSMutableAttributedString()
             children.map { $0.render(theme: theme, context: context, viewProvider: viewProvider) }.forEach { ans.append($0) }
-            ans.addAttributes(
-                [.font: theme.fonts.bold],
-                range: NSRange(location: 0, length: ans.length)
-            )
+            ans.enumerateAttribute(.font, in: NSRange(location: 0, length: ans.length)) { value, range, _ in
+                #if canImport(UIKit)
+                    guard let font = value as? UIFont, font != theme.fonts.body else {
+                        ans.addAttribute(.font, value: theme.fonts.bold, range: range)
+                        return
+                    }
+                    let traits = font.fontDescriptor.symbolicTraits.union(.traitBold)
+                    let boldFont = font.fontDescriptor.withSymbolicTraits(traits)
+                        .map { UIFont(descriptor: $0, size: 0) } ?? font
+                    ans.addAttribute(.font, value: boldFont, range: range)
+                #elseif canImport(AppKit)
+                    guard let font = value as? NSFont, font != theme.fonts.body else {
+                        ans.addAttribute(.font, value: theme.fonts.bold, range: range)
+                        return
+                    }
+                    ans.addAttribute(.font, value: font.bold, range: range)
+                #endif
+            }
             return ans
         case let .strikethrough(children):
             let ans = NSMutableAttributedString()
@@ -97,16 +111,20 @@ extension MarkdownInlineNode {
             let latexContent = context.rendered[replacementIdentifier]?.text ?? content
 
             if let item = context.rendered[replacementIdentifier], let image = item.image {
-                var imageSize = image.size
+                let imageSize = image.size
+                let contextKey = NSAttributedString.Key.contextIdentifier.rawValue as CFString
 
-                let drawingCallback = LTXLineDrawingAction { context, line, lineOrigin in
+                let drawingCallback = TextLabel.LineDrawingAction { context, line, lineOrigin in
                     let glyphRuns = CTLineGetGlyphRuns(line) as NSArray
                     var runOffsetX: CGFloat = 0
                     for i in 0 ..< glyphRuns.count {
                         let run = glyphRuns[i] as! CTRun
-                        let attributes = CTRunGetAttributes(run) as! [NSAttributedString.Key: Any]
-                        if attributes[.contextIdentifier] as? String == replacementIdentifier {
-                            break
+                        let attributes = CTRunGetAttributes(run)
+                        if let ptr = CFDictionaryGetValue(attributes, Unmanaged.passUnretained(contextKey).toOpaque()) {
+                            let value = Unmanaged<AnyObject>.fromOpaque(ptr).takeUnretainedValue()
+                            if (value as? String) == replacementIdentifier {
+                                break
+                            }
                         }
                         runOffsetX += CTRunGetTypographicBounds(run, CFRange(location: 0, length: 0), nil, nil, nil)
                     }
@@ -114,16 +132,16 @@ extension MarkdownInlineNode {
                     var ascent: CGFloat = 0
                     var descent: CGFloat = 0
                     CTLineGetTypographicBounds(line, &ascent, &descent, nil)
-                    if imageSize.height > ascent { // we only draw above the line
-                        let newWidth = imageSize.width * (ascent / imageSize.height)
-                        imageSize = CGSize(width: newWidth, height: ascent)
+                    var drawSize = imageSize
+                    if drawSize.height > ascent { // we only draw above the line
+                        drawSize = CGSize(width: drawSize.width * (ascent / drawSize.height), height: ascent)
                     }
 
                     let rect = CGRect(
                         x: lineOrigin.x + runOffsetX,
                         y: lineOrigin.y,
-                        width: imageSize.width,
-                        height: imageSize.height
+                        width: drawSize.width,
+                        height: drawSize.height
                     )
 
                     context.saveGState()
@@ -148,19 +166,22 @@ extension MarkdownInlineNode {
 
                     context.restoreGState()
                 }
-                let attachment = LTXAttachment.hold(attrString: .init(string: latexContent))
-                attachment.size = imageSize
+                let attachment = TextLabel.Attachment.hold(attrString: .init(string: latexContent))
+                // Litext's attachment run delegate reports ascent = 0.9 * size.height and
+                // descent = 0.1 * size.height, so pad the height to keep the full image
+                // above the baseline while the reserved width matches the drawn width.
+                attachment.size = CGSize(width: imageSize.width, height: imageSize.height / 0.9)
 
                 let attributes: [NSAttributedString.Key: Any] = [
-                    LTXAttachmentAttributeName: attachment,
-                    LTXLineDrawingCallbackName: drawingCallback,
+                    .litextAttachment: attachment,
+                    .litextLineDrawingAction: drawingCallback,
                     kCTRunDelegateAttributeName as NSAttributedString.Key: attachment.runDelegate,
                     .contextIdentifier: replacementIdentifier,
                     .mathLatexContent: latexContent, // Store LaTeX content for on-demand rendering
                 ]
 
                 return NSAttributedString(
-                    string: LTXReplacementText,
+                    string: TextLabel.Attachment.replacementText,
                     attributes: attributes
                 )
             } else {

@@ -78,18 +78,20 @@ final class ListProcessor {
         let checkboxDrawing = checkboxDrawing!
         let string = NSMutableAttributedString()
         let theme = theme
-        string.append(.init(string: LTXReplacementText, attributes: [
-            .font: theme.fonts.body,
-            .ltxLineDrawingCallback: LTXLineDrawingAction(action: { context, line, lineOrigin in
-                if item.ordered {
-                    numberedDrawing(context, line, lineOrigin, item.index)
-                } else if item.isTask {
-                    checkboxDrawing(context, line, lineOrigin, item.isDone)
-                } else {
-                    bulletDrawing(context, line, lineOrigin, item.depth)
-                }
-            }),
-        ]))
+        if item.showsMarker {
+            string.append(.init(string: TextLabel.Attachment.replacementText, attributes: [
+                .font: theme.fonts.body,
+                .litextLineDrawingAction: TextLabel.LineDrawingAction(action: { context, line, lineOrigin in
+                    if item.ordered {
+                        numberedDrawing(context, line, lineOrigin, item.index)
+                    } else if item.isTask {
+                        checkboxDrawing(context, line, lineOrigin, item.isDone)
+                    } else {
+                        bulletDrawing(context, line, lineOrigin, item.depth)
+                    }
+                }),
+            ]))
+        }
         string.append(item.paragraph.render(theme: theme, context: context, viewProvider: viewProvider))
 
         string.addAttributes(
@@ -125,14 +127,16 @@ extension ListProcessor {
         let index: Int
         let isTask: Bool
         let isDone: Bool
+        let showsMarker: Bool
         let paragraph: [MarkdownInlineNode]
 
-        init(depth: Int, ordered: Bool, index: Int = 0, isTask: Bool = false, isDone: Bool = false, paragraph: [MarkdownInlineNode]) {
+        init(depth: Int, ordered: Bool, index: Int = 0, isTask: Bool = false, isDone: Bool = false, showsMarker: Bool = true, paragraph: [MarkdownInlineNode]) {
             self.depth = depth
             self.ordered = ordered
             self.index = index
             self.isTask = isTask
             self.isDone = isDone
+            self.showsMarker = showsMarker
             self.paragraph = paragraph
         }
     }
@@ -149,13 +153,15 @@ extension ListProcessor {
 
         func handle(_ items: [MappedItem]) {
             for item in items {
+                var isFirstParagraph = true
                 for child in item.nodes {
                     switch child {
                     case let .paragraph(contents):
                         let isTask = item.isDone != nil
                         let isDone = item.isDone ?? false
-                        result.append(.init(depth: currentDepth, ordered: isOrdered, index: index, isTask: isTask, isDone: isDone, paragraph: contents))
-                        index += 1
+                        result.append(.init(depth: currentDepth, ordered: isOrdered, index: index, isTask: isTask, isDone: isDone, showsMarker: isFirstParagraph, paragraph: contents))
+                        if isFirstParagraph { index += 1 }
+                        isFirstParagraph = false
                     case let .bulletedList(_, sublist):
                         result.append(contentsOf: flatList(.bulleted(sublist), currentDepth: currentDepth + 1))
                     case let .numberedList(_, start, sublist):

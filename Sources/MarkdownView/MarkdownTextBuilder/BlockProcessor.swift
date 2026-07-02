@@ -77,10 +77,10 @@ final class BlockProcessor {
     func processThematicBreak() -> NSAttributedString {
         buildWithParagraphSync {
             let drawingCallback = self.thematicBreakDrawing
-            return .init(string: LTXReplacementText, attributes: [
+            return .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
-                .ltxAttachment: LTXAttachment.hold(attrString: .init(string: "\n\n")),
-                .ltxLineDrawingCallback: LTXLineDrawingAction(action: { context, line, lineOrigin in
+                .litextAttachment: TextLabel.Attachment.hold(attrString: .init(string: "\n\n")),
+                .litextLineDrawingAction: TextLabel.LineDrawingAction(action: { context, line, lineOrigin in
                     drawingCallback?(context, line, lineOrigin)
                 }),
             ])
@@ -103,10 +103,10 @@ final class BlockProcessor {
             let height = CodeView.intrinsicHeight(for: content, theme: theme)
             paragraph.minimumLineHeight = height
         } content: {
-            .init(string: LTXReplacementText, attributes: [
+            .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
-                .ltxAttachment: LTXAttachment.hold(attrString: .init(string: content + "\n")),
-                .ltxLineDrawingCallback: LTXLineDrawingAction { drawer($0, $1, $2) },
+                .litextAttachment: TextLabel.Attachment.hold(attrString: .init(string: content + "\n")),
+                .litextLineDrawingAction: TextLabel.LineDrawingAction { drawer($0, $1, $2) },
                 .contextView: codeView,
             ])
         }
@@ -132,6 +132,9 @@ final class BlockProcessor {
             }
             let paragraphContent = content.render(theme: theme, context: context, viewProvider: viewProvider)
             result.append(paragraphContent)
+            if !result.string.hasSuffix("\n") {
+                result.append(NSAttributedString(string: "\n", attributes: [.font: theme.fonts.body]))
+            }
         }
 
         while result.string.hasSuffix("\n") {
@@ -151,16 +154,16 @@ final class BlockProcessor {
         result.insert(buildWithParagraphSync(withNewLine: false) { paragraph in
             paragraph = baseParagraphStyle
         } content: {
-            .init(string: LTXReplacementText, attributes: [
+            .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
                 .paragraphStyle: baseParagraphStyle,
-                .ltxLineDrawingCallback: LTXLineDrawingAction { marker($0, $1, $2) },
+                .litextLineDrawingAction: TextLabel.LineDrawingAction { marker($0, $1, $2) },
             ])
         }, at: 0)
         result.append(buildWithParagraphSync(withNewLine: true) {
-            .init(string: LTXReplacementText, attributes: [
+            .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
-                .ltxLineDrawingCallback: LTXLineDrawingAction { drawer($0, $1, $2) },
+                .litextLineDrawingAction: TextLabel.LineDrawingAction { drawer($0, $1, $2) },
             ])
         })
 
@@ -184,10 +187,10 @@ final class BlockProcessor {
         let text = buildWithParagraphSync { paragraph in
             paragraph.minimumLineHeight = tableView.intrinsicContentHeight
         } content: {
-            .init(string: LTXReplacementText, attributes: [
+            .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
-                .ltxAttachment: LTXAttachment.hold(attrString: representedText),
-                .ltxLineDrawingCallback: LTXLineDrawingAction { drawer($0, $1, $2) },
+                .litextAttachment: TextLabel.Attachment.hold(attrString: representedText),
+                .litextLineDrawingAction: TextLabel.LineDrawingAction { drawer($0, $1, $2) },
                 .contextView: tableView,
             ])
         }

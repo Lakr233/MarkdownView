@@ -13,17 +13,27 @@ extension MarkdownTextView {
     func resetCombine() {
         cancellables.forEach { $0.cancel() }
         cancellables.removeAll()
+
+        NotificationCenter.default
+            .publisher(for: CodeHighlighter.highlightDidUpdateNotification)
+            .sink { [weak self] _ in
+                guard let self else { return }
+                use(document)
+            }
+            .store(in: &cancellables)
     }
 
     func setupCombine() {
         resetCombine()
         if let throttleInterval {
             contentSubject
+                .dropFirst()
                 .throttle(for: .seconds(throttleInterval), scheduler: DispatchQueue.main, latest: true)
                 .sink { [weak self] content in self?.use(content) }
                 .store(in: &cancellables)
         } else {
             contentSubject
+                .dropFirst()
                 .sink { [weak self] content in self?.use(content) }
                 .store(in: &cancellables)
         }

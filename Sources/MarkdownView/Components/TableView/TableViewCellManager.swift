@@ -15,12 +15,13 @@ import Litext
     final class TableViewCellManager {
         // MARK: - Properties
 
-        private(set) var cells: [LTXLabel] = []
+        private(set) var cells: [TextLabelView] = []
+        private var rawTexts: [NSAttributedString] = []
         private(set) var cellSizes: [CGSize] = []
         private(set) var widths: [CGFloat] = []
         private(set) var heights: [CGFloat] = []
         private var theme: MarkdownTheme = .default
-        private weak var delegate: LTXLabelDelegate?
+        private weak var delegate: TextLabelViewDelegate?
 
         // MARK: - Cell Configuration
 
@@ -68,11 +69,12 @@ import Litext
         // MARK: - Public Methods
 
         func setTheme(_ theme: MarkdownTheme) {
+            guard self.theme != theme else { return }
             self.theme = theme
             updateCellsAppearance()
         }
 
-        func setDelegate(_ delegate: LTXLabelDelegate?) {
+        func setDelegate(_ delegate: TextLabelViewDelegate?) {
             self.delegate = delegate
             cells.forEach { $0.delegate = delegate }
         }
@@ -85,11 +87,11 @@ import Litext
             maximumWidth: CGFloat,
             isHeader: Bool,
             in containerView: UIView
-        ) -> LTXLabel {
-            let cell: LTXLabel
+        ) -> TextLabelView {
+            let cell: TextLabelView
 
             if index >= cells.count {
-                cell = LTXLabel()
+                cell = TextLabelView()
                 cell.isSelectable = false
                 cell.backgroundColor = .clear
                 cell.selectionBackgroundColor = theme.colors.selectionBackground
@@ -101,16 +103,18 @@ import Litext
             }
 
             let needsTextUpdate = cell.preferredMaxLayoutWidth != maximumWidth
-                || !cell.attributedText.isEqual(to: attributedText)
+                || index >= rawTexts.count
+                || !rawTexts[index].isEqual(to: attributedText)
             if needsTextUpdate {
-                cell.preferredMaxLayoutWidth = maximumWidth
-                cell.attributedText = attributedText
-
-                if isHeader {
-                    applyCellHeaderStyling(to: cell)
+                if index < rawTexts.count {
+                    rawTexts[index] = attributedText
                 } else {
-                    applyCellNormalStyling(to: cell)
+                    rawTexts.append(attributedText)
                 }
+                cell.preferredMaxLayoutWidth = maximumWidth
+                cell.attributedText = isHeader
+                    ? styledHeaderText(from: attributedText)
+                    : styledNormalText(from: attributedText)
             }
 
             return cell
@@ -121,10 +125,13 @@ import Litext
             for index in stride(from: cells.count - 1, through: requiredCellCount, by: -1) {
                 cells[index].removeFromSuperview()
                 cells.remove(at: index)
+                if index < rawTexts.count {
+                    rawTexts.remove(at: index)
+                }
             }
         }
 
-        private func calculateCellSize(for cell: LTXLabel, cellPadding: CGFloat) -> CGSize {
+        private func calculateCellSize(for cell: TextLabelView, cellPadding: CGFloat) -> CGSize {
             let contentSize = cell.intrinsicContentSize
             return CGSize(
                 width: ceil(contentSize.width) + cellPadding * 2,
@@ -132,39 +139,41 @@ import Litext
             )
         }
 
-        private func applyCellHeaderStyling(to cell: LTXLabel) {
-            if let attributedText = cell.attributedText.mutableCopy() as? NSMutableAttributedString {
-                let range = NSRange(location: 0, length: attributedText.length)
-
-                attributedText.enumerateAttribute(.font, in: range, options: []) {
-                    value, subRange, _ in
-                    if let existingFont = value as? UIFont {
-                        let boldFont = UIFont.boldSystemFont(ofSize: existingFont.pointSize)
-                        attributedText.addAttribute(.font, value: boldFont, range: subRange)
-                    } else {
-                        attributedText.addAttribute(.font, value: theme.fonts.bold, range: subRange)
-                    }
-                }
-
-                cell.attributedText = attributedText
+        private func styledHeaderText(from source: NSAttributedString) -> NSAttributedString {
+            guard let attributedText = source.mutableCopy() as? NSMutableAttributedString else {
+                return source
             }
+            let range = NSRange(location: 0, length: attributedText.length)
+
+            attributedText.enumerateAttribute(.font, in: range, options: []) {
+                value, subRange, _ in
+                if let existingFont = value as? UIFont {
+                    let boldFont = UIFont.boldSystemFont(ofSize: existingFont.pointSize)
+                    attributedText.addAttribute(.font, value: boldFont, range: subRange)
+                } else {
+                    attributedText.addAttribute(.font, value: theme.fonts.bold, range: subRange)
+                }
+            }
+
+            return attributedText
         }
 
-        private func applyCellNormalStyling(to cell: LTXLabel) {
-            if let attributedText = cell.attributedText.mutableCopy() as? NSMutableAttributedString {
-                let range = NSRange(location: 0, length: attributedText.length)
-
-                attributedText.enumerateAttribute(.foregroundColor, in: range, options: []) {
-                    value, subRange, _ in
-                    if value == nil {
-                        attributedText.addAttribute(
-                            .foregroundColor, value: theme.colors.body, range: subRange
-                        )
-                    }
-                }
-
-                cell.attributedText = attributedText
+        private func styledNormalText(from source: NSAttributedString) -> NSAttributedString {
+            guard let attributedText = source.mutableCopy() as? NSMutableAttributedString else {
+                return source
             }
+            let range = NSRange(location: 0, length: attributedText.length)
+
+            attributedText.enumerateAttribute(.foregroundColor, in: range, options: []) {
+                value, subRange, _ in
+                if value == nil {
+                    attributedText.addAttribute(
+                        .foregroundColor, value: theme.colors.body, range: subRange
+                    )
+                }
+            }
+
+            return attributedText
         }
 
         private func updateCellsAppearance() {
@@ -174,10 +183,12 @@ import Litext
                 let row = index / numberOfColumns
                 let isHeaderCell = row == 0
 
-                if isHeaderCell {
-                    applyCellHeaderStyling(to: cell)
-                } else {
-                    applyCellNormalStyling(to: cell)
+                let source = index < rawTexts.count ? rawTexts[index] : cell.attributedText
+                let styled = isHeaderCell
+                    ? styledHeaderText(from: source)
+                    : styledNormalText(from: source)
+                if !styled.isEqual(to: cell.attributedText) {
+                    cell.attributedText = styled
                 }
             }
         }
@@ -188,12 +199,13 @@ import Litext
 
     @MainActor
     final class TableViewCellManager {
-        private(set) var cells: [LTXLabel] = []
+        private(set) var cells: [TextLabelView] = []
+        private var rawTexts: [NSAttributedString] = []
         private(set) var cellSizes: [CGSize] = []
         private(set) var widths: [CGFloat] = []
         private(set) var heights: [CGFloat] = []
         private var theme: MarkdownTheme = .default
-        private weak var delegate: LTXLabelDelegate?
+        private weak var delegate: TextLabelViewDelegate?
 
         func configureCells(
             for contents: [[NSAttributedString]],
@@ -236,11 +248,12 @@ import Litext
         }
 
         func setTheme(_ theme: MarkdownTheme) {
+            guard self.theme != theme else { return }
             self.theme = theme
             updateCellsAppearance()
         }
 
-        func setDelegate(_ delegate: LTXLabelDelegate?) {
+        func setDelegate(_ delegate: TextLabelViewDelegate?) {
             self.delegate = delegate
             cells.forEach { $0.delegate = delegate }
         }
@@ -251,11 +264,11 @@ import Litext
             maximumWidth: CGFloat,
             isHeader: Bool,
             in containerView: NSView
-        ) -> LTXLabel {
-            let cell: LTXLabel
+        ) -> TextLabelView {
+            let cell: TextLabelView
 
             if index >= cells.count {
-                cell = LTXLabel()
+                cell = TextLabelView()
                 cell.isSelectable = false
                 cell.wantsLayer = true
                 cell.layer?.backgroundColor = NSColor.clear.cgColor
@@ -268,16 +281,18 @@ import Litext
             }
 
             let needsTextUpdate = cell.preferredMaxLayoutWidth != maximumWidth
-                || !cell.attributedText.isEqual(to: attributedText)
+                || index >= rawTexts.count
+                || !rawTexts[index].isEqual(to: attributedText)
             if needsTextUpdate {
-                cell.preferredMaxLayoutWidth = maximumWidth
-                cell.attributedText = attributedText
-
-                if isHeader {
-                    applyCellHeaderStyling(to: cell)
+                if index < rawTexts.count {
+                    rawTexts[index] = attributedText
                 } else {
-                    applyCellNormalStyling(to: cell)
+                    rawTexts.append(attributedText)
                 }
+                cell.preferredMaxLayoutWidth = maximumWidth
+                cell.attributedText = isHeader
+                    ? styledHeaderText(from: attributedText)
+                    : styledNormalText(from: attributedText)
             }
 
             return cell
@@ -288,10 +303,13 @@ import Litext
             for index in stride(from: cells.count - 1, through: requiredCellCount, by: -1) {
                 cells[index].removeFromSuperview()
                 cells.remove(at: index)
+                if index < rawTexts.count {
+                    rawTexts.remove(at: index)
+                }
             }
         }
 
-        private func calculateCellSize(for cell: LTXLabel, cellPadding: CGFloat) -> CGSize {
+        private func calculateCellSize(for cell: TextLabelView, cellPadding: CGFloat) -> CGSize {
             let contentSize = cell.intrinsicContentSize
             return CGSize(
                 width: ceil(contentSize.width) + cellPadding * 2,
@@ -299,39 +317,41 @@ import Litext
             )
         }
 
-        private func applyCellHeaderStyling(to cell: LTXLabel) {
-            if let attributedText = cell.attributedText.mutableCopy() as? NSMutableAttributedString {
-                let range = NSRange(location: 0, length: attributedText.length)
-
-                attributedText.enumerateAttribute(.font, in: range, options: []) {
-                    value, subRange, _ in
-                    if let existingFont = value as? NSFont {
-                        let boldFont = NSFont.boldSystemFont(ofSize: existingFont.pointSize)
-                        attributedText.addAttribute(.font, value: boldFont, range: subRange)
-                    } else {
-                        attributedText.addAttribute(.font, value: theme.fonts.bold, range: subRange)
-                    }
-                }
-
-                cell.attributedText = attributedText
+        private func styledHeaderText(from source: NSAttributedString) -> NSAttributedString {
+            guard let attributedText = source.mutableCopy() as? NSMutableAttributedString else {
+                return source
             }
+            let range = NSRange(location: 0, length: attributedText.length)
+
+            attributedText.enumerateAttribute(.font, in: range, options: []) {
+                value, subRange, _ in
+                if let existingFont = value as? NSFont {
+                    let boldFont = NSFont.boldSystemFont(ofSize: existingFont.pointSize)
+                    attributedText.addAttribute(.font, value: boldFont, range: subRange)
+                } else {
+                    attributedText.addAttribute(.font, value: theme.fonts.bold, range: subRange)
+                }
+            }
+
+            return attributedText
         }
 
-        private func applyCellNormalStyling(to cell: LTXLabel) {
-            if let attributedText = cell.attributedText.mutableCopy() as? NSMutableAttributedString {
-                let range = NSRange(location: 0, length: attributedText.length)
-
-                attributedText.enumerateAttribute(.foregroundColor, in: range, options: []) {
-                    value, subRange, _ in
-                    if value == nil {
-                        attributedText.addAttribute(
-                            .foregroundColor, value: theme.colors.body, range: subRange
-                        )
-                    }
-                }
-
-                cell.attributedText = attributedText
+        private func styledNormalText(from source: NSAttributedString) -> NSAttributedString {
+            guard let attributedText = source.mutableCopy() as? NSMutableAttributedString else {
+                return source
             }
+            let range = NSRange(location: 0, length: attributedText.length)
+
+            attributedText.enumerateAttribute(.foregroundColor, in: range, options: []) {
+                value, subRange, _ in
+                if value == nil {
+                    attributedText.addAttribute(
+                        .foregroundColor, value: theme.colors.body, range: subRange
+                    )
+                }
+            }
+
+            return attributedText
         }
 
         private func updateCellsAppearance() {
@@ -341,10 +361,12 @@ import Litext
                 let row = index / numberOfColumns
                 let isHeaderCell = row == 0
 
-                if isHeaderCell {
-                    applyCellHeaderStyling(to: cell)
-                } else {
-                    applyCellNormalStyling(to: cell)
+                let source = index < rawTexts.count ? rawTexts[index] : cell.attributedText
+                let styled = isHeaderCell
+                    ? styledHeaderText(from: source)
+                    : styledNormalText(from: source)
+                if !styled.isEqual(to: cell.attributedText) {
+                    cell.attributedText = styled
                 }
             }
         }

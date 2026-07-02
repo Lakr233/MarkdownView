@@ -37,7 +37,11 @@
                     try? FileManager.default.removeItem(at: tempURL)
                 }
 
-                window?.rootViewController?.present(controller, animated: true)
+                var presenter = window?.rootViewController
+                while let presented = presenter?.presentedViewController {
+                    presenter = presented
+                }
+                presenter?.present(controller, animated: true)
             } catch {
                 print("[MarkdownView] Failed to create temp file for math preview: \(error)")
             }

@@ -11,6 +11,7 @@ import Litext
     final class LineNumberView: UIView {
         var lineCount: Int = 1 {
             didSet {
+                guard oldValue != lineCount else { return }
                 setNeedsDisplay()
                 invalidateIntrinsicContentSize()
             }
@@ -18,17 +19,22 @@ import Litext
 
         var font: UIFont = .monospacedSystemFont(ofSize: 12, weight: .regular) {
             didSet {
+                guard oldValue != font else { return }
                 setNeedsDisplay()
                 invalidateIntrinsicContentSize()
             }
         }
 
         var textColor: UIColor = .secondaryLabel {
-            didSet { setNeedsDisplay() }
+            didSet {
+                guard oldValue != textColor else { return }
+                setNeedsDisplay()
+            }
         }
 
         var padding: UIEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8) {
             didSet {
+                guard oldValue != padding else { return }
                 setNeedsDisplay()
                 invalidateIntrinsicContentSize()
             }
@@ -36,6 +42,7 @@ import Litext
 
         var contentHeight: CGFloat = 0 {
             didSet {
+                guard oldValue != contentHeight else { return }
                 setNeedsDisplay()
                 invalidateIntrinsicContentSize()
             }
@@ -83,18 +90,31 @@ import Litext
             let lineSpacing = availableHeight / CGFloat(lineCount)
             let startY = padding.top
 
-            for lineNumber in 1 ... lineCount {
-                let numberString = "\(lineNumber)"
-                let textSize = numberString.size(withAttributes: textAttributes)
+            guard lineSpacing > 0 else { return }
 
-                let x = bounds.width - padding.right - textSize.width
-                let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textSize.height) / 2
+            let firstLine = max(1, Int(floor((rect.minY - padding.top) / lineSpacing)))
+            let lastLine = min(lineCount, Int(ceil((rect.maxY - padding.top) / lineSpacing)) + 1)
+            guard firstLine <= lastLine else { return }
+
+            let textHeight = "0".size(withAttributes: textAttributes).height
+            var digitCount = 0
+            var textWidth: CGFloat = 0
+
+            for lineNumber in firstLine ... lastLine {
+                let numberString = "\(lineNumber)"
+                if numberString.count != digitCount {
+                    digitCount = numberString.count
+                    textWidth = numberString.size(withAttributes: textAttributes).width
+                }
+
+                let x = bounds.width - padding.right - textWidth
+                let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textHeight) / 2
 
                 let textRect = CGRect(
                     x: x,
                     y: y,
-                    width: textSize.width,
-                    height: textSize.height
+                    width: textWidth,
+                    height: textHeight
                 )
 
                 numberString.draw(in: textRect, withAttributes: textAttributes)
@@ -120,6 +140,7 @@ import Litext
     final class LineNumberView: NSView {
         var lineCount: Int = 1 {
             didSet {
+                guard oldValue != lineCount else { return }
                 needsDisplay = true
                 invalidateIntrinsicContentSize()
             }
@@ -127,17 +148,22 @@ import Litext
 
         var font: NSFont = .monospacedSystemFont(ofSize: 12, weight: .regular) {
             didSet {
+                guard oldValue != font else { return }
                 needsDisplay = true
                 invalidateIntrinsicContentSize()
             }
         }
 
         var textColor: NSColor = .secondaryLabelColor {
-            didSet { needsDisplay = true }
+            didSet {
+                guard oldValue != textColor else { return }
+                needsDisplay = true
+            }
         }
 
         var padding: NSEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8) {
             didSet {
+                guard !NSEdgeInsetsEqual(oldValue, padding) else { return }
                 needsDisplay = true
                 invalidateIntrinsicContentSize()
             }
@@ -145,6 +171,7 @@ import Litext
 
         var contentHeight: CGFloat = 0 {
             didSet {
+                guard oldValue != contentHeight else { return }
                 needsDisplay = true
                 invalidateIntrinsicContentSize()
             }
@@ -195,18 +222,31 @@ import Litext
             let lineSpacing = availableHeight / CGFloat(lineCount)
             let startY = padding.top
 
-            for lineNumber in 1 ... lineCount {
-                let numberString = "\(lineNumber)"
-                let textSize = numberString.size(withAttributes: textAttributes)
+            guard lineSpacing > 0 else { return }
 
-                let x = bounds.width - padding.right - textSize.width
-                let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textSize.height) / 2
+            let firstLine = max(1, Int(floor((dirtyRect.minY - padding.top) / lineSpacing)))
+            let lastLine = min(lineCount, Int(ceil((dirtyRect.maxY - padding.top) / lineSpacing)) + 1)
+            guard firstLine <= lastLine else { return }
+
+            let textHeight = "0".size(withAttributes: textAttributes).height
+            var digitCount = 0
+            var textWidth: CGFloat = 0
+
+            for lineNumber in firstLine ... lastLine {
+                let numberString = "\(lineNumber)"
+                if numberString.count != digitCount {
+                    digitCount = numberString.count
+                    textWidth = numberString.size(withAttributes: textAttributes).width
+                }
+
+                let x = bounds.width - padding.right - textWidth
+                let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textHeight) / 2
 
                 let textRect = CGRect(
                     x: x,
                     y: y,
-                    width: textSize.width,
-                    height: textSize.height
+                    width: textWidth,
+                    height: textHeight
                 )
 
                 numberString.draw(in: textRect, withAttributes: textAttributes)

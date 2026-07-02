@@ -44,11 +44,11 @@ public final class MarkdownParser: Sendable {
         let markdown = math.indexedContent ?? markdown
         let nodes = withParser { parser in
             markdown.withCString { str in
-                cmark_parser_feed(parser, str, strlen(str))
+                cmark_parser_feed(parser, str, markdown.utf8.count)
                 return cmark_parser_finish(parser)
             }
         }
-        var blocks = dumpBlocks(root: nodes)
+        var blocks = dumpBlocks(root: nodes, mathContext: math)
         blocks = finalizeMathBlocks(blocks, mathContext: math)
         return .init(document: blocks, mathContext: math.contents)
     }
@@ -64,7 +64,7 @@ public final class MarkdownParser: Sendable {
 
         let root = withParser { parser in
             markdown.withCString { str in
-                cmark_parser_feed(parser, str, strlen(str))
+                cmark_parser_feed(parser, str, markdown.utf8.count)
                 return cmark_parser_finish(parser)
             }
         }
@@ -83,21 +83,19 @@ public final class MarkdownParser: Sendable {
             let endColumn = Int(node.end_column)
 
             guard let startIndex = getIndex(forLine: startLine, column: startColumn, in: markdown),
-                  let endIndex = getIndex(forLine: endLine, column: endColumn, in: markdown)
+                  let endIndex = getIndex(forLine: endLine, column: endColumn, columnIsInclusiveEnd: true, in: markdown)
             else {
                 assertionFailure()
                 continue
             }
             let content = RootBlockRange(type: block.nodeType, startIndex: startIndex, endIndex: endIndex)
             ranges.append(content)
-
-            print("[*] block: \(block.nodeType) at \(content.startIndex) - \(content.endIndex)")
         }
         return ranges
     }
 }
 
-private func getIndex(forLine targetLine: Int, column targetColumn: Int, in text: String) -> String.Index? {
+private func getIndex(forLine targetLine: Int, column targetColumn: Int, columnIsInclusiveEnd: Bool = false, in text: String) -> String.Index? {
     var currentLine = 1
     var lineStartIndex = text.startIndex
 
@@ -110,7 +108,7 @@ private func getIndex(forLine targetLine: Int, column targetColumn: Int, in text
     }
 
     // cmark 使用 1-based 列号，需要减1转换为 0-based
-    let targetOffset = targetColumn - 1
+    let targetOffset = columnIsInclusiveEnd ? targetColumn : targetColumn - 1
 
     let lineEndIndex: String.Index = if let newlineIndex = text[lineStartIndex...].firstIndex(of: "\n") {
         newlineIndex
@@ -118,7 +116,13 @@ private func getIndex(forLine targetLine: Int, column targetColumn: Int, in text
         text.endIndex
     }
 
-    let maxOffset = text.distance(from: lineStartIndex, to: lineEndIndex)
+    guard let lineStartUTF8 = lineStartIndex.samePosition(in: text.utf8),
+          let lineEndUTF8 = lineEndIndex.samePosition(in: text.utf8)
+    else {
+        return lineEndIndex
+    }
+
+    let maxOffset = text.utf8.distance(from: lineStartUTF8, to: lineEndUTF8)
 
     if targetOffset > maxOffset {
         return lineEndIndex
@@ -128,5 +132,6 @@ private func getIndex(forLine targetLine: Int, column targetColumn: Int, in text
         return lineStartIndex
     }
 
-    return text.index(lineStartIndex, offsetBy: targetOffset)
+    let utf8Index = text.utf8.index(lineStartUTF8, offsetBy: targetOffset)
+    return utf8Index.samePosition(in: text) ?? lineEndIndex
 }

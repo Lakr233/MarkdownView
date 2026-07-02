@@ -1,12 +1,12 @@
 //
-//  LTXAttachment+Extension.swift
+//  TextLabel.Attachment+Extension.swift
 //  WatchMarkdownView
 //
 
 import Foundation
 import Litext
 
-private final class LTXHolderAttachment: LTXAttachment {
+private final class HolderAttachment: TextLabel.Attachment {
     private let attrString: NSAttributedString
 
     init(attrString: NSAttributedString) {
@@ -19,8 +19,8 @@ private final class LTXHolderAttachment: LTXAttachment {
     }
 }
 
-extension LTXAttachment {
-    static func hold(attrString: NSAttributedString) -> LTXAttachment {
-        LTXHolderAttachment(attrString: attrString)
+extension TextLabel.Attachment {
+    static func hold(attrString: NSAttributedString) -> TextLabel.Attachment {
+        HolderAttachment(attrString: attrString)
     }
 }

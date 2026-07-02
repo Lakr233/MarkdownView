@@ -10,12 +10,12 @@ import Litext
 #if canImport(UIKit)
     import UIKit
 
-    extension MarkdownTextView: LTXLabelDelegate {
-        public func ltxLabelSelectionDidChange(_: Litext.LTXLabel, selection _: NSRange?) {
+    extension MarkdownTextView: TextLabelViewDelegate {
+        public func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {
             // reserved for future use
         }
 
-        public func ltxLabelDetectedUserEventMovingAtLocation(_ label: Litext.LTXLabel, location: CGPoint) {
+        public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
             guard let scrollView = trackedScrollView else { return }
             guard scrollView.contentSize.height > scrollView.bounds.height else { return }
 
@@ -33,19 +33,16 @@ import Litext
             } else {
                 currentOffset.y += abs(locationInScrollView.y - scrollViewVisibleRect.maxY)
             }
-            currentOffset.y = max(0, currentOffset.y)
-            currentOffset.y = min(
-                currentOffset.y,
-                scrollView.contentSize.height - scrollView.bounds.height
-                    + scrollView.contentInset.top + scrollView.contentInset.bottom
+            let minOffsetY = -scrollView.adjustedContentInset.top
+            let maxOffsetY = max(
+                minOffsetY,
+                scrollView.contentSize.height + scrollView.adjustedContentInset.bottom - scrollView.bounds.height
             )
+            currentOffset.y = min(max(currentOffset.y, minOffsetY), maxOffsetY)
             scrollView.setContentOffset(currentOffset, animated: false)
         }
 
-        public func ltxLabelDidTapOnHighlightContent(_: LTXLabel, region: LTXHighlightRegion?, location: CGPoint) {
-            guard let highlightRegion = region else {
-                return
-            }
+        public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
 
             if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
                 presentMathPreview(for: latexContent, theme: theme)
@@ -65,12 +62,12 @@ import Litext
 #elseif canImport(AppKit)
     import AppKit
 
-    extension MarkdownTextView: LTXLabelDelegate {
-        public func ltxLabelSelectionDidChange(_: Litext.LTXLabel, selection _: NSRange?) {
+    extension MarkdownTextView: TextLabelViewDelegate {
+        public func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {
             // reserved for future use
         }
 
-        public func ltxLabelDetectedUserEventMovingAtLocation(_ label: Litext.LTXLabel, location: CGPoint) {
+        public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
             guard let scrollView = trackedScrollView else { return }
             guard let documentView = scrollView.documentView else { return }
             guard documentView.bounds.height > scrollView.bounds.height else { return }
@@ -94,10 +91,7 @@ import Litext
             documentView.scroll(newOrigin)
         }
 
-        public func ltxLabelDidTapOnHighlightContent(_: LTXLabel, region: LTXHighlightRegion?, location: CGPoint) {
-            guard let highlightRegion = region else {
-                return
-            }
+        public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
 
             if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
                 presentMathPreview(for: latexContent, theme: theme)

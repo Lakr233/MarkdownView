@@ -6,6 +6,7 @@
 import CoreGraphics
 import CoreText
 import Foundation
+import LRUCache
 
 enum WatchCodeBlockRenderer {
     struct Result {
@@ -14,7 +15,34 @@ enum WatchCodeBlockRenderer {
     }
 
     @MainActor
+    private static let cache = LRUCache<Int, Result>(countLimit: 32)
+
+    @MainActor
     static func render(
+        code: String,
+        theme: WatchMarkdownTheme,
+        maxWidth: CGFloat,
+        scale: CGFloat
+    ) -> Result {
+        var hasher = Hasher()
+        hasher.combine(code)
+        hasher.combine(maxWidth)
+        hasher.combine(scale)
+        hasher.combine(theme.bodySize)
+        hasher.combine(theme.codeScale)
+        hasher.combine(theme.tableCellPadding)
+        hashColor(theme.codeColor, into: &hasher)
+        hashColor(theme.codeBackgroundColor, into: &hasher)
+        let key = hasher.finalize()
+        if let cached = cache.value(forKey: key) {
+            return cached
+        }
+        let result = renderImage(code: code, theme: theme, maxWidth: maxWidth, scale: scale)
+        cache.setValue(result, forKey: key)
+        return result
+    }
+
+    private static func renderImage(
         code: String,
         theme: WatchMarkdownTheme,
         maxWidth: CGFloat,
@@ -92,6 +120,11 @@ enum WatchCodeBlockRenderer {
             nil
         )
         return CGSize(width: ceil(size.width), height: ceil(size.height))
+    }
+
+    private static func hashColor(_ color: CGColor, into hasher: inout Hasher) {
+        hasher.combine(color.components ?? [])
+        hasher.combine((color.colorSpace?.name).map { $0 as String })
     }
 
     private static func trimTrailingCharacters(in string: String, set: CharacterSet) -> String {

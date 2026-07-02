@@ -28,49 +28,31 @@ extension MarkdownViewRepresentableBase {
     }
 
     func updateMarkdownTextView(_ view: MarkdownTextView, coordinator: MarkdownViewCoordinator) {
-        let needsUpdate: Bool
-        let content: MarkdownTextView.PreprocessedContent
+        coordinator.width = width
+        coordinator.heightBinding = heightBinding
 
         switch contentSource {
         case let .text(text):
-            needsUpdate = coordinator.lastText != text
-                || coordinator.lastTheme != theme
+            let needsUpdate = coordinator.targetText != text
+                || coordinator.targetTheme != theme
             if needsUpdate {
-                let parser = MarkdownParser()
-                let result = parser.parse(text)
-                content = MarkdownTextView.PreprocessedContent(parserResult: result, theme: theme)
-                coordinator.lastText = text
-                coordinator.lastPreprocessedContent = nil
-            } else {
-                content = view.document
+                coordinator.setTextThrottled(text, theme: theme, on: view)
             }
 
         case let .preprocessed(preprocessedContent):
-            needsUpdate = coordinator.lastPreprocessedContent !== preprocessedContent
+            let needsUpdate = coordinator.lastPreprocessedContent !== preprocessedContent
                 || coordinator.lastTheme != theme
-            content = preprocessedContent
             if needsUpdate {
+                coordinator.cancelScheduledApply()
                 coordinator.lastText = ""
+                coordinator.lastParseResult = nil
                 coordinator.lastPreprocessedContent = preprocessedContent
+                view.theme = theme
+                view.setMarkdownManually(preprocessedContent)
+                view.invalidateIntrinsicContentSize()
+                coordinator.lastTheme = theme
             }
         }
-
-        if needsUpdate {
-            view.theme = theme
-            view.setMarkdownManually(content)
-            view.invalidateIntrinsicContentSize()
-            coordinator.lastTheme = theme
-        }
-        updateMeasuredHeight(for: view)
-    }
-
-    func updateMeasuredHeight(for view: MarkdownTextView) {
-        guard width.isFinite, width > 0 else { return }
-        let size = view.boundingSize(for: width)
-        let height = ceil(size.height)
-        guard abs(height - heightBinding.wrappedValue) > 0.5 else { return }
-        DispatchQueue.main.async {
-            self.heightBinding.wrappedValue = height
-        }
+        coordinator.updateMeasuredHeight(for: view)
     }
 }

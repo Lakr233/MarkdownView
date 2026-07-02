@@ -136,48 +136,27 @@ public extension MarkdownParser.ParseResult {
 public extension MarkdownParser.ParseResult {
     @MainActor
     fileprivate func renderHighlighMap(_: MarkdownTheme, highlightMaps: inout [Int: CodeHighlighter.HighlightMap]) {
-        var iterator: [Any] = document
-        while !iterator.isEmpty {
-            let node = iterator.removeFirst()
-            if let node = node as? MarkdownBlockNode {
-                iterator.append(contentsOf: node.children)
-                switch node {
-                case let .blockquote(children):
-                    iterator.append(contentsOf: children)
-                case let .bulletedList(_, items):
-                    iterator.append(contentsOf: items.flatMap(\.children))
-                case let .numberedList(_, _, items):
-                    iterator.append(contentsOf: items.flatMap(\.children))
-                case let .taskList(_, items):
-                    iterator.append(contentsOf: items.flatMap(\.children))
-                case let .codeBlock(fenceInfo, content):
-                    let key = CodeHighlighter.current.key(for: content, language: fenceInfo)
-                    let map = CodeHighlighter.current.highlight(key: key, content: content, language: fenceInfo)
+        var pendingRequests: [CodeHighlightRequest] = []
+        var queue: [MarkdownBlockNode] = document
+        var index = 0
+        while index < queue.count {
+            let node = queue[index]
+            index += 1
+            queue.append(contentsOf: node.children)
+            switch node {
+            case let .codeBlock(fenceInfo, content):
+                let key = CodeHighlighter.current.key(for: content, language: fenceInfo)
+                if let map = CodeHighlighter.current.cachedHighlightMap(for: key) {
                     highlightMaps[key] = map
-                case let .paragraph(content):
-                    iterator.append(contentsOf: content)
-                case let .heading(_, content):
-                    iterator.append(contentsOf: content)
-                case let .table(_, rows):
-                    iterator.append(contentsOf: rows.flatMap(\.cells).map(\.content))
-                case .thematicBreak:
-                    break
+                } else {
+                    pendingRequests.append(.init(key: key, content: content, language: fenceInfo))
                 }
-                continue
+            default:
+                break
             }
-            if let node = node as? MarkdownInlineNode {
-                switch node {
-                // 用户说这里很乱 不要高亮了
-                // case let .code(string), let .html(string):
-                // let key = CodeHighlighter.current.key(for: string, language: "")
-                // let map = CodeHighlighter.current.highlight(key: key, content: string, language: "")
-                // highlightMaps[key] = map
-                default:
-                    break
-                }
-                continue
-            }
-            continue
+        }
+        if !pendingRequests.isEmpty {
+            CodeHighlighter.current.scheduleHighlight(requests: pendingRequests)
         }
     }
 

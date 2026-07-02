@@ -12,15 +12,14 @@ private let mathPattern: NSRegularExpression? = {
         ###"\$\$([\s\S]*?)\$\$"###, // 块级公式 $$ ... $$
         ###"\\\\\[([\s\S]*?)\\\\\]"###, // 带转义的块级公式 \\[ ... \\]
         ###"\\\\\(([\s\S]*?)\\\\\)"###, // 带转义的行内公式 \\( ... \\)
-        ###"\\\[ ([\s\S]*?) \\\]"###, // 单个反斜杠的块级公式 \[ ... \]，前后需要空格
-        ###"\\\( ([^`\n]*?) \\\)"###, // 单个反斜杠的块级公式 \( ... \)，前后需要空格，中间不能有 ` 和 换行
+        ###"\\\[([\s\S]*?)\\\]"###, // 单个反斜杠的块级公式 \[ ... \]
+        ###"\\\(([^`\n]*?)\\\)"###, // 单个反斜杠的块级公式 \( ... \)，中间不能有 ` 和 换行
     ]
     let pattern = patterns.joined(separator: "|")
     guard let regex = try? NSRegularExpression(
         pattern: pattern,
         options: [
             .caseInsensitive,
-            .allowCommentsAndWhitespace,
         ]
     ) else {
         assertionFailure("failed to create regex for math pattern")
@@ -69,17 +68,29 @@ public extension MarkdownParser {
                 return
             }
 
-            var document = document
-            let matches = extractMathMatches(in: document, using: regex).reversed()
+            let matches = extractMathMatches(in: document, using: regex)
             if matches.isEmpty { return }
 
+            let nsText = document as NSString
+            var result = ""
+            result.reserveCapacity(document.utf8.count)
+            var lastEnd = 0
+
             for match in matches {
-                guard let fullRange = Range(match.range, in: document) else { continue }
-                let replacement = register(content: match.content, source: match.source)
-                document.replaceSubrange(fullRange, with: replacement)
+                if match.range.location > lastEnd {
+                    result += nsText.substring(
+                        with: NSRange(location: lastEnd, length: match.range.location - lastEnd)
+                    )
+                }
+                result += register(content: match.content, source: match.source)
+                lastEnd = match.range.location + match.range.length
             }
 
-            indexedContent = document
+            if lastEnd < nsText.length {
+                result += nsText.substring(from: lastEnd)
+            }
+
+            indexedContent = result
         }
 
         func register(content: String, source: String? = nil) -> String {
@@ -90,6 +101,7 @@ public extension MarkdownParser {
         }
 
         func inlineNode(forReplacementText text: String) -> MarkdownInlineNode? {
+            guard !contents.isEmpty else { return nil }
             guard MarkdownParser.typeForReplacementText(text) == .math,
                   let identifier = MarkdownParser.identifierForReplacementText(text),
                   let value = Int(identifier),
@@ -107,7 +119,8 @@ public extension MarkdownParser {
         }
 
         func restore(content: String) -> String {
-            contents.sorted(by: { $0.key < $1.key }).reduce(into: content) { partialResult, element in
+            guard content.contains("md://content?type=math") else { return content }
+            return contents.sorted(by: { $0.key < $1.key }).reduce(into: content) { partialResult, element in
                 let placeholder = MarkdownParser.replacementText(for: .math, identifier: .init(element.key))
                 let source = sourceContents[element.key] ?? element.value
                 partialResult = partialResult.replacingOccurrences(of: placeholder, with: source)
@@ -118,15 +131,14 @@ public extension MarkdownParser {
 
 private let mathPatternWithinBlock: NSRegularExpression? = {
     let patterns = [
-        ###"\\\( ([^\r\n]+?) \\\)"###, // 行内公式 \(...\)
-        ###"\$ ([^\r\n]+?) \$"###, // 行内公式 $ ... $
+        ###"\\\(([^\r\n]+?)\\\)"###, // 行内公式 \(...\)
+        ###"(?<![\d$])\$(?=\S)([^\r\n$]+?)(?<=\S)\$(?!\d)"###, // 行内公式 $...$，排除货币金额
     ]
     let pattern = patterns.joined(separator: "|")
     guard let regex = try? NSRegularExpression(
         pattern: pattern,
         options: [
             .caseInsensitive,
-            .allowCommentsAndWhitespace,
         ]
     ) else {
         assertionFailure("failed to create regex for math pattern")
@@ -135,11 +147,22 @@ private let mathPatternWithinBlock: NSRegularExpression? = {
     return regex
 }()
 
+private func textMayContainInlineMath(_ text: String) -> Bool {
+    var previous: UInt8 = 0
+    for byte in text.utf8 {
+        if byte == UInt8(ascii: "$") { return true }
+        if previous == UInt8(ascii: "\\"), byte == UInt8(ascii: "(") { return true }
+        previous = byte
+    }
+    return false
+}
+
 extension MarkdownParser {
     func finalizeMathBlocks(_ nodes: [MarkdownBlockNode], mathContext: MathContext) -> [MarkdownBlockNode] {
         let inlineFinalized = nodes.rewrite { node in
             finalizeInlineMath(node, mathContext: mathContext)
         }
+        guard !mathContext.contents.isEmpty else { return inlineFinalized }
         return inlineFinalized.rewrite { node in
             guard case let .codeBlock(language, content) = node else {
                 return [node]
@@ -164,6 +187,7 @@ extension MarkdownParser {
     }
 
     private func processInlineMath(in text: String, mathContext: MathContext) -> [MarkdownInlineNode] {
+        guard textMayContainInlineMath(text) else { return [.text(text)] }
         guard let regex = mathPatternWithinBlock else { return [.text(text)] }
         let matches = extractMathMatches(in: text, using: regex)
         if matches.isEmpty { return [.text(text)] }

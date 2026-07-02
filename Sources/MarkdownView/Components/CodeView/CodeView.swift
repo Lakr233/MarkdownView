@@ -11,11 +11,16 @@ import Litext
     final class CodeView: UIView {
         // MARK: - CONTENT
 
+        private var needsTextRebuild = false
+
         var theme: MarkdownTheme = .default {
             didSet {
                 languageLabel.font = theme.fonts.code
                 textView.selectionBackgroundColor = theme.colors.selectionBackground
                 updateLineNumberView()
+                if oldValue.fonts.code != theme.fonts.code || oldValue.colors.code != theme.colors.code {
+                    needsTextRebuild = true
+                }
             }
         }
 
@@ -25,21 +30,32 @@ import Litext
             }
         }
 
-        var highlightMap: CodeHighlighter.HighlightMap = .init()
+        var highlightMap: CodeHighlighter.HighlightMap = .init() {
+            didSet {
+                if oldValue != highlightMap {
+                    needsTextRebuild = true
+                }
+            }
+        }
 
         var content: String = "" {
             didSet {
-                guard oldValue != content else { return }
+                guard oldValue != content || needsTextRebuild else { return }
+                needsTextRebuild = false
+                cachedLineCount = max(content.components(separatedBy: .newlines).count, 1)
                 textView.attributedText = highlightMap.apply(to: content, with: theme)
                 lineNumberView.updateForContent(content)
                 updateLineNumberView()
             }
         }
 
+        private var cachedLineCount: Int = 1
+
         // MARK: CONTENT -
 
         var previewAction: ((String?, NSAttributedString) -> Void)? {
             didSet {
+                guard (oldValue == nil) != (previewAction == nil) else { return }
                 setNeedsLayout()
             }
         }
@@ -50,7 +66,7 @@ import Litext
         lazy var barView: UIView = .init()
         lazy var scrollView: UIScrollView = .init()
         lazy var languageLabel: UILabel = .init()
-        lazy var textView: LTXLabel = .init()
+        lazy var textView: TextLabelView = .init()
         lazy var copyButton: UIButton = .init()
         lazy var previewButton: UIButton = .init()
         lazy var lineNumberView: LineNumberView = .init()
@@ -107,7 +123,7 @@ import Litext
             let labelSize = languageLabel.intrinsicContentSize
             let barHeight = labelSize.height + CodeViewConfiguration.barPadding * 2
             let textSize = textView.intrinsicContentSize
-            let supposedHeight = Self.intrinsicHeight(for: content, theme: theme)
+            let supposedHeight = CodeViewConfiguration.intrinsicHeight(lineCount: cachedLineCount, theme: theme)
 
             let lineNumberWidth = lineNumberView.intrinsicContentSize.width
 
@@ -139,16 +155,14 @@ import Litext
 
         func updateLineNumberView() {
             let font = theme.fonts.code
-            lineNumberView.textColor = theme.colors.body.withAlphaComponent(0.5)
 
-            let lineCount = max(content.components(separatedBy: .newlines).count, 1)
             let textViewContentHeight = textView.intrinsicContentSize.height
 
             lineNumberView.configure(
-                lineCount: lineCount,
+                lineCount: cachedLineCount,
                 contentHeight: textViewContentHeight,
                 font: font,
-                textColor: .secondaryLabel
+                textColor: theme.colors.body.withAlphaComponent(0.5)
             )
 
             lineNumberView.padding = UIEdgeInsets(
@@ -160,7 +174,7 @@ import Litext
         }
     }
 
-    extension CodeView: LTXAttributeStringRepresentable {
+    extension CodeView: TextLabel.AttachmentRepresentable {
         func attributedStringRepresentation() -> NSAttributedString {
             textView.attributedText
         }
@@ -170,11 +184,16 @@ import Litext
     import AppKit
 
     final class CodeView: NSView {
+        private var needsTextRebuild = false
+
         var theme: MarkdownTheme = .default {
             didSet {
                 languageLabel.font = theme.fonts.code
                 textView.selectionBackgroundColor = theme.colors.selectionBackground
                 updateLineNumberView()
+                if oldValue.fonts.code != theme.fonts.code || oldValue.colors.code != theme.colors.code {
+                    needsTextRebuild = true
+                }
             }
         }
 
@@ -184,19 +203,30 @@ import Litext
             }
         }
 
-        var highlightMap: CodeHighlighter.HighlightMap = .init()
+        var highlightMap: CodeHighlighter.HighlightMap = .init() {
+            didSet {
+                if oldValue != highlightMap {
+                    needsTextRebuild = true
+                }
+            }
+        }
 
         var content: String = "" {
             didSet {
-                guard oldValue != content else { return }
+                guard oldValue != content || needsTextRebuild else { return }
+                needsTextRebuild = false
+                cachedLineCount = max(content.components(separatedBy: .newlines).count, 1)
                 textView.attributedText = highlightMap.apply(to: content, with: theme)
                 lineNumberView.updateForContent(content)
                 updateLineNumberView()
             }
         }
 
+        private var cachedLineCount: Int = 1
+
         var previewAction: ((String?, NSAttributedString) -> Void)? {
             didSet {
+                guard (oldValue == nil) != (previewAction == nil) else { return }
                 needsLayout = true
             }
         }
@@ -221,7 +251,7 @@ import Litext
             return label
         }()
 
-        lazy var textView: LTXLabel = .init()
+        lazy var textView: TextLabelView = .init()
         lazy var copyButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var previewButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var lineNumberView: LineNumberView = .init()
@@ -270,15 +300,16 @@ import Litext
         }
 
         override func hitTest(_ point: NSPoint) -> NSView? {
-            guard !isHidden, bounds.contains(point) else { return nil }
-            return interactionTarget(at: point)
+            let localPoint = superview.map { convert(point, from: $0) } ?? point
+            guard !isHidden, bounds.contains(localPoint) else { return nil }
+            return interactionTarget(at: localPoint)
         }
 
         override var intrinsicContentSize: CGSize {
             let labelSize = languageLabel.intrinsicContentSize
             let barHeight = labelSize.height + CodeViewConfiguration.barPadding * 2
             let textSize = textView.intrinsicContentSize
-            let supposedHeight = Self.intrinsicHeight(for: content, theme: theme)
+            let supposedHeight = CodeViewConfiguration.intrinsicHeight(lineCount: cachedLineCount, theme: theme)
 
             let lineNumberWidth = lineNumberView.intrinsicContentSize.width
 
@@ -306,16 +337,14 @@ import Litext
 
         func updateLineNumberView() {
             let font = theme.fonts.code
-            lineNumberView.textColor = theme.colors.body.withAlphaComponent(0.5)
 
-            let lineCount = max(content.components(separatedBy: .newlines).count, 1)
             let textViewContentHeight = textView.intrinsicContentSize.height
 
             lineNumberView.configure(
-                lineCount: lineCount,
+                lineCount: cachedLineCount,
                 contentHeight: textViewContentHeight,
                 font: font,
-                textColor: .secondaryLabelColor
+                textColor: theme.colors.body.withAlphaComponent(0.5)
             )
 
             lineNumberView.padding = NSEdgeInsets(
@@ -327,7 +356,7 @@ import Litext
         }
     }
 
-    extension CodeView: LTXAttributeStringRepresentable {
+    extension CodeView: TextLabel.AttachmentRepresentable {
         func attributedStringRepresentation() -> NSAttributedString {
             textView.attributedText
         }

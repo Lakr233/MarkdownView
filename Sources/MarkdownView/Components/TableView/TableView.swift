@@ -102,7 +102,6 @@ import Litext
         override func layoutSubviews() {
             super.layoutSubviews()
 
-            scrollView.clipsToBounds = false
             scrollView.frame = bounds
             let contentSize = intrinsicContentSize
             scrollView.contentSize = contentSize
@@ -211,13 +210,16 @@ import Litext
             input: NSAttributedString,
             replacing occurs: String,
             with replaced: String
-        ) -> NSMutableAttributedString {
+        ) -> NSAttributedString {
+            guard input.string.contains(occurs) else { return input }
             let mutableAttributedString = input.mutableCopy() as! NSMutableAttributedString
             let mutableString = mutableAttributedString.mutableString
-            while mutableString.contains(occurs) {
-                let rangeOfStringToBeReplaced = mutableString.range(of: occurs)
-                mutableAttributedString.replaceCharacters(in: rangeOfStringToBeReplaced, with: replaced)
-            }
+            mutableString.replaceOccurrences(
+                of: occurs,
+                with: replaced,
+                options: [],
+                range: NSRange(location: 0, length: mutableString.length)
+            )
             return mutableAttributedString
         }
 
@@ -235,19 +237,18 @@ import Litext
         }
     }
 
-    // MARK: - LTXLabelDelegate
+    // MARK: - TextLabelViewDelegate
 
-    extension TableView: LTXLabelDelegate {
-        func ltxLabelSelectionDidChange(_: LTXLabel, selection _: NSRange?) {
+    extension TableView: TextLabelViewDelegate {
+        func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {
             // Reserved for future use
         }
 
-        func ltxLabelDetectedUserEventMovingAtLocation(_: LTXLabel, location _: CGPoint) {
+        func textLabelView(_: TextLabelView, didDragSelectionAt _: CGPoint) {
             // Reserved for future use
         }
 
-        func ltxLabelDidTapOnHighlightContent(_ label: LTXLabel, region: LTXHighlightRegion?, location: CGPoint) {
-            guard let highlightRegion = region else { return }
+        func textLabelView(_ label: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
             let link = highlightRegion.attributes[NSAttributedString.Key.link]
             let range = highlightRegion.stringRange
 
@@ -276,6 +277,11 @@ import Litext
         private var lockedToVertical: Bool?
 
         override func scrollWheel(with event: NSEvent) {
+            // Legacy mouse-wheel events carry no phases; decide the axis
+            // per event instead of latching it for the gesture.
+            if event.phase.isEmpty, event.momentumPhase.isEmpty {
+                lockedToVertical = nil
+            }
             // Reset at the start of each new gesture (deltas are 0 at .began,
             // so don't lock yet — wait for first real movement below).
             if event.phase.contains(.began) {
@@ -420,6 +426,18 @@ import Litext
         }
 
         func interactionTarget(at point: CGPoint) -> NSView? {
+            for cell in cellManager.cells.reversed() {
+                let cellPoint = cell.convert(point, from: self)
+                guard cell.bounds.contains(cellPoint) else { continue }
+                // Unlike UIKit, AppKit's TextLabelView.hitTest falls back to
+                // super and reports a hit even for inert text, so only route
+                // to cells that can actually handle interaction.
+                guard cellSupportsInteraction(cell) else { continue }
+                if let target = cell.hitTest(cellPoint) {
+                    return target
+                }
+            }
+
             let scrollPoint = scrollView.convert(point, from: self)
             if scrollView.bounds.contains(scrollPoint),
                let documentView = scrollView.documentView,
@@ -432,8 +450,24 @@ import Litext
         }
 
         override func hitTest(_ point: NSPoint) -> NSView? {
-            guard !isHidden, bounds.contains(point) else { return nil }
-            return interactionTarget(at: point)
+            let localPoint = superview.map { convert(point, from: $0) } ?? point
+            guard !isHidden, bounds.contains(localPoint) else { return nil }
+            return interactionTarget(at: localPoint)
+        }
+
+        private func cellSupportsInteraction(_ cell: TextLabelView) -> Bool {
+            if cell.isSelectable { return true }
+            let text = cell.attributedText
+            var containsLink = false
+            text.enumerateAttribute(
+                .link,
+                in: NSRange(location: 0, length: text.length)
+            ) { value, _, stop in
+                guard value != nil else { return }
+                containsLink = true
+                stop.pointee = true
+            }
+            return containsLink
         }
 
         private func layoutCells() {
@@ -506,13 +540,16 @@ import Litext
             input: NSAttributedString,
             replacing occurs: String,
             with replaced: String
-        ) -> NSMutableAttributedString {
+        ) -> NSAttributedString {
+            guard input.string.contains(occurs) else { return input }
             let mutableAttributedString = input.mutableCopy() as! NSMutableAttributedString
             let mutableString = mutableAttributedString.mutableString
-            while mutableString.contains(occurs) {
-                let rangeOfStringToBeReplaced = mutableString.range(of: occurs)
-                mutableAttributedString.replaceCharacters(in: rangeOfStringToBeReplaced, with: replaced)
-            }
+            mutableString.replaceOccurrences(
+                of: occurs,
+                with: replaced,
+                options: [],
+                range: NSRange(location: 0, length: mutableString.length)
+            )
             return mutableAttributedString
         }
 
@@ -530,15 +567,14 @@ import Litext
         }
     }
 
-    // MARK: - LTXLabelDelegate
+    // MARK: - TextLabelViewDelegate
 
-    extension TableView: LTXLabelDelegate {
-        func ltxLabelSelectionDidChange(_: LTXLabel, selection _: NSRange?) {}
+    extension TableView: TextLabelViewDelegate {
+        func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {}
 
-        func ltxLabelDetectedUserEventMovingAtLocation(_: LTXLabel, location _: CGPoint) {}
+        func textLabelView(_: TextLabelView, didDragSelectionAt _: CGPoint) {}
 
-        func ltxLabelDidTapOnHighlightContent(_ label: LTXLabel, region: LTXHighlightRegion?, location: CGPoint) {
-            guard let highlightRegion = region else { return }
+        func textLabelView(_ label: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
             let link = highlightRegion.attributes[NSAttributedString.Key.link]
             let range = highlightRegion.stringRange
 

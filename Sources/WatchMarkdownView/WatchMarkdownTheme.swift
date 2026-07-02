@@ -9,8 +9,25 @@ import Foundation
 public struct WatchMarkdownTheme: @unchecked Sendable {
     // MARK: - Scale
 
-    public var bodySize: CGFloat = 16
-    public var codeScale: CGFloat = 0.85
+    public var bodySize: CGFloat = 16 {
+        didSet { refreshFonts() }
+    }
+
+    public var codeScale: CGFloat = 0.85 {
+        didSet { refreshFonts() }
+    }
+
+    // MARK: - Fonts
+
+    var bodyFont: CTFont
+    var boldFont: CTFont
+    var italicFont: CTFont
+    var boldItalicFont: CTFont
+    var codeFont: CTFont
+    var h1Font: CTFont
+    var h2Font: CTFont
+    var h3Font: CTFont
+    var h4Font: CTFont
 
     // MARK: - Colors (CGColor — UIColor/NSColor not available on watchOS)
 
@@ -37,46 +54,28 @@ public struct WatchMarkdownTheme: @unchecked Sendable {
     // MARK: - Default
 
     public static let `default` = WatchMarkdownTheme()
-    public init() {}
-}
-
-// MARK: - Font Accessors
-
-extension WatchMarkdownTheme {
-    var bodyFont: CTFont {
-        systemFont(size: bodySize)
+    public init() {
+        bodyFont = systemFont(size: bodySize)
+        boldFont = boldSystemFont(size: bodySize)
+        italicFont = italicSystemFont(size: bodySize)
+        boldItalicFont = boldItalicSystemFont(size: bodySize)
+        codeFont = monoFont(size: ceil(bodySize * codeScale))
+        h1Font = boldSystemFont(size: ceil(bodySize * 1.6))
+        h2Font = boldSystemFont(size: ceil(bodySize * 1.4))
+        h3Font = boldSystemFont(size: ceil(bodySize * 1.2))
+        h4Font = boldSystemFont(size: ceil(bodySize * 1.1))
     }
 
-    var boldFont: CTFont {
-        boldSystemFont(size: bodySize)
-    }
-
-    var italicFont: CTFont {
-        italicSystemFont(size: bodySize)
-    }
-
-    var boldItalicFont: CTFont {
-        boldItalicSystemFont(size: bodySize)
-    }
-
-    var codeFont: CTFont {
-        monoFont(size: ceil(bodySize * codeScale))
-    }
-
-    var h1Font: CTFont {
-        boldSystemFont(size: ceil(bodySize * 1.6))
-    }
-
-    var h2Font: CTFont {
-        boldSystemFont(size: ceil(bodySize * 1.4))
-    }
-
-    var h3Font: CTFont {
-        boldSystemFont(size: ceil(bodySize * 1.2))
-    }
-
-    var h4Font: CTFont {
-        boldSystemFont(size: ceil(bodySize * 1.1))
+    private mutating func refreshFonts() {
+        bodyFont = systemFont(size: bodySize)
+        boldFont = boldSystemFont(size: bodySize)
+        italicFont = italicSystemFont(size: bodySize)
+        boldItalicFont = boldItalicSystemFont(size: bodySize)
+        codeFont = monoFont(size: ceil(bodySize * codeScale))
+        h1Font = boldSystemFont(size: ceil(bodySize * 1.6))
+        h2Font = boldSystemFont(size: ceil(bodySize * 1.4))
+        h3Font = boldSystemFont(size: ceil(bodySize * 1.2))
+        h4Font = boldSystemFont(size: ceil(bodySize * 1.1))
     }
 }
 

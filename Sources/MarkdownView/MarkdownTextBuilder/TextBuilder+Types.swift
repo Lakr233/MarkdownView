@@ -26,7 +26,7 @@ extension TextBuilder {
 
 struct RenderText {
     let attributedString: NSAttributedString
-    let fullWidthAttachments: [LTXAttachment]
+    let fullWidthAttachments: [TextLabel.Attachment]
 }
 
 // MARK: - String Extension

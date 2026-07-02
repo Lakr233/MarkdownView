@@ -76,10 +76,11 @@ private extension WatchTextBuilder {
             )
 
         case let .heading(level, content):
+            let font = headingFont(level: level, theme: theme)
             result.append(
                 renderTextBlock(
-                    content.render(theme: theme, baseFont: headingFont(level: level, theme: theme)),
-                    font: headingFont(level: level, theme: theme),
+                    content.render(theme: theme, baseFont: font),
+                    font: font,
                     paragraphSpacing: theme.blockSpacing * 1.5,
                     context: context,
                     theme: theme
@@ -166,14 +167,14 @@ private extension WatchTextBuilder {
             nil,
             nil
         ) {
-            result.addAttribute(.ltxLineDrawingCallback, value: action, range: bodyRange)
+            result.addAttribute(.litextLineDrawingAction, value: action, range: bodyRange)
         }
 
         if let marker {
             let markerRange = NSRange(location: prefixLength, length: 1)
             result.addAttribute(
-                .ltxLineDrawingCallback,
-                value: LTXLineDrawingAction { drawContext, line, lineOrigin in
+                .litextLineDrawingAction,
+                value: TextLabel.LineDrawingAction { drawContext, line, lineOrigin in
                     drawMarker(
                         marker,
                         font: font,
@@ -221,7 +222,7 @@ private extension WatchTextBuilder {
             return NSAttributedString()
         }
 
-        let attachment = LTXAttachment.hold(
+        let attachment = TextLabel.Attachment.hold(
             attrString: NSAttributedString(
                 string: code.deletingTrailingCharacters(in: .whitespacesAndNewlines) + "\n",
                 attributes: codeAttributes(theme: theme)
@@ -230,10 +231,10 @@ private extension WatchTextBuilder {
         attachment.size = rendered.size
 
         let result = NSMutableAttributedString(
-            string: LTXReplacementText,
+            string: TextLabel.Attachment.replacementText,
             attributes: [
                 .font: theme.codeFont,
-                .ltxAttachment: attachment,
+                .litextAttachment: attachment,
             ]
         )
 
@@ -242,7 +243,7 @@ private extension WatchTextBuilder {
             imageAction(image: image, size: rendered.size, context: context)
         ) {
             result.addAttribute(
-                .ltxLineDrawingCallback,
+                .litextLineDrawingAction,
                 value: action,
                 range: NSRange(location: 0, length: result.length)
             )
@@ -307,24 +308,24 @@ private extension WatchTextBuilder {
         }
 
         let startMarker = NSMutableAttributedString(
-            string: LTXReplacementText,
+            string: TextLabel.Attachment.replacementText,
             attributes: startMarkerAttributes
         )
         startMarker.addAttribute(
-            .ltxLineDrawingCallback,
-            value: LTXLineDrawingAction { _, line, lineOrigin in
+            .litextLineDrawingAction,
+            value: TextLabel.LineDrawingAction { _, line, lineOrigin in
                 quoteTopY = lineBounds(line: line, origin: lineOrigin).maxY
             },
             range: NSRange(location: 0, length: 1)
         )
 
         let endMarker = NSMutableAttributedString(
-            string: LTXReplacementText,
+            string: TextLabel.Attachment.replacementText,
             attributes: endMarkerAttributes
         )
         endMarker.addAttribute(
-            .ltxLineDrawingCallback,
-            value: LTXLineDrawingAction { drawContext, line, lineOrigin in
+            .litextLineDrawingAction,
+            value: TextLabel.LineDrawingAction { drawContext, line, lineOrigin in
                 guard let quoteTopY else { return }
                 let lineRect = lineBounds(line: line, origin: lineOrigin)
                 let rect = CGRect(
@@ -356,14 +357,14 @@ private extension WatchTextBuilder {
         context: RenderContext,
         theme: WatchMarkdownTheme
     ) -> NSAttributedString {
-        let attachment = LTXAttachment.hold(attrString: NSAttributedString(string: "\n"))
+        let attachment = TextLabel.Attachment.hold(attrString: NSAttributedString(string: "\n"))
         attachment.size = CGSize(width: 1, height: max(8, theme.bodySize))
 
         let result = NSMutableAttributedString(
-            string: LTXReplacementText,
+            string: TextLabel.Attachment.replacementText,
             attributes: [
                 .font: theme.bodyFont,
-                .ltxAttachment: attachment,
+                .litextAttachment: attachment,
             ]
         )
 
@@ -371,7 +372,7 @@ private extension WatchTextBuilder {
             nil,
             separatorAction(context: context, theme: theme)
         ) {
-            result.addAttribute(.ltxLineDrawingCallback, value: action, range: NSRange(location: 0, length: result.length))
+            result.addAttribute(.litextLineDrawingAction, value: action, range: NSRange(location: 0, length: result.length))
         }
 
         let lineHeight = max(theme.bodySize, attachment.size.height)
@@ -409,14 +410,14 @@ private extension WatchTextBuilder {
             return NSAttributedString()
         }
 
-        let attachment = LTXAttachment.hold(attrString: tableRepresentation(rows: rows))
+        let attachment = TextLabel.Attachment.hold(attrString: tableRepresentation(rows: rows))
         attachment.size = rendered.size
 
         let result = NSMutableAttributedString(
-            string: LTXReplacementText,
+            string: TextLabel.Attachment.replacementText,
             attributes: [
                 .font: theme.bodyFont,
-                .ltxAttachment: attachment,
+                .litextAttachment: attachment,
             ]
         )
 
@@ -425,7 +426,7 @@ private extension WatchTextBuilder {
             imageAction(image: image, size: rendered.size, context: context)
         )
         if let action {
-            result.addAttribute(.ltxLineDrawingCallback, value: action, range: NSRange(location: 0, length: result.length))
+            result.addAttribute(.litextLineDrawingAction, value: action, range: NSRange(location: 0, length: result.length))
         }
 
         let paragraph = makeParagraphStyle(
@@ -464,12 +465,16 @@ private extension WatchTextBuilder {
                 .bullet(depth: item.depth)
             }
 
+            if !item.showsMarker {
+                itemContext.leadingInset += markerIndent(for: marker, font: theme.bodyFont, theme: theme)
+            }
+
             result.append(
                 renderTextBlock(
                     item.paragraph.render(theme: theme, baseFont: theme.bodyFont),
                     font: theme.bodyFont,
                     paragraphSpacing: paragraphSpacing,
-                    marker: marker,
+                    marker: item.showsMarker ? marker : nil,
                     context: itemContext,
                     theme: theme
                 )
@@ -481,9 +486,9 @@ private extension WatchTextBuilder {
 // MARK: - Drawing
 
 private extension WatchTextBuilder {
-    func makeCombinedAction(_ first: LineAction?, _ second: LineAction?) -> LTXLineDrawingAction? {
+    func makeCombinedAction(_ first: LineAction?, _ second: LineAction?) -> TextLabel.LineDrawingAction? {
         guard first != nil || second != nil else { return nil }
-        return LTXLineDrawingAction { context, line, lineOrigin in
+        return TextLabel.LineDrawingAction { context, line, lineOrigin in
             first?(context, line, lineOrigin)
             second?(context, line, lineOrigin)
         }
@@ -720,7 +725,7 @@ private extension WatchTextBuilder {
 
     func markerPrefix(marker _: ListMarker, theme: WatchMarkdownTheme) -> NSAttributedString {
         NSAttributedString(
-            string: LTXReplacementText,
+            string: TextLabel.Attachment.replacementText,
             attributes: baseAttributes(font: theme.bodyFont, theme: theme)
         )
     }
@@ -749,6 +754,7 @@ private extension WatchTextBuilder {
             ordered = orderedValue
 
             for item in items {
+                var isFirstParagraph = true
                 for child in item.nodes {
                     switch child {
                     case let .paragraph(contents):
@@ -759,10 +765,11 @@ private extension WatchTextBuilder {
                                 index: nextIndex,
                                 isTask: item.isDone != nil,
                                 isDone: item.isDone ?? false,
+                                showsMarker: isFirstParagraph,
                                 paragraph: contents
                             )
                         )
-                        nextIndex += 1
+                        isFirstParagraph = false
                     case let .bulletedList(_, children):
                         result.append(contentsOf: flattenList(.bulleted(children), depth: depth + 1))
                     case let .numberedList(_, start, children):
@@ -773,6 +780,7 @@ private extension WatchTextBuilder {
                         assertionFailure("Unsupported list child: \(child)")
                     }
                 }
+                nextIndex += 1
             }
         }
 
@@ -804,6 +812,7 @@ private extension WatchTextBuilder {
         let index: Int
         let isTask: Bool
         let isDone: Bool
+        let showsMarker: Bool
         let paragraph: [MarkdownInlineNode]
     }
 }
