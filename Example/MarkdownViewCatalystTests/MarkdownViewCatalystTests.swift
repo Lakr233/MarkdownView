@@ -51,9 +51,16 @@ import Testing
                 let gridView = try #require(
                     scrollView.subviews.first { $0 is GridView } as? GridView
                 )
+                #expect(tableView.intrinsicContentSize.width == UIView.noIntrinsicMetric)
                 if columnCount <= 3 {
                     #expect(abs(gridView.frame.width - tableView.bounds.width) <= 0.5)
                 } else {
+                    #expect(gridView.frame.width > tableView.bounds.width)
+
+                    tableView.frame.size.width = 160
+                    tableView.layoutIfNeeded()
+
+                    #expect(tableView.bounds.width == 160)
                     #expect(gridView.frame.width > tableView.bounds.width)
                 }
             }

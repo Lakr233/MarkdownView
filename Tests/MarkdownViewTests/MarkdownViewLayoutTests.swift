@@ -252,8 +252,8 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
-    @Test("Table grid matches scrollable content size")
-    func tableGridMatchesScrollableContentSize() throws {
+    @Test("Table viewport can shrink below its scrollable content width")
+    func tableViewportCanShrinkBelowContentWidth() throws {
         let tableView = TableView(frame: .init(x: 0, y: 0, width: 140, height: 90))
         tableView.setTheme(.default)
         tableView.setContents([
@@ -265,7 +265,16 @@ struct MarkdownViewLayoutTests {
         let scrollView = try #require(extractScrollView(from: tableView))
         let gridView = try #require(extractGridView(from: scrollView))
 
-        #expect(gridView.frame.size == tableView.intrinsicContentSize)
+        #expect(tableView.intrinsicContentSize.width == TestContainerView.noIntrinsicMetric)
+        #expect(gridView.frame.width > tableView.bounds.width)
+        #expect(gridView.frame.height == tableView.intrinsicContentHeight)
+
+        tableView.frame.size.width = 96
+        layout(view: tableView)
+
+        #expect(tableView.bounds.width == 96)
+        #expect(gridView.frame.width > tableView.bounds.width)
+        #expect(tableView.intrinsicContentSize.width == TestContainerView.noIntrinsicMetric)
     }
 
     @MainActor

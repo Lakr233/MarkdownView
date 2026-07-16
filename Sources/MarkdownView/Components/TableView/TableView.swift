@@ -222,7 +222,7 @@ private func fittedTableColumnWidths(
 
         override var intrinsicContentSize: CGSize {
             .init(
-                width: ceil(widths.reduce(0, +)) + tableViewPadding * 2,
+                width: Self.noIntrinsicMetric,
                 height: intrinsicContentHeight
             )
         }
@@ -523,7 +523,7 @@ private func fittedTableColumnWidths(
 
         override var intrinsicContentSize: CGSize {
             .init(
-                width: ceil(widths.reduce(0, +)) + tableViewPadding * 2,
+                width: Self.noIntrinsicMetric,
                 height: intrinsicContentHeight
             )
         }
