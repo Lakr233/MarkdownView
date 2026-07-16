@@ -162,7 +162,10 @@ final class BlockProcessor {
         return result
     }
 
-    func processTable(rows: [RawTableRow]) -> (NSAttributedString, TableView) {
+    func processTable(
+        columnAlignments: [RawTableColumnAlignment],
+        rows: [RawTableRow]
+    ) -> (NSAttributedString, TableView) {
         let tableView = viewProvider.acquireTableView()
         let contents = rows.map {
             $0.cells.map { rawCell in
@@ -174,7 +177,7 @@ final class BlockProcessor {
             .joined(separator: "\n")
         let representedText = NSAttributedString(string: allContent + "\n")
         tableView.setTheme(theme)
-        tableView.setContents(contents)
+        tableView.setContents(contents, columnAlignments: columnAlignments)
 
         let text = buildWithParagraphSync { paragraph in
             paragraph.minimumLineHeight = tableView.intrinsicContentHeight

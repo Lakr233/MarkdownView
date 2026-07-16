@@ -152,8 +152,11 @@ extension TextBuilder {
             return result.0
         case let .blockquote(children):
             return blockProcessor.processBlockquote(children)
-        case let .table(_, rows):
-            let result = blockProcessor.processTable(rows: rows)
+        case let .table(columnAlignments, rows):
+            let result = blockProcessor.processTable(
+                columnAlignments: columnAlignments,
+                rows: rows
+            )
             subviews.append(result.1)
             return result.0
         }

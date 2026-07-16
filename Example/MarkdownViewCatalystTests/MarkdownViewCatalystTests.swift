@@ -18,8 +18,7 @@ import Testing
                     [makeText("C"), makeText("D")],
                 ],
                 in: container,
-                cellPadding: 10,
-                maximumCellWidth: 180
+                metrics: testTableMetrics(maximumTextWidth: 180)
             )
 
             let originalIdentifiers = manager.cells.map(ObjectIdentifier.init)
@@ -30,12 +29,58 @@ import Testing
                     [makeText("CC"), makeText("DD")],
                 ],
                 in: container,
-                cellPadding: 10,
-                maximumCellWidth: 180
+                metrics: testTableMetrics(maximumTextWidth: 180)
             )
 
             #expect(manager.cells.count == 4)
             #expect(manager.cells.map(ObjectIdentifier.init) == originalIdentifiers)
+        }
+
+        @MainActor
+        @Test("Native table widths fill short tables and scroll wide tables")
+        func nativeTableWidthsFillAndScroll() throws {
+            for columnCount in [1, 2, 3, 5] {
+                let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 120))
+                let row = (0 ..< columnCount).map { makeText("C\($0)") }
+                tableView.setContents([row, row])
+                tableView.layoutIfNeeded()
+
+                let scrollView = try #require(
+                    tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+                )
+                let gridView = try #require(
+                    scrollView.subviews.first { $0 is GridView } as? GridView
+                )
+                if columnCount <= 3 {
+                    #expect(abs(gridView.frame.width - tableView.bounds.width) <= 0.5)
+                } else {
+                    #expect(gridView.frame.width > tableView.bounds.width)
+                }
+            }
+        }
+
+        @MainActor
+        @Test("Markdown table alignment reaches UIKit cells")
+        func markdownTableAlignmentReachesUIKitCells() throws {
+            let view = MarkdownTextView()
+            view.frame = .init(x: 0, y: 0, width: 390, height: 240)
+            view.setContentImmediately(preprocessedContent(for: """
+            | Left | Center | Right |
+            | :--- | :---: | ---: |
+            | A | B | C |
+            """))
+
+            let tableView = try #require(view.contextViews.first as? TableView)
+            let scrollView = try #require(
+                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+            )
+            let cells = scrollView.subviews.compactMap { $0 as? TextLabelView }
+
+            #expect(tableView.columnAlignments == [.left, .center, .right])
+            #expect(cells.count == 6)
+            #expect(paragraphAlignment(in: cells[0]) == .left)
+            #expect(paragraphAlignment(in: cells[1]) == .center)
+            #expect(paragraphAlignment(in: cells[2]) == .right)
         }
 
         @MainActor
@@ -185,6 +230,26 @@ import Testing
                 .font: MarkdownTheme.default.fonts.body,
             ]
         )
+    }
+
+    private func testTableMetrics(maximumTextWidth: CGFloat) -> TableLayoutMetrics {
+        TableLayoutMetrics(
+            minimumColumnWidth: 20,
+            maximumColumnWidth: maximumTextWidth + 20,
+            horizontalCellPadding: 10,
+            verticalCellPadding: 10,
+            minimumRowHeight: 0
+        )
+    }
+
+    @MainActor
+    private func paragraphAlignment(in cell: TextLabelView) -> NSTextAlignment? {
+        guard cell.attributedText.length > 0 else { return nil }
+        return (cell.attributedText.attribute(
+            .paragraphStyle,
+            at: 0,
+            effectiveRange: nil
+        ) as? NSParagraphStyle)?.alignment
     }
 
     @MainActor

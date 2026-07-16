@@ -4,6 +4,29 @@
 //
 
 import Litext
+import MarkdownParser
+
+private func fittedTableColumnWidths(
+    _ naturalWidths: [CGFloat],
+    to availableWidth: CGFloat,
+    outerPadding: CGFloat
+) -> [CGFloat] {
+    guard !naturalWidths.isEmpty, availableWidth.isFinite, availableWidth > 0 else {
+        return naturalWidths
+    }
+
+    let naturalWidth = naturalWidths.reduce(0, +)
+    let minimumColumnsWidth = max(0, availableWidth - outerPadding * 2)
+    let extraWidth = minimumColumnsWidth - naturalWidth
+    guard extraWidth > 0 else { return naturalWidths }
+
+    let extraWidthPerColumn = extraWidth / CGFloat(naturalWidths.count)
+    var fittedWidths = naturalWidths.map { $0 + extraWidthPerColumn }
+    if let lastIndex = fittedWidths.indices.last {
+        fittedWidths[lastIndex] += minimumColumnsWidth - fittedWidths.reduce(0, +)
+    }
+    return fittedWidths
+}
 
 #if canImport(UIKit)
     import UIKit
@@ -14,8 +37,7 @@ import Litext
         // MARK: - Constants
 
         private let tableViewPadding: CGFloat = 2
-        private let cellPadding: CGFloat = 10
-        private let maximumCellWidth: CGFloat = 200
+        private let layoutMetrics = TableLayoutMetrics.compact
 
         // MARK: - UI Components
 
@@ -24,12 +46,8 @@ import Litext
 
         // MARK: - Properties
 
-        private(set) var contents: [Rows] = [] {
-            didSet {
-                configureCells()
-                setNeedsLayout()
-            }
-        }
+        private(set) var contents: [Rows] = []
+        private(set) var columnAlignments: [RawTableColumnAlignment] = []
 
         private var cellManager = TableViewCellManager()
         private var widths: [CGFloat] = []
@@ -70,7 +88,10 @@ import Litext
             scrollView.addSubview(gridView)
         }
 
-        func setContents(_ contents: [Rows]) {
+        func setContents(
+            _ contents: [Rows],
+            columnAlignments: [RawTableColumnAlignment] = []
+        ) {
             // replace <br> in each items with newline characters
             var builder = contents
             for x in 0 ..< contents.count {
@@ -84,13 +105,22 @@ import Litext
                     builder[x][y] = processedContent
                 }
             }
-            guard !contentsEqual(self.contents, builder) else { return }
+            guard !contentsEqual(self.contents, builder)
+                || self.columnAlignments != columnAlignments
+            else { return }
             self.contents = builder
+            self.columnAlignments = columnAlignments
+            configureCells()
+            setNeedsLayout()
         }
 
         func setTheme(_ theme: MarkdownTheme) {
+            guard self.theme != theme else { return }
             self.theme = theme
             updateThemeAppearance()
+            guard !contents.isEmpty else { return }
+            configureCells()
+            setNeedsLayout()
         }
 
         private func updateThemeAppearance() {
@@ -104,11 +134,20 @@ import Litext
             super.layoutSubviews()
 
             scrollView.frame = bounds
-            let contentSize = intrinsicContentSize
+            let layoutWidths = fittedTableColumnWidths(
+                widths,
+                to: bounds.width,
+                outerPadding: tableViewPadding
+            )
+            let contentSize = CGSize(
+                width: layoutWidths.reduce(0, +) + tableViewPadding * 2,
+                height: intrinsicContentHeight
+            )
             scrollView.contentSize = contentSize
             gridView.frame = CGRect(origin: .zero, size: contentSize)
+            gridView.update(widths: layoutWidths, heights: heights)
 
-            layoutCells()
+            layoutCells(using: layoutWidths)
         }
 
         func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
@@ -140,8 +179,12 @@ import Litext
             return interactionTarget(at: point, event: event)
         }
 
-        private func layoutCells() {
+        private func layoutCells(using layoutWidths: [CGFloat]) {
             guard !cellManager.cellSizes.isEmpty, !cellManager.cells.isEmpty else {
+                return
+            }
+            guard layoutWidths.count == numberOfColumns else {
+                assertionFailure("Table layout width count must match its column count.")
                 return
             }
 
@@ -151,18 +194,17 @@ import Litext
             for row in 0 ..< numberOfRows {
                 for column in 0 ..< numberOfColumns {
                     let index = row * numberOfColumns + column
-                    let cellSize = cellManager.cellSizes[index]
                     let cell = cellManager.cells[index]
                     let idealCellSize = cell.intrinsicContentSize
+                    let columnWidth = layoutWidths[column]
 
                     cell.frame = .init(
-                        x: x + cellPadding + tableViewPadding,
-                        y: y + (cellSize.height - idealCellSize.height) / 2 + tableViewPadding,
-                        width: ceil(idealCellSize.width),
+                        x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
+                        y: y + layoutMetrics.verticalCellPadding + tableViewPadding,
+                        width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2),
                         height: ceil(idealCellSize.height)
                     )
 
-                    let columnWidth = widths[column]
                     x += columnWidth
                 }
                 x = 0
@@ -190,9 +232,9 @@ import Litext
             cellManager.setDelegate(self)
             cellManager.configureCells(
                 for: contents,
+                columnAlignments: columnAlignments,
                 in: scrollView,
-                cellPadding: cellPadding,
-                maximumCellWidth: maximumCellWidth
+                metrics: layoutMetrics
             )
 
             widths = cellManager.widths
@@ -201,10 +243,7 @@ import Litext
             gridView.padding = tableViewPadding
             gridView.update(widths: widths, heights: heights)
 
-            // Add header background for first row
-            if numberOfRows > 0 {
-                gridView.setHeaderRow(true)
-            }
+            gridView.setHeaderRow(numberOfRows > 0)
         }
 
         private func processContent(
@@ -273,8 +312,7 @@ import Litext
         // MARK: - Constants
 
         private let tableViewPadding: CGFloat = 2
-        private let cellPadding: CGFloat = 10
-        private let maximumCellWidth: CGFloat = 200
+        private let layoutMetrics = TableLayoutMetrics.regular
 
         // MARK: - UI Components
 
@@ -292,12 +330,8 @@ import Litext
 
         // MARK: - Properties
 
-        private(set) var contents: [Rows] = [] {
-            didSet {
-                configureCells()
-                needsLayout = true
-            }
-        }
+        private(set) var contents: [Rows] = []
+        private(set) var columnAlignments: [RawTableColumnAlignment] = []
 
         private var cellManager = TableViewCellManager()
         private var widths: [CGFloat] = []
@@ -339,7 +373,10 @@ import Litext
             scrollView.documentView = gridView
         }
 
-        func setContents(_ contents: [Rows]) {
+        func setContents(
+            _ contents: [Rows],
+            columnAlignments: [RawTableColumnAlignment] = []
+        ) {
             var builder = contents
             for x in 0 ..< contents.count {
                 for y in 0 ..< contents[x].count {
@@ -352,13 +389,22 @@ import Litext
                     builder[x][y] = processedContent
                 }
             }
-            guard !contentsEqual(self.contents, builder) else { return }
+            guard !contentsEqual(self.contents, builder)
+                || self.columnAlignments != columnAlignments
+            else { return }
             self.contents = builder
+            self.columnAlignments = columnAlignments
+            configureCells()
+            needsLayout = true
         }
 
         func setTheme(_ theme: MarkdownTheme) {
+            guard self.theme != theme else { return }
             self.theme = theme
             updateThemeAppearance()
+            guard !contents.isEmpty else { return }
+            configureCells()
+            needsLayout = true
         }
 
         private func updateThemeAppearance() {
@@ -372,15 +418,18 @@ import Litext
             super.layout()
 
             scrollView.frame = bounds
-            // Set document view to full content size so NSScrollView can
-            // scroll horizontally when the table is wider than the viewport.
-            let contentSize = intrinsicContentSize
-            gridView.frame = CGRect(
-                x: 0, y: 0,
-                width: max(contentSize.width, bounds.width),
-                height: max(contentSize.height, bounds.height)
+            let layoutWidths = fittedTableColumnWidths(
+                widths,
+                to: bounds.width,
+                outerPadding: tableViewPadding
             )
-            layoutCells()
+            let contentSize = CGSize(
+                width: layoutWidths.reduce(0, +) + tableViewPadding * 2,
+                height: intrinsicContentHeight
+            )
+            gridView.frame = CGRect(origin: .zero, size: contentSize)
+            gridView.update(widths: layoutWidths, heights: heights)
+            layoutCells(using: layoutWidths)
         }
 
         func interactionTarget(at point: CGPoint) -> NSView? {
@@ -428,8 +477,12 @@ import Litext
             return containsLink
         }
 
-        private func layoutCells() {
+        private func layoutCells(using layoutWidths: [CGFloat]) {
             guard !cellManager.cellSizes.isEmpty, !cellManager.cells.isEmpty else {
+                return
+            }
+            guard layoutWidths.count == numberOfColumns else {
+                assertionFailure("Table layout width count must match its column count.")
                 return
             }
 
@@ -439,18 +492,17 @@ import Litext
             for row in 0 ..< numberOfRows {
                 for column in 0 ..< numberOfColumns {
                     let index = row * numberOfColumns + column
-                    let cellSize = cellManager.cellSizes[index]
                     let cell = cellManager.cells[index]
                     let idealCellSize = cell.intrinsicContentSize
+                    let columnWidth = layoutWidths[column]
 
                     cell.frame = .init(
-                        x: x + cellPadding + tableViewPadding,
-                        y: y + (cellSize.height - idealCellSize.height) / 2 + tableViewPadding,
-                        width: ceil(idealCellSize.width),
+                        x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
+                        y: y + layoutMetrics.verticalCellPadding + tableViewPadding,
+                        width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2),
                         height: ceil(idealCellSize.height)
                     )
 
-                    let columnWidth = widths[column]
                     x += columnWidth
                 }
                 x = 0
@@ -478,9 +530,9 @@ import Litext
             cellManager.setDelegate(self)
             cellManager.configureCells(
                 for: contents,
+                columnAlignments: columnAlignments,
                 in: gridView,
-                cellPadding: cellPadding,
-                maximumCellWidth: maximumCellWidth
+                metrics: layoutMetrics
             )
 
             widths = cellManager.widths
@@ -489,9 +541,7 @@ import Litext
             gridView.padding = tableViewPadding
             gridView.update(widths: widths, heights: heights)
 
-            if numberOfRows > 0 {
-                gridView.setHeaderRow(true)
-            }
+            gridView.setHeaderRow(numberOfRows > 0)
         }
 
         private func processContent(

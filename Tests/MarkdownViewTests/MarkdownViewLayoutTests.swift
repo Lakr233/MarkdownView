@@ -28,8 +28,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("C"), makeText("D")],
             ],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 180
+            metrics: testTableMetrics(maximumTextWidth: 180)
         )
 
         let originalIdentifiers = manager.cells.map(ObjectIdentifier.init)
@@ -40,8 +39,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("CC"), makeText("DD")],
             ],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 180
+            metrics: testTableMetrics(maximumTextWidth: 180)
         )
 
         #expect(manager.cells.count == 4)
@@ -60,15 +58,13 @@ struct MarkdownViewLayoutTests {
                 [makeText("C"), makeText("D")],
             ],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 180
+            metrics: testTableMetrics(maximumTextWidth: 180)
         )
 
         manager.configureCells(
             for: [[makeText("Only one")]],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 180
+            metrics: testTableMetrics(maximumTextWidth: 180)
         )
 
         #expect(manager.cells.count == 1)
@@ -84,8 +80,7 @@ struct MarkdownViewLayoutTests {
         manager.configureCells(
             for: [[makeText("Wrapped content that needs width")]],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 220
+            metrics: testTableMetrics(maximumTextWidth: 220)
         )
 
         let cell = try #require(manager.cells.first)
@@ -94,8 +89,7 @@ struct MarkdownViewLayoutTests {
         manager.configureCells(
             for: [[makeText("Wrapped content that needs width")]],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 120
+            metrics: testTableMetrics(maximumTextWidth: 120)
         )
 
         let reusedCell = try #require(manager.cells.first)
@@ -115,8 +109,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("This cell is tallest\nbecause it wraps"), makeText("Mid")],
             ],
             in: container,
-            cellPadding: 10,
-            maximumCellWidth: 140
+            metrics: testTableMetrics(maximumTextWidth: 140)
         )
 
         let cellSizes = manager.cellSizes
@@ -131,6 +124,105 @@ struct MarkdownViewLayoutTests {
 
         #expect(manager.widths == expectedWidths)
         #expect(manager.heights == expectedHeights)
+    }
+
+    @MainActor
+    @Test("Table columns use native point width bounds and readable row heights")
+    func tableColumnsUseNativePointBounds() throws {
+        let manager = TableViewCellManager()
+        let container = TestContainerView(frame: .init(x: 0, y: 0, width: 390, height: 400))
+        let longToken = String(repeating: "unbroken", count: 80)
+
+        manager.configureCells(
+            for: [
+                [makeText("A"), makeText(longToken)],
+                [makeText(""), makeText("Value")],
+            ],
+            in: container,
+            metrics: .compact
+        )
+
+        #expect(manager.widths.allSatisfy { (88 ... 280).contains($0) })
+        #expect(manager.heights.allSatisfy { $0 >= 38 })
+        #expect(manager.cells[1].preferredMaxLayoutWidth == 262)
+
+        let paragraphStyle = try #require(
+            manager.cells[1].attributedText.attribute(
+                .paragraphStyle,
+                at: 0,
+                effectiveRange: nil
+            ) as? NSParagraphStyle
+        )
+        #expect(paragraphStyle.lineBreakMode == .byWordWrapping)
+        #expect(manager.cells[1].intrinsicContentSize.width <= 262)
+    }
+
+    @MainActor
+    @Test("One to three short columns fill the table viewport")
+    func shortTablesFillViewport() throws {
+        for columnCount in 1 ... 3 {
+            let tableView = TableView(frame: .init(x: 0, y: 0, width: 390, height: 120))
+            let row = (0 ..< columnCount).map { makeText("C\($0)") }
+            tableView.setContents([row, row])
+            layout(view: tableView)
+
+            let scrollView = try #require(extractScrollView(from: tableView))
+            let gridView = try #require(extractGridView(from: scrollView))
+            #expect(abs(gridView.frame.width - tableView.bounds.width) <= 0.5)
+        }
+    }
+
+    @MainActor
+    @Test("Five short columns remain horizontally scrollable")
+    func wideTablesRemainHorizontallyScrollable() throws {
+        let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 120))
+        let row = (0 ..< 5).map { makeText("C\($0)") }
+        tableView.setContents([row, row])
+        layout(view: tableView)
+
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let gridView = try #require(extractGridView(from: scrollView))
+        #expect(gridView.frame.width > tableView.bounds.width)
+    }
+
+    @MainActor
+    @Test("Table cells are top aligned")
+    func tableCellsAreTopAligned() throws {
+        let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 160))
+        tableView.setContents([
+            [makeText("Short"), makeText("First line\nSecond line")],
+        ])
+        layout(view: tableView)
+
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let cells = extractTableCells(from: scrollView)
+        #expect(cells.count == 2)
+        #expect(abs(cells[0].frame.minY - cells[1].frame.minY) <= 0.5)
+    }
+
+    @MainActor
+    @Test("Markdown column alignment reaches table headers and cells")
+    func markdownColumnAlignmentReachesTableCells() throws {
+        let view = MarkdownTextView()
+        view.frame = .init(x: 0, y: 0, width: 390, height: 240)
+        view.setContentImmediately(preprocessedContent(for: """
+        | Left | Center | Right |
+        | :--- | :---: | ---: |
+        | A | B | C |
+        """))
+
+        let tableView = try #require(view.contextViews.first as? TableView)
+        #expect(tableView.columnAlignments == [.left, .center, .right])
+
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let cells = extractTableCells(from: scrollView)
+        #expect(cells.count == 6)
+        #expect(paragraphAlignment(in: cells[0]) == .left)
+        #expect(paragraphAlignment(in: cells[1]) == .center)
+        #expect(paragraphAlignment(in: cells[2]) == .right)
+        #expect(paragraphAlignment(in: cells[3]) == .left)
+        #expect(paragraphAlignment(in: cells[4]) == .center)
+        #expect(paragraphAlignment(in: cells[5]) == .right)
     }
 
     @MainActor
@@ -543,6 +635,16 @@ private func makeText(_ string: String) -> NSAttributedString {
     )
 }
 
+private func testTableMetrics(maximumTextWidth: CGFloat) -> TableLayoutMetrics {
+    TableLayoutMetrics(
+        minimumColumnWidth: 20,
+        maximumColumnWidth: maximumTextWidth + 20,
+        horizontalCellPadding: 10,
+        verticalCellPadding: 10,
+        minimumRowHeight: 0
+    )
+}
+
 @MainActor
 private final class TextSelectionProbe: TextLabelViewDelegate {
     weak var changedLabel: TextLabelView?
@@ -610,6 +712,25 @@ private func extractGridView(from scrollView: TestScrollView) -> GridView? {
     #elseif canImport(AppKit)
         scrollView.documentView as? GridView
     #endif
+}
+
+@MainActor
+private func extractTableCells(from scrollView: TestScrollView) -> [TextLabelView] {
+    #if canImport(UIKit)
+        scrollView.subviews.compactMap { $0 as? TextLabelView }
+    #elseif canImport(AppKit)
+        scrollView.documentView?.subviews.compactMap { $0 as? TextLabelView } ?? []
+    #endif
+}
+
+@MainActor
+private func paragraphAlignment(in cell: TextLabelView) -> NSTextAlignment? {
+    guard cell.attributedText.length > 0 else { return nil }
+    return (cell.attributedText.attribute(
+        .paragraphStyle,
+        at: 0,
+        effectiveRange: nil
+    ) as? NSParagraphStyle)?.alignment
 }
 
 #if canImport(AppKit) && !targetEnvironment(macCatalyst)

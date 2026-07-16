@@ -39,6 +39,7 @@
 - Dependency injection over singletons
 - Composition over inheritance
 - Factory/Repository patterns
+- For Markdown tables, map web logical pixels directly to native points while preserving theme typography and dynamic colors; carry parser-provided column alignment through to each native cell, and derive viewport-filling widths from bounded natural column widths.
 
 ## Debug Assertions
 - Use `assert()` for development-time invariant checking
