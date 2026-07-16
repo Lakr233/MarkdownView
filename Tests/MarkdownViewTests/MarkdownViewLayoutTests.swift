@@ -186,8 +186,8 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
-    @Test("Table cells are top aligned")
-    func tableCellsAreTopAligned() throws {
+    @Test("Table cells are vertically centered within each row")
+    func tableCellsAreVerticallyCentered() throws {
         let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 160))
         tableView.setContents([
             [makeText("Short"), makeText("First line\nSecond line")],
@@ -197,7 +197,23 @@ struct MarkdownViewLayoutTests {
         let scrollView = try #require(extractScrollView(from: tableView))
         let cells = extractTableCells(from: scrollView)
         #expect(cells.count == 2)
-        #expect(abs(cells[0].frame.minY - cells[1].frame.minY) <= 0.5)
+        #expect(abs(cells[0].frame.midY - cells[1].frame.midY) <= 0.5)
+        #expect(cells[0].frame.minY > cells[1].frame.minY)
+    }
+
+    @MainActor
+    @Test("Default table theme preserves rounded striped appearance")
+    func defaultTableThemePreservesAppearance() {
+        let table = MarkdownTheme.default.table
+
+        #expect(table.cornerRadius == 8)
+        #if canImport(UIKit)
+            #expect(table.cellBackgroundColor.isEqual(UIColor.clear))
+            #expect(!table.stripeCellBackgroundColor.isEqual(UIColor.clear))
+        #elseif canImport(AppKit)
+            #expect(table.cellBackgroundColor.isEqual(NSColor.clear))
+            #expect(!table.stripeCellBackgroundColor.isEqual(NSColor.clear))
+        #endif
     }
 
     @MainActor
@@ -262,14 +278,18 @@ struct MarkdownViewLayoutTests {
         ])
         layout(view: tableView)
 
-        let target = try #require(tableView.interactionTarget(at: CGPoint(x: 24, y: 24)))
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let cell = try #require(extractTableCells(from: scrollView).first)
+        let target = try #require(tableView.interactionTarget(
+            at: cell.convert(CGPoint(x: cell.bounds.midX, y: cell.bounds.midY), to: tableView)
+        ))
 
         #expect(target.isDescendant(of: tableView))
     }
 
     @MainActor
     @Test("Scrollable table surface remains interactive")
-    func scrollableTableSurfaceRemainsInteractive() {
+    func scrollableTableSurfaceRemainsInteractive() throws {
         let tableView = TableView(frame: .init(x: 0, y: 0, width: 80, height: 120))
         tableView.setContents([
             [makeText("A very long header"), makeText("Another very long header")],
@@ -277,7 +297,13 @@ struct MarkdownViewLayoutTests {
         ])
         layout(view: tableView)
 
-        #expect(tableView.interactionTarget(at: CGPoint(x: 24, y: 24)) != nil)
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let cell = try #require(extractTableCells(from: scrollView).first)
+        let point = cell.convert(
+            CGPoint(x: cell.bounds.midX, y: cell.bounds.midY),
+            to: tableView
+        )
+        #expect(tableView.interactionTarget(at: point) != nil)
     }
 
     @MainActor
@@ -292,7 +318,13 @@ struct MarkdownViewLayoutTests {
         ])
         layout(view: tableView)
 
-        let target = try #require(tableView.interactionTarget(at: CGPoint(x: 24, y: 24)) as? TextLabelView)
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let cell = try #require(extractTableCells(from: scrollView).first)
+        let point = cell.convert(
+            CGPoint(x: cell.bounds.midX, y: cell.bounds.midY),
+            to: tableView
+        )
+        let target = try #require(tableView.interactionTarget(at: point) as? TextLabelView)
         let selection = NSRange(location: 0, length: 4)
         let dragLocation = CGPoint(x: 6, y: 8)
 
@@ -591,7 +623,13 @@ struct MarkdownViewLayoutTests {
 
         let tableView = try #require(view.contextViews.first as? TableView)
         layout(view: tableView)
-        let overlayTarget = tableView.interactionTarget(at: CGPoint(x: 24, y: 24))
+        let scrollView = try #require(extractScrollView(from: tableView))
+        let cell = try #require(extractTableCells(from: scrollView).first)
+        let point = cell.convert(
+            CGPoint(x: cell.bounds.midX, y: cell.bounds.midY),
+            to: tableView
+        )
+        let overlayTarget = tableView.interactionTarget(at: point)
         let target = try #require(overlayTarget)
 
         #expect(target.isDescendant(of: tableView))

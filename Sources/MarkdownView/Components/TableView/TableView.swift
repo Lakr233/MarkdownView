@@ -197,12 +197,14 @@ private func fittedTableColumnWidths(
                     let cell = cellManager.cells[index]
                     let idealCellSize = cell.intrinsicContentSize
                     let columnWidth = layoutWidths[column]
+                    let cellHeight = ceil(idealCellSize.height)
+                    let verticalOffset = max(0, (heights[row] - cellHeight) / 2)
 
                     cell.frame = .init(
                         x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
-                        y: y + layoutMetrics.verticalCellPadding + tableViewPadding,
+                        y: y + verticalOffset + tableViewPadding,
                         width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2),
-                        height: ceil(idealCellSize.height)
+                        height: cellHeight
                     )
 
                     x += columnWidth
@@ -443,6 +445,7 @@ private func fittedTableColumnWidths(
                 if let target = cell.hitTest(cellPoint) {
                     return target
                 }
+                return cell
             }
 
             let scrollPoint = scrollView.convert(point, from: self)
@@ -495,12 +498,14 @@ private func fittedTableColumnWidths(
                     let cell = cellManager.cells[index]
                     let idealCellSize = cell.intrinsicContentSize
                     let columnWidth = layoutWidths[column]
+                    let cellHeight = ceil(idealCellSize.height)
+                    let verticalOffset = max(0, (heights[row] - cellHeight) / 2)
 
                     cell.frame = .init(
                         x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
-                        y: y + layoutMetrics.verticalCellPadding + tableViewPadding,
+                        y: y + verticalOffset + tableViewPadding,
                         width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2),
-                        height: ceil(idealCellSize.height)
+                        height: cellHeight
                     )
 
                     x += columnWidth

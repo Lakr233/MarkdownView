@@ -40,6 +40,7 @@
 - Composition over inheritance
 - Factory/Repository patterns
 - For Markdown tables, map web logical pixels directly to native points while preserving theme typography and dynamic colors; carry parser-provided column alignment through to each native cell, and derive viewport-filling widths from bounded natural column widths.
+- Derive table cell vertical placement from the resolved row height, and regression-test rendered corner radius, background colors, and stripe layers whenever table layout changes.
 
 ## Debug Assertions
 - Use `assert()` for development-time invariant checking

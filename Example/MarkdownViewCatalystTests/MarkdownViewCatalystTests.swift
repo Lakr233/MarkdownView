@@ -84,6 +84,73 @@ import Testing
         }
 
         @MainActor
+        @Test("Default table appearance reaches rendered UIKit layers")
+        func defaultTableAppearanceReachesRenderedLayers() throws {
+            let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 180))
+            tableView.setTheme(.default)
+            tableView.setContents([
+                [makeText("Feature"), makeText("Status")],
+                [makeText("Bold"), makeText("Done")],
+                [makeText("Italic"), makeText("Done")],
+            ])
+            tableView.layoutIfNeeded()
+
+            let scrollView = try #require(
+                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+            )
+            let gridView = try #require(
+                scrollView.subviews.first { $0 is GridView } as? GridView
+            )
+            gridView.layoutIfNeeded()
+
+            let layers = try #require(gridView.layer.sublayers)
+            let backgroundLayer = try #require(layers[0] as? CAShapeLayer)
+            let stripeLayer = try #require(layers[1] as? CAShapeLayer)
+            let headerLayer = try #require(layers[2] as? CAShapeLayer)
+            let borderLayer = try #require(layers[3] as? CAShapeLayer)
+            let backgroundColor = try #require(backgroundLayer.fillColor)
+            let stripeColor = try #require(stripeLayer.fillColor)
+            let headerColor = try #require(headerLayer.fillColor)
+            let stripePath = try #require(stripeLayer.path)
+            let borderPath = try #require(borderLayer.path)
+
+            #expect(UIColor(cgColor: backgroundColor).isEqual(UIColor.clear))
+            #expect(colorsMatch(
+                rendered: stripeColor,
+                expected: MarkdownTheme.default.table.stripeCellBackgroundColor,
+                traitCollection: gridView.traitCollection
+            ))
+            #expect(colorsMatch(
+                rendered: headerColor,
+                expected: MarkdownTheme.default.table.headerBackgroundColor,
+                traitCollection: gridView.traitCollection
+            ))
+            #expect(!stripePath.isEmpty)
+            #expect(borderPath.boundingBox.width > 0)
+            #expect(pathContainsCurve(borderPath))
+            #expect(MarkdownTheme.default.table.cornerRadius == 8)
+        }
+
+        @MainActor
+        @Test("UIKit table cells are vertically centered within each row")
+        func tableCellsAreVerticallyCentered() throws {
+            let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 120))
+            tableView.setContents([
+                [makeText("Short"), makeText("First line\nSecond line")],
+            ])
+            tableView.layoutIfNeeded()
+
+            let scrollView = try #require(
+                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+            )
+            let cells = scrollView.subviews.compactMap { $0 as? TextLabelView }
+
+            #expect(cells.count == 2)
+            #expect(abs(cells[0].frame.midY - cells[1].frame.midY) <= 0.5)
+            #expect(cells[0].frame.minY > cells[1].frame.minY)
+        }
+
+        @MainActor
         @Test("Code toolbar remains interactive")
         func codeToolbarRemainsInteractive() {
             let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
@@ -250,6 +317,52 @@ import Testing
             at: 0,
             effectiveRange: nil
         ) as? NSParagraphStyle)?.alignment
+    }
+
+    private func pathContainsCurve(_ path: CGPath) -> Bool {
+        var containsCurve = false
+        path.applyWithBlock { element in
+            switch element.pointee.type {
+            case .addCurveToPoint, .addQuadCurveToPoint:
+                containsCurve = true
+            default:
+                break
+            }
+        }
+        return containsCurve
+    }
+
+    private func colorsMatch(
+        rendered: CGColor,
+        expected: UIColor,
+        traitCollection: UITraitCollection
+    ) -> Bool {
+        let renderedColor = UIColor(cgColor: rendered)
+        let resolvedExpected = expected.resolvedColor(with: traitCollection)
+        var renderedRed: CGFloat = 0
+        var renderedGreen: CGFloat = 0
+        var renderedBlue: CGFloat = 0
+        var renderedAlpha: CGFloat = 0
+        var expectedRed: CGFloat = 0
+        var expectedGreen: CGFloat = 0
+        var expectedBlue: CGFloat = 0
+        var expectedAlpha: CGFloat = 0
+        guard renderedColor.getRed(
+            &renderedRed,
+            green: &renderedGreen,
+            blue: &renderedBlue,
+            alpha: &renderedAlpha
+        ), resolvedExpected.getRed(
+            &expectedRed,
+            green: &expectedGreen,
+            blue: &expectedBlue,
+            alpha: &expectedAlpha
+        ) else { return false }
+
+        return abs(renderedRed - expectedRed) <= 0.001
+            && abs(renderedGreen - expectedGreen) <= 0.001
+            && abs(renderedBlue - expectedBlue) <= 0.001
+            && abs(renderedAlpha - expectedAlpha) <= 0.001
     }
 
     @MainActor
