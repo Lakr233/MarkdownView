@@ -267,50 +267,6 @@ import Litext
 #elseif canImport(AppKit)
     import AppKit
 
-    /// NSScrollView subclass that passes vertical scroll events to the next
-    /// responder, allowing the parent chat list to scroll normally when the
-    /// user scrolls over a table that only needs horizontal scrolling.
-    ///
-    /// Axis is locked at gesture start so mixed-delta trackpad events don't
-    /// stutter between horizontal and vertical handling mid-gesture.
-    private final class TableScrollView: NSScrollView {
-        // nil = undecided; locked once first meaningful delta arrives
-        private var lockedToVertical: Bool?
-
-        override func scrollWheel(with event: NSEvent) {
-            // Legacy mouse-wheel events carry no phases; decide the axis
-            // per event instead of latching it for the gesture.
-            if event.phase.isEmpty, event.momentumPhase.isEmpty {
-                lockedToVertical = nil
-            }
-            // Reset at the start of each new gesture (deltas are 0 at .began,
-            // so don't lock yet — wait for first real movement below).
-            if event.phase.contains(.began) {
-                lockedToVertical = nil
-            }
-            // Release after momentum ends so the next gesture starts fresh.
-            if event.momentumPhase.contains(.ended) || event.momentumPhase.contains(.cancelled) {
-                lockedToVertical = nil
-            }
-
-            // Lock axis on first event that carries real movement.
-            let dx = abs(event.scrollingDeltaX)
-            let dy = abs(event.scrollingDeltaY)
-            if lockedToVertical == nil, dx > 0 || dy > 0 {
-                // Favour horizontal so tables are usable; vertical wins only
-                // when dy is clearly dominant.
-                lockedToVertical = dy > dx
-            }
-
-            let isVertical = lockedToVertical ?? false
-            if isVertical {
-                nextResponder?.scrollWheel(with: event)
-            } else {
-                super.scrollWheel(with: event)
-            }
-        }
-    }
-
     final class TableView: NSView {
         typealias Rows = [NSAttributedString]
 
@@ -322,8 +278,8 @@ import Litext
 
         // MARK: - UI Components
 
-        private lazy var scrollView: TableScrollView = {
-            let sv = TableScrollView()
+        private lazy var scrollView: HorizontalScrollView = {
+            let sv = HorizontalScrollView()
             sv.hasVerticalScroller = false
             sv.hasHorizontalScroller = true
             sv.autohidesScrollers = true

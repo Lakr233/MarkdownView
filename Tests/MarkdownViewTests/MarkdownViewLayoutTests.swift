@@ -241,6 +241,23 @@ struct MarkdownViewLayoutTests {
         #expect(codeView.interactionTarget(at: CGPoint(x: 240, y: 20)) != nil)
     }
 
+    #if canImport(AppKit) && !targetEnvironment(macCatalyst)
+        @MainActor
+        @Test("Code forwards vertical scroll events to its responder chain")
+        func codeForwardsVerticalScrollEvents() throws {
+            let container = ScrollWheelProbe(frame: .init(x: 0, y: 0, width: 260, height: 160))
+            let codeView = CodeView(frame: container.bounds)
+            codeView.theme = .default
+            codeView.content = "let value = 1"
+            container.addSubview(codeView)
+            layout(view: codeView)
+
+            codeView.scrollView.scrollWheel(with: try makeScrollWheelEvent(deltaY: 1))
+
+            #expect(container.eventCount == 1)
+        }
+    #endif
+
     @MainActor
     @Test("MarkdownTextView height grows as width shrinks")
     func markdownTextViewHeightGrowsAsWidthShrinks() {
@@ -594,6 +611,30 @@ private func extractGridView(from scrollView: TestScrollView) -> GridView? {
         scrollView.documentView as? GridView
     #endif
 }
+
+#if canImport(AppKit) && !targetEnvironment(macCatalyst)
+    @MainActor
+    private final class ScrollWheelProbe: NSView {
+        private(set) var eventCount = 0
+
+        override func scrollWheel(with _: NSEvent) {
+            eventCount += 1
+        }
+    }
+
+    @MainActor
+    private func makeScrollWheelEvent(deltaY: Int32) throws -> NSEvent {
+        let cgEvent = try #require(CGEvent(
+            scrollWheelEvent2Source: nil,
+            units: .line,
+            wheelCount: 1,
+            wheel1: deltaY,
+            wheel2: 0,
+            wheel3: 0
+        ))
+        return try #require(NSEvent(cgEvent: cgEvent))
+    }
+#endif
 
 private func language(at needle: String, in attributedString: NSAttributedString) -> String? {
     let range = (attributedString.string as NSString).range(of: needle)
