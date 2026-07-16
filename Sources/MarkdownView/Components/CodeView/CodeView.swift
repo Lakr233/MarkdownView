@@ -243,7 +243,7 @@ import Litext
 
         lazy var barView: NSView = .init()
         lazy var scrollView: NSScrollView = {
-            let sv = NSScrollView()
+            let sv = HorizontalScrollView()
             sv.hasVerticalScroller = false
             sv.hasHorizontalScroller = false
             sv.drawsBackground = false
