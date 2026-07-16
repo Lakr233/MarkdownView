@@ -110,18 +110,18 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
     public var sizes: Sizes = .init()
 
     public struct Table: Equatable, @unchecked Sendable {
-        public var cornerRadius: CGFloat = 8
+        public var cornerRadius: CGFloat = 0
         public var borderWidth: CGFloat = 1
         #if canImport(UIKit)
             public var borderColor = UIColor.separator
             public var headerBackgroundColor = UIColor.systemGray6
-            public var cellBackgroundColor = UIColor.clear
-            public var stripeCellBackgroundColor = UIColor.systemGray.withAlphaComponent(0.03)
+            public var cellBackgroundColor = UIColor.systemBackground
+            public var stripeCellBackgroundColor = UIColor.clear
         #elseif canImport(AppKit)
             public var borderColor = NSColor.separatorColor
             public var headerBackgroundColor = NSColor.windowBackgroundColor
-            public var cellBackgroundColor = NSColor.clear
-            public var stripeCellBackgroundColor = NSColor.systemGray.withAlphaComponent(0.03)
+            public var cellBackgroundColor = NSColor.textBackgroundColor
+            public var stripeCellBackgroundColor = NSColor.clear
         #endif
     }
 
