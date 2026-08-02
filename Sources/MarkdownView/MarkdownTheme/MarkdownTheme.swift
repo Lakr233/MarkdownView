@@ -99,6 +99,12 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
         public var general: CGFloat = 8
         public var list: CGFloat = 8
         public var cell: CGFloat = 32
+        /// Space after every block-level element (paragraphs, headings,
+        /// code blocks, tables…). Defaults match the previously hardcoded
+        /// 16 pt so existing consumers render unchanged.
+        public var paragraph: CGFloat = 16
+        /// Extra space above a heading.
+        public var headingBefore: CGFloat = 16
     }
 
     public var spacings: Spacings = .init()

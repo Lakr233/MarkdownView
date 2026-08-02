@@ -43,8 +43,8 @@ final class BlockProcessor {
         let font: PlatformFont = theme.fonts.title
 
         return buildWithParagraphSync { paragraph in
-            paragraph.paragraphSpacing = 16
-            paragraph.paragraphSpacingBefore = 16
+            paragraph.paragraphSpacing = theme.spacings.paragraph
+            paragraph.paragraphSpacingBefore = theme.spacings.headingBefore
         } content: {
             let string = contents.render(theme: theme, context: context, viewProvider: viewProvider)
             string.addAttributes(
@@ -57,7 +57,7 @@ final class BlockProcessor {
 
     func processParagraph(contents: [MarkdownInlineNode]) -> NSAttributedString {
         buildWithParagraphSync { paragraph in
-            paragraph.paragraphSpacing = 16
+            paragraph.paragraphSpacing = theme.spacings.paragraph
             paragraph.lineSpacing = 4
         } content: {
             let rendered = contents.render(theme: theme, context: context, viewProvider: viewProvider)
@@ -201,7 +201,7 @@ extension BlockProcessor {
         content: () -> NSMutableAttributedString
     ) -> NSMutableAttributedString {
         var paragraphStyle: NSMutableParagraphStyle = .init()
-        paragraphStyle.paragraphSpacing = 16
+        paragraphStyle.paragraphSpacing = theme.spacings.paragraph
         paragraphStyle.lineSpacing = 4
         modifier(&paragraphStyle)
 
