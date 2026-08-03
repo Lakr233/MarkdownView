@@ -55,7 +55,14 @@ final class MarkdownViewCoordinator {
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, for view: MarkdownTextView) -> CGSize? {
-        // SwiftUI also probes with 0, infinity, and nil width proposals while
+        // A zero-width proposal asks for the minimum width. Text can wrap to
+        // any width, so answer with zero — reporting the current layout width
+        // here pins the hosting window's minimum width and makes it
+        // impossible to shrink the window.
+        if proposal.width == 0 {
+            return .zero
+        }
+        // SwiftUI also probes with infinite and nil width proposals while
         // negotiating the flexible frame. Those probes must be answered with
         // the last concrete width — falling back to the view's current bounds
         // reports a stale width (and its height) after a resize, which the
