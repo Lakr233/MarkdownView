@@ -13,11 +13,6 @@ import SwiftUI
     struct MarkdownViewRepresentable: UIViewRepresentable, MarkdownViewRepresentableBase {
         let contentSource: MarkdownView.ContentSource
         let theme: MarkdownTheme
-        @Binding var measuredHeight: CGFloat
-
-        var heightBinding: Binding<CGFloat> {
-            $measuredHeight
-        }
 
         func makeUIView(context _: Context) -> MarkdownTextView {
             createMarkdownTextView()
@@ -46,11 +41,6 @@ import SwiftUI
     struct MarkdownViewRepresentable: NSViewRepresentable, MarkdownViewRepresentableBase {
         let contentSource: MarkdownView.ContentSource
         let theme: MarkdownTheme
-        @Binding var measuredHeight: CGFloat
-
-        var heightBinding: Binding<CGFloat> {
-            $measuredHeight
-        }
 
         func makeNSView(context _: Context) -> MarkdownTextView {
             createMarkdownTextView()

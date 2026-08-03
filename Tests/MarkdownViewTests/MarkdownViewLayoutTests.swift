@@ -412,7 +412,6 @@ struct MarkdownViewLayoutTests {
     @MainActor
     @Test("MarkdownView coordinator sizes representable to full content height")
     func markdownViewCoordinatorSizesRepresentableToFullContentHeight() async throws {
-        var measuredHeight: CGFloat = 0
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 388, height: 925)
         let filler = Array(
@@ -434,20 +433,14 @@ struct MarkdownViewLayoutTests {
         let tableView = try #require(view.contextViews.first { $0 is TableView } as? TableView)
 
         let coordinator = MarkdownViewCoordinator()
-        coordinator.heightBinding = Binding(
-            get: { measuredHeight },
-            set: { measuredHeight = $0 }
-        )
 
         let size = try #require(coordinator.sizeThatFits(
             ProposedViewSize(width: 388, height: nil),
             for: view
         ))
-        try await Task.sleep(nanoseconds: 10_000_000)
 
         #expect(size.width == 388)
         #expect(size.height > view.bounds.height)
-        #expect(abs(measuredHeight - size.height) <= 0.5)
 
         view.frame = .init(x: 0, y: 0, width: size.width, height: size.height)
         layout(view: view)

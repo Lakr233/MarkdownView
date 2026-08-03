@@ -20,8 +20,6 @@ public struct MarkdownView: View {
     let contentSource: ContentSource
     public var theme: MarkdownTheme
 
-    @State private var measuredHeight: CGFloat = 0
-
     public init(_ text: String, theme: MarkdownTheme = .default) {
         contentSource = .text(text)
         self.theme = theme
@@ -33,17 +31,13 @@ public struct MarkdownView: View {
     }
 
     public var body: some View {
+        // Single-phase layout: the representable reports its height
+        // synchronously through sizeThatFits(_:), so no measured-height
+        // state (and no second layout pass) is needed here.
         MarkdownViewRepresentable(
             contentSource: contentSource,
-            theme: theme,
-            measuredHeight: $measuredHeight
+            theme: theme
         )
-        .frame(
-            maxWidth: .infinity,
-            minHeight: measuredHeight,
-            idealHeight: measuredHeight > 0 ? measuredHeight : nil,
-            maxHeight: measuredHeight > 0 ? measuredHeight : nil,
-            alignment: .topLeading
-        )
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 }
