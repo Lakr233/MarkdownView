@@ -55,16 +55,22 @@ final class MarkdownViewCoordinator {
     }
 
     func sizeThatFits(_ proposal: ProposedViewSize, for view: MarkdownTextView) -> CGSize? {
-        let proposedWidth = proposal.width ?? width
-        let fallbackWidth = view.bounds.width
+        // SwiftUI also probes with 0, infinity, and nil width proposals while
+        // negotiating the flexible frame. Those probes must be answered with
+        // the last concrete width — falling back to the view's current bounds
+        // reports a stale width (and its height) after a resize, which the
+        // host then applies, leaving the text laid out for the old width.
         let fittingWidth: CGFloat
-        if proposedWidth.isFinite, proposedWidth > 0 {
-            fittingWidth = proposedWidth
+        if let proposed = proposal.width, proposed.isFinite, proposed > 0 {
+            fittingWidth = proposed
+            width = proposed
+        } else if width > 0 {
+            fittingWidth = width
+        } else if view.bounds.width > 0 {
+            fittingWidth = view.bounds.width
         } else {
-            fittingWidth = fallbackWidth
+            return nil
         }
-        guard fittingWidth.isFinite, fittingWidth > 0 else { return nil }
-        width = fittingWidth
         let height = measuredHeight(for: view, width: fittingWidth)
         return CGSize(width: fittingWidth, height: height)
     }
