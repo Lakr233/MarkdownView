@@ -146,7 +146,7 @@ extension TextBuilder {
             let result = blockProcessor.processCodeBlock(
                 language: language,
                 content: content,
-                highlightMap: highlightMap ?? .init()
+                highlightMap: highlightMap
             )
             subviews.append(result.1)
             return result.0

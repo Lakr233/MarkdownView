@@ -84,14 +84,13 @@ final class BlockProcessor {
     func processCodeBlock(
         language: String?,
         content: String,
-        highlightMap: CodeHighlighter.HighlightMap
+        highlightMap: CodeHighlighter.HighlightMap?
     ) -> (NSAttributedString, CodeView) {
         let content = content.deletingSuffix(of: .whitespacesAndNewlines)
         let codeView = viewProvider.acquireCodeView()
         codeView.theme = theme
         codeView.language = language ?? ""
-        codeView.highlightMap = highlightMap
-        codeView.content = content
+        codeView.setContent(content, highlightMap: highlightMap)
         let text = buildWithParagraphSync { paragraph in
             let height = CodeView.intrinsicHeight(for: content, theme: theme)
             paragraph.minimumLineHeight = height

@@ -50,6 +50,23 @@ import Litext
         }
 
         private var cachedLineCount: Int = 1
+        private var highlightedContent: String = ""
+
+        /// Applies content and its highlight map together. Pass `nil` while the
+        /// map for `newContent` is still being computed: the previous map is kept
+        /// when the new content extends the previously highlighted content
+        /// (streaming append), so the colored prefix does not flash back to
+        /// plain text on every chunk.
+        func setContent(_ newContent: String, highlightMap map: CodeHighlighter.HighlightMap?) {
+            if let map {
+                highlightedContent = newContent
+                highlightMap = map
+            } else if !newContent.hasPrefix(highlightedContent) {
+                highlightedContent = ""
+                highlightMap = .init()
+            }
+            content = newContent
+        }
 
         // MARK: CONTENT -
 
@@ -230,6 +247,23 @@ import Litext
         }
 
         private var cachedLineCount: Int = 1
+        private var highlightedContent: String = ""
+
+        /// Applies content and its highlight map together. Pass `nil` while the
+        /// map for `newContent` is still being computed: the previous map is kept
+        /// when the new content extends the previously highlighted content
+        /// (streaming append), so the colored prefix does not flash back to
+        /// plain text on every chunk.
+        func setContent(_ newContent: String, highlightMap map: CodeHighlighter.HighlightMap?) {
+            if let map {
+                highlightedContent = newContent
+                highlightMap = map
+            } else if !newContent.hasPrefix(highlightedContent) {
+                highlightedContent = ""
+                highlightMap = .init()
+            }
+            content = newContent
+        }
 
         var previewAction: ((String?, NSAttributedString) -> Void)? {
             didSet {
