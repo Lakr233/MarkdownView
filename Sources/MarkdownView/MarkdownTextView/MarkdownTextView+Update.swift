@@ -36,6 +36,7 @@ import Litext
             textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
             renderedHighlightKeys = artifacts.highlightKeys
+            blockFragmentCache = artifacts.fragmentCache
 
             for view in artifacts.subviews {
                 if let view = view as? CodeView {
@@ -86,6 +87,7 @@ import Litext
             textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
             renderedHighlightKeys = artifacts.highlightKeys
+            blockFragmentCache = artifacts.fragmentCache
 
             for view in artifacts.subviews {
                 if let view = view as? CodeView {

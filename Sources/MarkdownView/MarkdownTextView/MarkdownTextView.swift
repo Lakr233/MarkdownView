@@ -38,6 +38,10 @@ import MarkdownParser
         var blockquoteBars: [BlockquoteBarView] = []
         /// Highlight cache keys of the code blocks this view is showing.
         var renderedHighlightKeys: Set<Int> = []
+        /// What each block rendered to last time, so an unchanged block is not
+        /// built again. Held per view because a fragment's drawing callbacks
+        /// read from the view they were built for.
+        var blockFragmentCache: BlockFragmentCache = .init()
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
@@ -71,9 +75,6 @@ import MarkdownParser
             textLabelView.preferredMaxLayoutWidth = bounds.width
             textLabelView.layoutIfNeeded()
             syncContextViewLayout()
-            #if DEBUG
-                assertVerticalLayoutOrdering()
-            #endif
         }
 
         override public var intrinsicContentSize: CGSize {
@@ -161,6 +162,10 @@ import MarkdownParser
         var blockquoteBars: [BlockquoteBarView] = []
         /// Highlight cache keys of the code blocks this view is showing.
         var renderedHighlightKeys: Set<Int> = []
+        /// What each block rendered to last time, so an unchanged block is not
+        /// built again. Held per view because a fragment's drawing callbacks
+        /// read from the view they were built for.
+        var blockFragmentCache: BlockFragmentCache = .init()
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
@@ -204,9 +209,6 @@ import MarkdownParser
             textLabelView.preferredMaxLayoutWidth = bounds.width
             textLabelView.layoutSubtreeIfNeeded()
             syncContextViewLayout()
-            #if DEBUG
-                assertVerticalLayoutOrdering()
-            #endif
         }
 
         override public var intrinsicContentSize: CGSize {

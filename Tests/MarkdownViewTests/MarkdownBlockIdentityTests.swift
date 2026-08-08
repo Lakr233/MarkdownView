@@ -50,6 +50,30 @@ struct MarkdownBlockIdentityTests {
     }
 
     @MainActor
+    @Test("Two identical quotes stay two quotes after a rebuild reuses them")
+    func identicalQuotesKeepSeparateGroupsWhenReused() {
+        // The first build populates the block cache; the second is the one that
+        // can go wrong. A cache keyed on the block's value rather than on its
+        // position would hand both quotes the same fragment here, and with it
+        // the same group — one bar drawn straight through the paragraph between
+        // them.
+        let markdown = """
+        > 完全相同的引用 identical quote
+
+        Between the two quotes.
+
+        > 完全相同的引用 identical quote
+        """
+        let view = RenderProbe.view(markdown)
+        RenderProbe.show(markdown, in: view)
+
+        let groups = blockquoteGroups(in: view.textLabelView.attributedText)
+        #expect(groups.count == 2)
+        #expect(groups[0] !== groups[1])
+        #expect(view.blockquoteBars.count == 2)
+    }
+
+    @MainActor
     @Test("Adjacent quote lines stay one quote")
     func adjacentQuoteLinesShareOneGroup() {
         let view = RenderProbe.view("""

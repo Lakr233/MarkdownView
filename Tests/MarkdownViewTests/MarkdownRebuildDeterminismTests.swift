@@ -27,6 +27,56 @@ struct MarkdownRebuildDeterminismTests {
         return view
     }
 
+    /// The fragment the cache is currently holding for a block, if any.
+    @MainActor
+    private func cachedFragment(_ view: MarkdownTextView, at index: Int) -> NSAttributedString? {
+        guard view.content.blocks.indices.contains(index),
+              view.blockFragmentCache.isUsable(with: view.theme, for: view.content)
+        else { return nil }
+        return view.blockFragmentCache.fragment(at: index, matching: view.content.blocks[index])
+    }
+
+    @MainActor
+    @Test("A block that did not change is not built again")
+    func unchangedBlocksAreReused() {
+        // Not an implementation detail worth hiding: a stream rebuilds the whole
+        // document per token, and losing this quietly costs a third of every
+        // update while every other test still passes.
+        let markdown = """
+        第一段 first paragraph stays put.
+
+        第二段 second paragraph also stays.
+
+        - 列表项 a bullet that stays
+        """
+        let view = warmedView(markdown)
+        let before = (0 ..< 3).map { cachedFragment(view, at: $0) }
+        #expect(before.allSatisfy { $0 != nil })
+
+        RenderProbe.show(markdown + "\n\n新的一段 a paragraph arrives.", in: view)
+        let after = (0 ..< 3).map { cachedFragment(view, at: $0) }
+
+        #expect(zip(before, after).allSatisfy { $0 === $1 })
+        #expect(cachedFragment(view, at: 3) != nil)
+    }
+
+    @MainActor
+    @Test("A theme change builds every block again")
+    func themeChangeDropsTheReusedBlocks() {
+        let markdown = "一段中文 paragraph with text."
+        let view = warmedView(markdown)
+        let before = cachedFragment(view, at: 0)
+        #expect(before != nil)
+
+        var theme = view.theme
+        theme.fonts.body = .systemFont(ofSize: 28)
+        view.theme = theme
+        RenderProbe.layout(view)
+
+        #expect(cachedFragment(view, at: 0) !== before)
+        #expect(RenderProbe.font(at: "paragraph", in: view.textLabelView.attributedText)?.pointSize == 28)
+    }
+
     @MainActor
     @Test("Rebuilding the same content twice yields the same document")
     func rebuildingIsIdempotent() {
