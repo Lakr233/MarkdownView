@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import LRUCache
 import MarkdownParser
 
 /// Parsed and pre-rendered markdown, ready for display in ``MarkdownTextView``.
@@ -13,17 +14,35 @@ import MarkdownParser
 /// Build one off the main thread for streaming scenarios, or use
 /// ``init(markdown:theme:locale:)`` for one-shot rendering.
 public final class MarkdownContent: @unchecked Sendable {
-    private struct InlineRenderCacheKey: Hashable {
+    /// What a rendered piece of body text depends on.
+    ///
+    /// The font and colour are held as themselves rather than as a formatted
+    /// description of them. Describing them cost more than every other part of
+    /// rendering the text put together, and it also made two colours that
+    /// happen to resolve alike today share one entry — which hands a caller
+    /// asking for a dynamic colour a copy frozen in the current appearance.
+    /// Fonts and colours are immutable once handed to a theme, so a key holding
+    /// them can cross the actor boundary the cache requires.
+    private struct InlineRenderCacheKey: Hashable, @unchecked Sendable {
         let text: String
         let localeIdentifier: String
-        let themeSignature: String
+        let font: PlatformFont
+        let color: PlatformColor
     }
+
+    /// Rendered body text, shared by every content rather than owned by one.
+    ///
+    /// Streaming builds a fresh ``MarkdownContent`` for each token, so a cache
+    /// living on the instance never saw a second lookup in the one situation it
+    /// exists for. Shared, a stream re-renders only the paragraph that grew.
+    /// Bounded by entry count, and cleared under memory pressure by `LRUCache`.
+    @MainActor private static let inlineRenderCache =
+        LRUCache<InlineRenderCacheKey, NSAttributedString>(countLimit: 4096)
 
     public let blocks: [MarkdownBlockNode]
     public let rendered: RenderedTextContent.Map
     public let highlightMaps: [Int: CodeHighlighter.HighlightMap]
     public let locale: Locale
-    @MainActor private var inlineRenderCache: [InlineRenderCacheKey: NSAttributedString] = [:]
 
     public init(
         blocks: [MarkdownBlockNode],
@@ -75,9 +94,10 @@ public final class MarkdownContent: @unchecked Sendable {
         let key = InlineRenderCacheKey(
             text: text,
             localeIdentifier: locale.identifier,
-            themeSignature: theme.inlineBodyCacheSignature
+            font: theme.fonts.body,
+            color: theme.colors.body
         )
-        if let cached = inlineRenderCache[key] {
+        if let cached = Self.inlineRenderCache.value(forKey: key) {
             return cached
         }
 
@@ -92,8 +112,14 @@ public final class MarkdownContent: @unchecked Sendable {
             to: rendered,
             fallbackLocale: locale
         )
+        // Resolve the fallback font here, once per distinct piece of text,
+        // rather than leaving it to the pass over the finished document.
+        // The body font covers no CJK and no emoji, so that pass was asking
+        // CoreText for a substitute for the same runs on every rebuild — a
+        // third of the cost of a streaming update.
+        rendered.fixAttributes(in: NSRange(location: 0, length: rendered.length))
         let cached = rendered.copy() as! NSAttributedString
-        inlineRenderCache[key] = cached
+        Self.inlineRenderCache.setValue(cached, forKey: key)
         return cached
     }
 }
@@ -101,28 +127,6 @@ public final class MarkdownContent: @unchecked Sendable {
 public extension MarkdownTextView {
     @available(*, deprecated, renamed: "MarkdownContent")
     typealias PreprocessedContent = MarkdownContent
-}
-
-private extension MarkdownTheme {
-    var inlineBodyCacheSignature: String {
-        [
-            fonts.body.fontName,
-            String(format: "%.4f", Double(fonts.body.pointSize)),
-            colors.body.cacheDescription,
-        ].joined(separator: "|")
-    }
-}
-
-private extension PlatformColor {
-    var cacheDescription: String {
-        #if canImport(UIKit)
-            guard let components = cgColor.components else { return description }
-        #elseif canImport(AppKit)
-            guard let converted = usingColorSpace(.deviceRGB) else { return description }
-            guard let components = converted.cgColor.components else { return description }
-        #endif
-        return components.map { String(format: "%.4f", $0) }.joined(separator: ",")
-    }
 }
 
 public extension MarkdownParser.ParseResult {

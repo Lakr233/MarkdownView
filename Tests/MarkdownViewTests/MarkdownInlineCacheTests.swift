@@ -218,6 +218,102 @@ struct MarkdownInlineCacheTests {
     }
 
     @MainActor
+    @Test("Two contents share one rendering of the same text")
+    func renderedTextIsSharedBetweenContents() {
+        // Streaming builds a new content per token, so a cache that does not
+        // reach across instances never gets a second lookup. Asserting the
+        // shared instance is what keeps that from quietly reverting.
+        let first = RenderProbe.content("placeholder")
+        let second = RenderProbe.content("placeholder")
+        let theme = MarkdownTheme.default
+
+        let fromFirst = first.cachedBodyText("共享的一段文字 shared run", theme: theme)
+        let fromSecond = second.cachedBodyText("共享的一段文字 shared run", theme: theme)
+
+        #expect(fromFirst === fromSecond)
+    }
+
+    @MainActor
+    @Test("A shared entry still belongs to its own theme")
+    func sharedCacheKeepsThemesApart() {
+        let first = RenderProbe.content("placeholder")
+        let second = RenderProbe.content("placeholder")
+
+        let small = first.cachedBodyText("同一段文字 same text", theme: themeWithBodyFont(size: 12))
+        let large = second.cachedBodyText("同一段文字 same text", theme: themeWithBodyFont(size: 24))
+
+        #expect((small.attribute(.font, at: 0, effectiveRange: nil) as? PlatformFont)?.pointSize == 12)
+        #expect((large.attribute(.font, at: 0, effectiveRange: nil) as? PlatformFont)?.pointSize == 24)
+    }
+
+    @MainActor
+    @Test("Bold Han text is bold, not merely a fallback font")
+    func boldHanTextKeepsItsWeight() {
+        // Bold is applied by walking the rendered runs and replacing any font
+        // that is still the body font. A cached fragment that already carries a
+        // resolved fallback font is no longer equal to the body font, so this
+        // asserts the outcome — bold Han differs from plain Han — rather than
+        // the branch that produces it.
+        let view = RenderProbe.view("普通中文 and **加粗中文** together.")
+        let text = view.textLabelView.attributedText
+
+        let plain = RenderProbe.font(at: "普通中文", in: text)
+        let bold = RenderProbe.font(at: "加粗中文", in: text)
+
+        #expect(plain != nil)
+        #expect(bold != nil)
+        #expect(bold != plain)
+    }
+
+    @MainActor
+    @Test("Two colors that resolve alike are still cached apart")
+    func colorsThatResolveAlikeAreCachedApart() {
+        // A dynamic color repaints itself when the appearance changes; a literal
+        // one with the same components today does not. A cache that keys on the
+        // resolved components hands the dynamic caller the frozen color and the
+        // text stops following dark mode.
+        let dynamic = MarkdownTheme.default.colors.body
+        let literal = frozenCopy(of: dynamic)
+        let content = RenderProbe.content("placeholder")
+
+        var dynamicTheme = MarkdownTheme.default
+        dynamicTheme.colors.body = dynamic
+        var literalTheme = MarkdownTheme.default
+        literalTheme.colors.body = literal
+
+        let fromDynamic = content.cachedBodyText("同一段文字", theme: dynamicTheme)
+        let fromLiteral = content.cachedBodyText("同一段文字", theme: literalTheme)
+
+        #expect(
+            fromDynamic.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? PlatformColor === dynamic
+        )
+        #expect(
+            fromLiteral.attribute(.foregroundColor, at: 0, effectiveRange: nil) as? PlatformColor === literal
+        )
+    }
+
+    /// A static color with the same components `color` resolves to right now.
+    @MainActor
+    private func frozenCopy(of color: PlatformColor) -> PlatformColor {
+        #if canImport(UIKit)
+            var red: CGFloat = 0
+            var green: CGFloat = 0
+            var blue: CGFloat = 0
+            var alpha: CGFloat = 0
+            color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+            return UIColor(red: red, green: green, blue: blue, alpha: alpha)
+        #elseif canImport(AppKit)
+            guard let resolved = color.usingColorSpace(.deviceRGB) else { return .black }
+            return NSColor(
+                deviceRed: resolved.redComponent,
+                green: resolved.greenComponent,
+                blue: resolved.blueComponent,
+                alpha: resolved.alphaComponent
+            )
+        #endif
+    }
+
+    @MainActor
     @Test("A repeated word renders the same way at every occurrence")
     func repeatedWordsRenderConsistently() {
         // The obvious way to make the cache cheaper is to key it more loosely.
