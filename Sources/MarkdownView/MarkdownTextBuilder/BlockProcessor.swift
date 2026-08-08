@@ -20,23 +20,17 @@ final class BlockProcessor {
     private let viewProvider: ReusableViewProvider
     private let context: MarkdownContent
     private let thematicBreakDrawing: TextBuilder.DrawingCallback?
-    private let blockquoteMarking: TextBuilder.BlockquoteMarkingCallback?
-    private let blockquoteDrawing: TextBuilder.BlockquoteDrawingCallback?
 
     init(
         theme: MarkdownTheme,
         viewProvider: ReusableViewProvider,
         context: MarkdownContent,
-        thematicBreakDrawing: TextBuilder.DrawingCallback?,
-        blockquoteMarking: TextBuilder.BlockquoteMarkingCallback?,
-        blockquoteDrawing: TextBuilder.BlockquoteDrawingCallback?
+        thematicBreakDrawing: TextBuilder.DrawingCallback?
     ) {
         self.theme = theme
         self.viewProvider = viewProvider
         self.context = context
         self.thematicBreakDrawing = thematicBreakDrawing
-        self.blockquoteMarking = blockquoteMarking
-        self.blockquoteDrawing = blockquoteDrawing
     }
 
     func processHeading(level _: Int, contents: [MarkdownInlineNode]) -> NSAttributedString {
@@ -136,29 +130,21 @@ final class BlockProcessor {
         guard result.length > 0 else { return result }
 //        result.append(.init(string: "\n"))
 
-        result.addAttribute(
-            .paragraphStyle,
-            value: baseParagraphStyle, range: NSRange(location: 0, length: result.length)
-        )
-
-        let marker = blockquoteMarking!
-        let drawer = blockquoteDrawing!
-
-        result.insert(buildWithParagraphSync(withNewLine: false) { paragraph in
-            paragraph = baseParagraphStyle
-        } content: {
-            .init(string: TextLabel.Attachment.replacementText, attributes: [
-                .font: theme.fonts.body,
+        // The quoting bar is positioned from these runs after layout rather than
+        // stroked while drawing: a line drawing action only runs for the lines a
+        // redraw happens to touch, so a bar painted from one line's action comes
+        // out clipped to whatever band was dirty.
+        result.addAttributes(
+            [
                 .paragraphStyle: baseParagraphStyle,
-                .litextLineDrawingAction: TextLabel.LineDrawingAction { marker($0, $1, $2) },
-            ])
-        }, at: 0)
-        result.append(buildWithParagraphSync(withNewLine: true) {
-            .init(string: TextLabel.Attachment.replacementText, attributes: [
-                .font: theme.fonts.body,
-                .litextLineDrawingAction: TextLabel.LineDrawingAction { drawer($0, $1, $2) },
-            ])
-        })
+                .blockquoteGroup: BlockquoteGroup(),
+            ],
+            range: NSRange(location: 0, length: result.length)
+        )
+        result.append(.init(string: "\n", attributes: [
+            .font: theme.fonts.body,
+            .paragraphStyle: baseParagraphStyle,
+        ]))
 
         return result
     }

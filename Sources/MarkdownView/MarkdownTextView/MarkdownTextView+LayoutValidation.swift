@@ -54,20 +54,6 @@ extension MarkdownTextView {
         }
     }
 
-    /// Converts a CoreText layout rect into ``MarkdownTextView`` coordinates.
-    ///
-    /// The text is anchored to the top of the layout container, so the flip must use
-    /// the container height the lines were laid out against. `bounds.height` desyncs
-    /// whenever the view is resized before the text relayouts.
-    func convertFromTextLayout(_ rect: CGRect) -> CGRect {
-        CGRect(
-            x: textLabelView.frame.minX + rect.minX,
-            y: textLabelView.frame.minY + textLabelView.bounds.height - rect.maxY,
-            width: rect.width,
-            height: rect.height
-        )
-    }
-
     #if DEBUG
         /// Fails in debug builds when a block is laid out on top of the block above it.
         ///

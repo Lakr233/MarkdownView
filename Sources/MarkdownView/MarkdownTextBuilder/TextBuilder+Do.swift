@@ -71,8 +71,6 @@ extension TextBuilder {
         let context: MarkdownContent = view.content
         let theme: MarkdownTheme = view.theme
 
-        var blockquoteMarkingStorage: CGFloat? = nil
-
         @discardableResult
         func populateContextColorFromFirstRun(context: CGContext, line: CTLine) -> PlatformColor {
             var textColor = theme.colors.body
@@ -189,26 +187,6 @@ extension TextBuilder {
                 context.move(to: .init(x: boundingBox.minX, y: boundingBox.midY))
                 context.addLine(to: .init(x: boundingBox.minX + view.bounds.width, y: boundingBox.midY))
                 context.strokePath()
-            }
-            .withBlockquoteMarking { _, line, lineOrigin in
-                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                blockquoteMarkingStorage = boundingBox.maxY
-            }
-            .withBlockquoteDrawing { context, line, lineOrigin in
-                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                defer { blockquoteMarkingStorage = nil }
-                guard let markedTop = blockquoteMarkingStorage else { return }
-                let quotingLineHeight: CGFloat = markedTop - boundingBox.minY
-                let lineRect = CGRect(
-                    x: 0,
-                    y: markedTop - quotingLineHeight,
-                    width: 4,
-                    height: quotingLineHeight
-                )
-                context.setFillColor(theme.colors.body.withAlphaComponent(0.1).cgColor)
-                let roundedPath = CGPath(roundedRect: lineRect, cornerWidth: 2, cornerHeight: 2, transform: nil)
-                context.addPath(roundedPath)
-                context.fillPath()
             }
             .build()
     }

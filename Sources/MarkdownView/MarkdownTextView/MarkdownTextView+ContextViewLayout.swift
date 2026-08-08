@@ -34,6 +34,32 @@ import Litext
             for view in contextViews {
                 view.isHidden = !placed.contains(view)
             }
+
+            syncBlockquoteBars()
+        }
+
+        /// Gives every blockquote a bar spanning all of its lines.
+        ///
+        /// The bar is a view instead of a line drawing action because an action
+        /// only runs for the lines a redraw touches, which paints a bar spanning
+        /// several lines in fragments.
+        private func syncBlockquoteBars() {
+            let spans = blockquoteLineSpans()
+
+            while blockquoteBars.count < spans.count {
+                let bar = BlockquoteBarView()
+                blockquoteBars.append(bar)
+                addSubview(bar)
+            }
+            while blockquoteBars.count > spans.count {
+                blockquoteBars.removeLast().removeFromSuperview()
+            }
+
+            for (bar, span) in zip(blockquoteBars, spans) {
+                bar.setTheme(theme)
+                bar.isHidden = false
+                setFrameIfNeeded(for: bar, to: span)
+            }
         }
 
         private func syncCodeView(_ codeView: CodeView, with run: TextLabel.LayoutRun) {
@@ -108,6 +134,32 @@ import Litext
             // exists. Hide it rather than let it paint over the text.
             for view in contextViews {
                 view.isHidden = !placed.contains(view)
+            }
+
+            syncBlockquoteBars()
+        }
+
+        /// Gives every blockquote a bar spanning all of its lines.
+        ///
+        /// The bar is a view instead of a line drawing action because an action
+        /// only runs for the lines a redraw touches, which paints a bar spanning
+        /// several lines in fragments.
+        private func syncBlockquoteBars() {
+            let spans = blockquoteLineSpans()
+
+            while blockquoteBars.count < spans.count {
+                let bar = BlockquoteBarView()
+                blockquoteBars.append(bar)
+                addSubview(bar)
+            }
+            while blockquoteBars.count > spans.count {
+                blockquoteBars.removeLast().removeFromSuperview()
+            }
+
+            for (bar, span) in zip(blockquoteBars, spans) {
+                bar.setTheme(theme)
+                bar.isHidden = false
+                setFrameIfNeeded(for: bar, to: span)
             }
         }
 

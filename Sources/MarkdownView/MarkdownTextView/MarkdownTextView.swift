@@ -35,6 +35,7 @@ import MarkdownParser
         public weak var trackedScrollView: UIScrollView?
 
         var contextViews: [UIView] = []
+        var blockquoteBars: [BlockquoteBarView] = []
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
@@ -155,6 +156,7 @@ import MarkdownParser
         public weak var trackedScrollView: NSScrollView?
 
         var contextViews: [NSView] = []
+        var blockquoteBars: [BlockquoteBarView] = []
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps

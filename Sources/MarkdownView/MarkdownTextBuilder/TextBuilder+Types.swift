@@ -18,8 +18,6 @@ extension TextBuilder {
     typealias BulletDrawingCallback = (CGContext, CTLine, CGPoint, Int) -> Void
     typealias CheckboxDrawingCallback = (CGContext, CTLine, CGPoint, Bool) -> Void
     typealias NumberedDrawingCallback = (CGContext, CTLine, CGPoint, Int) -> Void
-    typealias BlockquoteMarkingCallback = (CGContext, CTLine, CGPoint) -> Void
-    typealias BlockquoteDrawingCallback = (CGContext, CTLine, CGPoint) -> Void
 }
 
 // MARK: - RenderText
