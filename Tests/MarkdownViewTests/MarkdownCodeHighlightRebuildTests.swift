@@ -132,6 +132,53 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
+    @Test("A finished highlight only reaches the views showing that block")
+    func onlyTheViewsShowingTheBlockPickUpAHighlight() {
+        // Built before the cache is warm, so the code starts out unhighlighted
+        // and picking up colour is proof that a rebuild happened.
+        let source = "let uniqueToThisTest = 1"
+        let document = markdown(source)
+        let view = RenderProbe.view(document)
+        guard let unhighlighted = codeView(in: view) else {
+            Issue.record("no code view was built")
+            return
+        }
+        #expect(distinctColors(in: unhighlighted).count == 1)
+
+        warmHighlightCache(for: document)
+        let strangerKey = CodeHighlighter.current.key(
+            for: "print(\"a block this view never showed\")",
+            language: "python"
+        )
+        postHighlightUpdate(keys: [strangerKey])
+        RenderProbe.layout(view)
+
+        #expect(distinctColors(in: unhighlighted).count == 1, "an unrelated block rebuilt this view")
+
+        let ownKeys = Set(MarkdownParser().parse(document).document.compactMap { block -> Int? in
+            guard case let .codeBlock(language, content) = block else { return nil }
+            return CodeHighlighter.current.key(for: content, language: language)
+        })
+        postHighlightUpdate(keys: ownKeys)
+        RenderProbe.layout(view)
+
+        guard let rebuiltCodeView = codeView(in: view) else {
+            Issue.record("the code view went away")
+            return
+        }
+        #expect(distinctColors(in: rebuiltCodeView).count > 1)
+    }
+
+    @MainActor
+    private func postHighlightUpdate(keys: Set<Int>) {
+        NotificationCenter.default.post(
+            name: CodeHighlighter.highlightDidUpdateNotification,
+            object: nil,
+            userInfo: [CodeHighlighter.highlightedKeysUserInfoKey: keys]
+        )
+    }
+
+    @MainActor
     @Test("Code text reaches the view verbatim")
     func codeTextReachesTheViewVerbatim() {
         let view = RenderProbe.view(markdown(Self.source))

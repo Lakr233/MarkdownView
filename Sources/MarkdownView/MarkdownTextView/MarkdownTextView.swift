@@ -36,6 +36,8 @@ import MarkdownParser
 
         var contextViews: [UIView] = []
         var blockquoteBars: [BlockquoteBarView] = []
+        /// Highlight cache keys of the code blocks this view is showing.
+        var renderedHighlightKeys: Set<Int> = []
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
@@ -157,6 +159,8 @@ import MarkdownParser
 
         var contextViews: [NSView] = []
         var blockquoteBars: [BlockquoteBarView] = []
+        /// Highlight cache keys of the code blocks this view is showing.
+        var renderedHighlightKeys: Set<Int> = []
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
