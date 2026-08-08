@@ -85,21 +85,62 @@ struct MarkdownInlineCacheTests {
         #expect(content.cachedBodyText("", theme: theme).string.isEmpty)
     }
 
+    /// The glyphs CoreText would actually draw for `text`.
+    ///
+    /// The locale reaches the reader as a shape, not as an attribute — the same
+    /// codepoint is drawn differently in Simplified and Traditional Chinese —
+    /// so that is what these assert. Whether the shape comes from a resolved
+    /// font or from a language attribute left in place is not the point.
     @MainActor
-    @Test("Han text takes its language from the content locale", arguments: [
-        ("zh-Hans", "zh-Hans"),
-        ("zh-Hant", "zh-Hant"),
-        ("ja", "ja"),
-        ("ko", "ko"),
-        ("en_US", "zh-Hans"),
-    ])
-    func hanTextFollowsTheLocale(localeIdentifier: String, expected: String) {
-        let content = RenderProbe.content("placeholder", locale: .init(identifier: localeIdentifier))
-        let rendered = content.cachedBodyText("汉字", theme: .default)
+    private func glyphs(of text: NSAttributedString) -> [CGGlyph] {
+        let line = CTLineCreateWithAttributedString(text)
+        var result: [CGGlyph] = []
+        for run in (CTLineGetGlyphRuns(line) as NSArray) {
+            let run = run as! CTRun
+            let count = CTRunGetGlyphCount(run)
+            var glyphs = [CGGlyph](repeating: 0, count: count)
+            CTRunGetGlyphs(run, CFRange(location: 0, length: count), &glyphs)
+            result.append(contentsOf: glyphs)
+        }
+        return result
+    }
 
-        #expect(
-            rendered.attribute(.coreTextLanguage, at: 0, effectiveRange: nil) as? String == expected
-        )
+    /// Characters whose shape differs between Simplified and Traditional.
+    private static let variantHan = "直骨門今雪類"
+
+    @MainActor
+    @Test("Han text is drawn the way its locale draws it")
+    func hanTextFollowsTheLocale() {
+        func drawn(_ localeIdentifier: String) -> [CGGlyph] {
+            let content = RenderProbe.content("placeholder", locale: .init(identifier: localeIdentifier))
+            return glyphs(of: content.cachedBodyText(Self.variantHan, theme: .default))
+        }
+
+        let simplified = drawn("zh-Hans")
+        #expect(!simplified.isEmpty)
+        #expect(drawn("zh-Hant") != simplified, "Traditional must not be drawn as Simplified")
+        #expect(drawn("ja") != simplified, "Japanese must not be drawn as Simplified")
+        #expect(drawn("en_US") == simplified, "an unknown locale falls back to Simplified")
+    }
+
+    @MainActor
+    @Test("Only the languages that still change the result keep their attribute")
+    func shapingLanguagesKeepTheirAttribute() {
+        // The attribute triples the cost of building a framesetter, and it is
+        // paid on every rebuild, so it is dropped once the font it selected has
+        // been resolved. It stays for the two languages where dropping it was
+        // measured to change what the reader sees: Traditional Chinese draws
+        // 41% of ideographs differently, and Korean breaks lines differently.
+        func language(_ localeIdentifier: String, _ text: String) -> String? {
+            let content = RenderProbe.content("placeholder", locale: .init(identifier: localeIdentifier))
+            return content.cachedBodyText(text, theme: .default)
+                .attribute(.coreTextLanguage, at: 0, effectiveRange: nil) as? String
+        }
+
+        #expect(language("zh-Hant", "汉字") == "zh-Hant")
+        #expect(language("ko", "한글") == "ko")
+        #expect(language("zh-Hans", "汉字") == nil)
+        #expect(language("ja", "かな") == nil)
     }
 
     @MainActor
@@ -111,8 +152,10 @@ struct MarkdownInlineCacheTests {
         let fromJapanese = japanese.cachedBodyText("汉字", theme: .default)
         let fromChinese = chinese.cachedBodyText("汉字", theme: .default)
 
-        #expect(fromJapanese.attribute(.coreTextLanguage, at: 0, effectiveRange: nil) as? String == "ja")
-        #expect(fromChinese.attribute(.coreTextLanguage, at: 0, effectiveRange: nil) as? String == "zh-Hans")
+        // Two contents, two locales, one shared cache: the entries must not be
+        // the same one, and the difference has to survive as far as the glyphs.
+        #expect(fromJapanese !== fromChinese)
+        #expect(glyphs(of: fromJapanese) != glyphs(of: fromChinese))
     }
 
     @MainActor
@@ -123,11 +166,13 @@ struct MarkdownInlineCacheTests {
         let content = RenderProbe.content("placeholder", locale: .init(identifier: "en_US"))
         let rendered = content.cachedBodyText("かな 한글 العربية עברית plain", theme: .default)
 
-        #expect(RenderProbe.language(at: "か", in: rendered) == "ja")
+        // Korean, Arabic and Hebrew still shape differently with the attribute,
+        // so they keep it. Kana resolves to a Japanese font instead.
         #expect(RenderProbe.language(at: "한", in: rendered) == "ko")
         #expect(RenderProbe.language(at: "ع", in: rendered) == "ar")
         #expect(RenderProbe.language(at: "ע", in: rendered) == "he")
         #expect(RenderProbe.language(at: "plain", in: rendered) == nil)
+        #expect(RenderProbe.font(at: "か", in: rendered) != RenderProbe.font(at: "plain", in: rendered))
     }
 
     @MainActor
@@ -138,8 +183,7 @@ struct MarkdownInlineCacheTests {
         let content = RenderProbe.content("placeholder", locale: .init(identifier: "zh-Hans"))
         let rendered = content.cachedBodyText("日本語かな 中文", theme: .default)
 
-        #expect(RenderProbe.language(at: "日", in: rendered) == "ja")
-        #expect(RenderProbe.language(at: "中", in: rendered) == "zh-Hans")
+        #expect(RenderProbe.font(at: "日", in: rendered) != RenderProbe.font(at: "中", in: rendered))
     }
 
     @MainActor

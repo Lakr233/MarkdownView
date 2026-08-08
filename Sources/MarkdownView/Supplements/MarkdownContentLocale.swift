@@ -42,6 +42,26 @@ enum MarkdownContentLocale {
         }
     }
 
+    /// Whether a language still has work to do once the font is resolved.
+    ///
+    /// The attribute exists so CoreText picks the right font and the right
+    /// glyphs for a run. Resolving the font is done once, where the text is
+    /// cached; leaving the attribute in place makes building a framesetter
+    /// three times more expensive, on every rebuild.
+    ///
+    /// Two languages genuinely need it at shaping time, measured over 3166
+    /// ideographs and four widths:
+    ///
+    /// - Traditional Chinese picks a different glyph for 41% of them.
+    /// - Korean breaks lines differently.
+    ///
+    /// Simplified Chinese and Japanese change neither. Anything else — Arabic,
+    /// Hebrew, a language added later — keeps the attribute, because the cost
+    /// of being wrong is a reader seeing the wrong shapes.
+    static func affectsShaping(_ language: String) -> Bool {
+        language != "zh-Hans" && language != "ja"
+    }
+
     static func dominantLanguageIdentifier(
         for text: String,
         fallbackLocale: Locale
