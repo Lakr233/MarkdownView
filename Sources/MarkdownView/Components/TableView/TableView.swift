@@ -323,7 +323,6 @@ private func fittedTableColumnWidths(
             sv.hasVerticalScroller = false
             sv.hasHorizontalScroller = true
             sv.autohidesScrollers = true
-            sv.scrollerStyle = .overlay
             sv.drawsBackground = false
             return sv
         }()

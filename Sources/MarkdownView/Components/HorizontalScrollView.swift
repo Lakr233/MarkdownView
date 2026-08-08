@@ -14,6 +14,20 @@
     final class HorizontalScrollView: NSScrollView {
         private var lockedToVertical: Bool?
 
+        /// A legacy scroller is laid out inside the scroll view and takes a strip of
+        /// its height. The blocks scrolled here — a table, a code block — are exactly
+        /// as tall as their content, so that strip came straight out of the last row,
+        /// leaving it cut in half behind the scroller whenever the content was wide
+        /// enough to scroll at all.
+        ///
+        /// Assigning the style once is not enough: AppKit follows the system's "show
+        /// scroll bars" preference and puts the scroll view back to legacy behind the
+        /// assignment, so the style is answered here instead of stored.
+        override var scrollerStyle: NSScroller.Style {
+            get { .overlay }
+            set { _ = newValue }
+        }
+
         override func scrollWheel(with event: NSEvent) {
             if event.phase.isEmpty, event.momentumPhase.isEmpty {
                 lockedToVertical = nil
