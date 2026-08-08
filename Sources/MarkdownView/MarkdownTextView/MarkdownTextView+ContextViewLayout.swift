@@ -13,15 +13,26 @@ import Litext
 
     extension MarkdownTextView {
         func syncContextViewLayout() {
+            var placed: Set<PlatformView> = []
+
             for run in textLabelView.layoutRuns(matching: .contextView) {
                 if let codeView = run.attributes[.contextView] as? CodeView {
                     syncCodeView(codeView, with: run)
+                    placed.insert(codeView)
                     continue
                 }
 
                 if let tableView = run.attributes[.contextView] as? TableView {
                     syncTableView(tableView, with: run)
+                    placed.insert(tableView)
                 }
+            }
+
+            // A view whose line did not survive this layout pass has no known
+            // position, and its previous frame belongs to a layout that no longer
+            // exists. Hide it rather than let it paint over the text.
+            for view in contextViews {
+                view.isHidden = !placed.contains(view)
             }
         }
 
@@ -77,15 +88,26 @@ import Litext
 
     extension MarkdownTextView {
         func syncContextViewLayout() {
+            var placed: Set<PlatformView> = []
+
             for run in textLabelView.layoutRuns(matching: .contextView) {
                 if let codeView = run.attributes[.contextView] as? CodeView {
                     syncCodeView(codeView, with: run)
+                    placed.insert(codeView)
                     continue
                 }
 
                 if let tableView = run.attributes[.contextView] as? TableView {
                     syncTableView(tableView, with: run)
+                    placed.insert(tableView)
                 }
+            }
+
+            // A view whose line did not survive this layout pass has no known
+            // position, and its previous frame belongs to a layout that no longer
+            // exists. Hide it rather than let it paint over the text.
+            for view in contextViews {
+                view.isHidden = !placed.contains(view)
             }
         }
 

@@ -50,14 +50,10 @@ import MarkdownParser
             textLabelView.backgroundColor = .clear
             textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
             textLabelView.delegate = self
-            textLabelView.translatesAutoresizingMaskIntoConstraints = false
+            // The label is sized in `layoutSubviews()` rather than by constraints:
+            // its height decides how much text CoreText lays out, and a frame that
+            // trails the view by one pass drops the tail of the document.
             addSubview(textLabelView)
-            NSLayoutConstraint.activate([
-                textLabelView.leadingAnchor.constraint(equalTo: leadingAnchor),
-                textLabelView.trailingAnchor.constraint(equalTo: trailingAnchor),
-                textLabelView.topAnchor.constraint(equalTo: topAnchor),
-                textLabelView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            ])
             setupCombine()
         }
 
@@ -68,9 +64,13 @@ import MarkdownParser
 
         override public func layoutSubviews() {
             super.layoutSubviews()
+            textLabelView.frame = bounds
             textLabelView.preferredMaxLayoutWidth = bounds.width
             textLabelView.layoutIfNeeded()
             syncContextViewLayout()
+            #if DEBUG
+                assertVerticalLayoutOrdering()
+            #endif
         }
 
         override public var intrinsicContentSize: CGSize {
@@ -171,14 +171,10 @@ import MarkdownParser
             textLabelView.delegate = self
             wantsLayer = true
             layer?.backgroundColor = NSColor.clear.cgColor
-            textLabelView.translatesAutoresizingMaskIntoConstraints = false
+            // The label is sized in `layout()` rather than by constraints: its
+            // height decides how much text CoreText lays out, and a frame that
+            // trails the view by one pass drops the tail of the document.
             addSubview(textLabelView)
-            NSLayoutConstraint.activate([
-                textLabelView.leadingAnchor.constraint(equalTo: leadingAnchor),
-                textLabelView.trailingAnchor.constraint(equalTo: trailingAnchor),
-                textLabelView.topAnchor.constraint(equalTo: topAnchor),
-                textLabelView.bottomAnchor.constraint(equalTo: bottomAnchor),
-            ])
             setupCombine()
         }
 
@@ -198,9 +194,13 @@ import MarkdownParser
 
         override public func layout() {
             super.layout()
+            textLabelView.frame = bounds
             textLabelView.preferredMaxLayoutWidth = bounds.width
             textLabelView.layoutSubtreeIfNeeded()
             syncContextViewLayout()
+            #if DEBUG
+                assertVerticalLayoutOrdering()
+            #endif
         }
 
         override public var intrinsicContentSize: CGSize {

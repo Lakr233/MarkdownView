@@ -92,8 +92,10 @@ final class BlockProcessor {
         codeView.language = language ?? ""
         codeView.setContent(content, highlightMap: highlightMap)
         let text = buildWithParagraphSync { paragraph in
-            let height = CodeView.intrinsicHeight(for: content, theme: theme)
-            paragraph.minimumLineHeight = height
+            // Reserve exactly what the view will occupy. Estimating the height from
+            // the source text instead lets the two numbers drift apart, and the view
+            // then paints over whatever follows it.
+            paragraph.minimumLineHeight = codeView.intrinsicContentSize.height
         } content: {
             .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
