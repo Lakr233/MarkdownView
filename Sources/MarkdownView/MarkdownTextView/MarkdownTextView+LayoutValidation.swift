@@ -20,8 +20,7 @@ extension MarkdownTextView {
 
     /// Every laid-out element ordered top to bottom.
     ///
-    /// Used by tests and by the debug-only ordering check to prove that no block
-    /// is drawn on top of another one.
+    /// Read by the tests that prove no block is drawn on top of another one.
     func verticalLayoutBoxes() -> [VerticalLayoutBox] {
         var boxesByLine: [Int: VerticalLayoutBox] = [:]
 
@@ -53,33 +52,4 @@ extension MarkdownTextView {
                 : $0.frame.minY < $1.frame.minY
         }
     }
-
-    #if DEBUG
-        /// Fails in debug builds when a block is laid out on top of the block above it.
-        ///
-        /// Blocks are stacked, never interleaved, so each element must start at or below
-        /// the bottom of its predecessor.
-        func assertVerticalLayoutOrdering() {
-            let boxes = verticalLayoutBoxes()
-            guard boxes.count > 1 else { return }
-
-            for index in boxes.indices.dropFirst() {
-                let previous = boxes[index - 1]
-                let current = boxes[index]
-                guard current.frame.minY < previous.frame.maxY - Self.layoutOrderingTolerance else {
-                    continue
-                }
-                assertionFailure("""
-                Markdown blocks are laid out out of order at width \(bounds.width): \
-                \(current.label) starts at \(current.frame.minY) while \
-                \(previous.label) only ends at \(previous.frame.maxY).
-                """)
-                return
-            }
-        }
-
-        /// CoreText line rects include leading, so consecutive lines can report
-        /// sub-point overlaps that never reach the pixel grid.
-        private static let layoutOrderingTolerance: CGFloat = 0.5
-    #endif
 }

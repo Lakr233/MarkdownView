@@ -91,6 +91,7 @@ extension TextBuilder {
 
         return TextBuilder(nodes: context.blocks, context: context, viewProvider: viewProvider)
             .withTheme(theme)
+            .withFragmentCache(view.blockFragmentCache)
             .withBulletDrawing { context, line, lineOrigin, depth in
                 let style = markerStyle(of: line)
                 let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: style.font)

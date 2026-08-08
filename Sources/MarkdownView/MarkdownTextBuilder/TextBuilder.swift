@@ -60,30 +60,48 @@ final class TextBuilder {
         return self
     }
 
+    func withFragmentCache(_ cache: BlockFragmentCache) -> TextBuilder {
+        fragmentCache = cache
+        return self
+    }
+
     struct BuildResult {
         let document: NSAttributedString
         let subviews: [PlatformView]
         /// Highlight cache keys of every code block in this document, so a view
         /// can tell whether a finished highlight is one of its own.
         let highlightKeys: Set<Int>
+        /// What this build produced, to hand back to the next one.
+        let fragmentCache: BlockFragmentCache
     }
 
     private var pendingHighlightRequests: [CodeHighlightRequest] = []
     private var highlightKeys: Set<Int> = []
+    private var fragmentCache: BlockFragmentCache = .init()
 
     private var previouslyBuilt = false
     func build() -> BuildResult {
         assert(!previouslyBuilt, "TextBuilder can only be built once.")
         previouslyBuilt = true
         var subviewCollector = [PlatformView]()
-        for node in nodes {
-            text.append(processBlock(node, context: context, subviews: &subviewCollector))
+        var nextFragmentCache = BlockFragmentCache(theme: theme, content: context)
+        let reusesFragments = fragmentCache.isUsable(with: theme, for: context)
+        for (index, node) in nodes.enumerated() {
+            let fragment = (reusesFragments ? fragmentCache.fragment(at: index, matching: node) : nil)
+                ?? processBlock(node, context: context, subviews: &subviewCollector)
+            text.append(fragment)
+            nextFragmentCache.record(fragment, for: node)
         }
         text.fixAttributes(in: .init(location: 0, length: text.length))
         if !pendingHighlightRequests.isEmpty {
             CodeHighlighter.current.scheduleHighlight(requests: pendingHighlightRequests)
         }
-        return .init(document: text, subviews: subviewCollector, highlightKeys: highlightKeys)
+        return .init(
+            document: text,
+            subviews: subviewCollector,
+            highlightKeys: highlightKeys,
+            fragmentCache: nextFragmentCache
+        )
     }
 }
 
