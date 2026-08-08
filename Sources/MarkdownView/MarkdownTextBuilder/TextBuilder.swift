@@ -63,9 +63,13 @@ final class TextBuilder {
     struct BuildResult {
         let document: NSAttributedString
         let subviews: [PlatformView]
+        /// Highlight cache keys of every code block in this document, so a view
+        /// can tell whether a finished highlight is one of its own.
+        let highlightKeys: Set<Int>
     }
 
     private var pendingHighlightRequests: [CodeHighlightRequest] = []
+    private var highlightKeys: Set<Int> = []
 
     private var previouslyBuilt = false
     func build() -> BuildResult {
@@ -79,7 +83,7 @@ final class TextBuilder {
         if !pendingHighlightRequests.isEmpty {
             CodeHighlighter.current.scheduleHighlight(requests: pendingHighlightRequests)
         }
-        return .init(document: text, subviews: subviewCollector)
+        return .init(document: text, subviews: subviewCollector, highlightKeys: highlightKeys)
     }
 }
 
@@ -122,6 +126,7 @@ extension TextBuilder {
             return blockProcessor.processThematicBreak()
         case let .codeBlock(language, content):
             let highlightKey = CodeHighlighter.current.key(for: content, language: language)
+            highlightKeys.insert(highlightKey)
             var highlightMap = context.highlightMaps[highlightKey]
             if highlightMap == nil {
                 highlightMap = CodeHighlighter.current.cachedHighlightMap(for: highlightKey)

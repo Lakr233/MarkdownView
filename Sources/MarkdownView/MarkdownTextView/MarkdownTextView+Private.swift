@@ -16,8 +16,18 @@ extension MarkdownTextView {
 
         NotificationCenter.default
             .publisher(for: CodeHighlighter.highlightDidUpdateNotification)
-            .sink { [weak self] _ in
+            .sink { [weak self] notification in
                 guard let self else { return }
+                // One shared notification reaches every view on screen, so a
+                // code block finishing in one message used to rebuild all of
+                // them. A notification that does not name the blocks it
+                // finished still means a rebuild — it could be any of them.
+                if let keys = notification.userInfo?[CodeHighlighter.highlightedKeysUserInfoKey]
+                    as? Set<Int>,
+                    renderedHighlightKeys.isDisjoint(with: keys)
+                {
+                    return
+                }
                 use(content)
             }
             .store(in: &cancellables)

@@ -35,6 +35,7 @@ import Litext
             let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
             textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
+            renderedHighlightKeys = artifacts.highlightKeys
 
             for view in artifacts.subviews {
                 if let view = view as? CodeView {
@@ -84,6 +85,7 @@ import Litext
             let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
             textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
+            renderedHighlightKeys = artifacts.highlightKeys
 
             for view in artifacts.subviews {
                 if let view = view as? CodeView {

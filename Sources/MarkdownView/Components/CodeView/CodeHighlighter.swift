@@ -36,6 +36,13 @@ public final class CodeHighlighter {
 
     static let highlightDidUpdateNotification = Notification.Name("wiki.qaq.MarkdownView.CodeHighlighter.highlightDidUpdate")
 
+    /// The keys whose highlighting finished, as a `Set<Int>` in the user info.
+    ///
+    /// Every view listens to one shared notification, so without this a code
+    /// block finishing in one message rebuilds every other message on screen.
+    /// A notification arriving without it is taken as possibly relevant.
+    static let highlightedKeysUserInfoKey = "wiki.qaq.MarkdownView.CodeHighlighter.highlightedKeys"
+
     private let worker = HighlightWorker()
     private var pendingRequests: OrderedDictionary<Int, CodeHighlightRequest> = [:]
     private var inflightKey: Int?
@@ -263,7 +270,11 @@ extension CodeHighlighter {
         defer { processNextRequestIfNeeded() }
         guard renderCache.value(forKey: key) == nil else { return }
         renderCache.setValue(map, forKey: key)
-        NotificationCenter.default.post(name: Self.highlightDidUpdateNotification, object: nil)
+        NotificationCenter.default.post(
+            name: Self.highlightDidUpdateNotification,
+            object: nil,
+            userInfo: [Self.highlightedKeysUserInfoKey: Set([key])]
+        )
     }
 }
 
