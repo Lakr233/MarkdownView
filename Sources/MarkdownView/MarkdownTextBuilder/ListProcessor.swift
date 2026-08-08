@@ -81,6 +81,13 @@ final class ListProcessor {
         if item.showsMarker {
             string.append(.init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
+                // A marker is drawn rather than typeset, so the only thing copying it
+                // would pick up is the replacement character itself — which pastes as
+                // an `[obj]` box. The attachment hands the pasteboard the markdown the
+                // drawing stands for instead.
+                .litextAttachment: TextLabel.Attachment.hold(
+                    attrString: .init(string: Self.markerText(for: item))
+                ),
                 .litextLineDrawingAction: TextLabel.LineDrawingAction(action: { context, line, lineOrigin in
                     if item.ordered {
                         numberedDrawing(context, line, lineOrigin, item.index)
@@ -100,6 +107,22 @@ final class ListProcessor {
         )
         string.append(.init(string: "\n"))
         return string
+    }
+
+    /// The markdown a drawn list marker stands for, used when the item is copied.
+    ///
+    /// Depth is expressed with two spaces per level so a copied bullet list nests
+    /// the way it looks. An ordered marker is wider than that indent, so a numbered
+    /// list nested inside another numbered list pastes back as a flat one.
+    private static func markerText(for item: ListItem) -> String {
+        let indent = String(repeating: "  ", count: item.depth)
+        if item.isTask {
+            return indent + (item.isDone ? "- [x] " : "- [ ] ")
+        }
+        if item.ordered {
+            return indent + "\(item.index). "
+        }
+        return indent + "- "
     }
 
     private func renderListItems(_ items: [ListItem]) -> NSAttributedString {
