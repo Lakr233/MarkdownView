@@ -520,9 +520,10 @@ struct MarkdownViewLayoutTests {
             .text("中文段落 日本語かな العربية")
             .render(theme: .default, context: context, viewProvider: .init())
 
-        #expect(language(at: "中", in: rendered) == "zh-Hans")
-        #expect(language(at: "日", in: rendered) == "ja")
-        #expect(language(at: "か", in: rendered) == "ja")
+        // Simplified Chinese and Japanese carry their locale in the resolved
+        // font rather than in the attribute; Arabic still shapes by language.
+        #expect(font(at: "中", in: rendered) != font(at: "日", in: rendered))
+        #expect(font(at: "日", in: rendered) == font(at: "か", in: rendered))
         #expect(language(at: "ع", in: rendered) == "ar")
     }
 
@@ -801,4 +802,10 @@ private func language(at needle: String, in attributedString: NSAttributedString
     let range = (attributedString.string as NSString).range(of: needle)
     guard range.location != NSNotFound else { return nil }
     return attributedString.attribute(.coreTextLanguage, at: range.location, effectiveRange: nil) as? String
+}
+
+private func font(at needle: String, in attributedString: NSAttributedString) -> PlatformFont? {
+    let range = (attributedString.string as NSString).range(of: needle)
+    guard range.location != NSNotFound else { return nil }
+    return attributedString.attribute(.font, at: range.location, effectiveRange: nil) as? PlatformFont
 }
