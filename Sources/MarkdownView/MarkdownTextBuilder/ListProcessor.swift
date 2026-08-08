@@ -54,22 +54,11 @@ final class ListProcessor {
         return renderListItems(items)
     }
 
-    private func listIndentMultiple(for count: Int) -> CGFloat {
-        assert(count >= 0)
-        if count <= 9 { return 1.5 }
-        if count <= 99 { return 2 }
-        if count <= 999 { return 3 }
-        if count <= 9999 { return 4 }
-        if count <= 99999 { return 5 }
-        assertionFailure() // fuck you
-        return 1
-    }
-
-    private func renderListItem(_ item: ListItem, reduceLineSpacing: Bool = false, total _: Int) -> NSAttributedString {
+    private func renderListItem(_ item: ListItem, reduceLineSpacing: Bool = false) -> NSAttributedString {
         let paragraphStyle: NSMutableParagraphStyle = .init()
         paragraphStyle.paragraphSpacing = reduceLineSpacing ? theme.spacings.list : theme.spacings.paragraph
         paragraphStyle.lineSpacing = 4
-        let indent = CGFloat(item.depth + 1) * 24
+        let indent = CGFloat(item.depth + 1) * ListMarkerLayout.indent
         paragraphStyle.firstLineHeadIndent = indent
         paragraphStyle.headIndent = indent
 
@@ -128,7 +117,7 @@ final class ListProcessor {
     private func renderListItems(_ items: [ListItem]) -> NSAttributedString {
         let result = NSMutableAttributedString()
         for (index, item) in items.enumerated() {
-            let rendered = renderListItem(item, reduceLineSpacing: index != items.count - 1, total: items.count)
+            let rendered = renderListItem(item, reduceLineSpacing: index != items.count - 1)
             result.append(rendered)
         }
         return result

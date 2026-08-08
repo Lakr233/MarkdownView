@@ -9,54 +9,38 @@ import CoreText
 import Foundation
 import Litext
 
-#if canImport(UIKit)
-    import UIKit
-
-    private func builtinSystemImage(_ name: String, size: CGFloat = 16) -> UIImage {
+/// A symbol rendered at the size the marker column draws it at.
+///
+/// A symbol image is vector backed and hands back no `cgImage` to mask with until
+/// something rasterizes it, so it is rendered here — at the fitted size, so the
+/// bitmap the marker is masked from was never scaled after the fact.
+private func builtinSystemImage(_ name: String) -> PlatformImage {
+    #if canImport(UIKit)
         guard let image = UIImage(
             systemName: name,
             withConfiguration: UIImage.SymbolConfiguration(scale: .small)
         ) else { return .init() }
-        let templateImage = image.withTintColor(.label, renderingMode: .alwaysTemplate)
-        return templateImage.resized(to: .init(width: size, height: size))
-    }
-
-    @MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
-    @MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
-
-    @MainActor private var kNumberCircleImageCache: [Int: UIImage] = [:]
-
-    @MainActor private func kNumberCircleImage(_ number: Int) -> UIImage {
-        if let cached = kNumberCircleImageCache[number] { return cached }
-        let image = builtinSystemImage("\(number).circle.fill")
-        kNumberCircleImageCache[number] = image
-        return image
-    }
-
-#elseif canImport(AppKit)
-    import AppKit
-
-    private func builtinSystemImage(_ name: String, size _: CGFloat = 16) -> NSImage {
+        let template = image.withTintColor(.label, renderingMode: .alwaysTemplate)
+    #elseif canImport(AppKit)
         guard let image = NSImage(systemSymbolName: name, accessibilityDescription: nil) else {
-            return NSImage()
+            return .init()
         }
-        let config = NSImage.SymbolConfiguration(scale: .small)
-        return image.withSymbolConfiguration(config) ?? image
-    }
+        let template = image.withSymbolConfiguration(.init(scale: .small)) ?? image
+    #endif
+    return template.resized(to: ListMarkerLayout.fittedSize(for: template.size))
+}
 
-    @MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
-    @MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
+@MainActor private let kCheckedBoxImage = builtinSystemImage("checkmark.square.fill")
+@MainActor private let kUncheckedBoxImage = builtinSystemImage("square")
 
-    @MainActor private var kNumberCircleImageCache: [Int: (image: NSImage, cgImage: CGImage?)] = [:]
+@MainActor private var kNumberCircleImageCache: [Int: PlatformImage] = [:]
 
-    @MainActor private func kNumberCircleImageEntry(_ number: Int) -> (image: NSImage, cgImage: CGImage?) {
-        if let cached = kNumberCircleImageCache[number] { return cached }
-        let image = builtinSystemImage("\(number).circle.fill")
-        let entry = (image: image, cgImage: image.cgImage(forProposedRect: nil, context: nil, hints: nil))
-        kNumberCircleImageCache[number] = entry
-        return entry
-    }
-#endif
+@MainActor private func kNumberCircleImage(_ number: Int) -> PlatformImage {
+    if let cached = kNumberCircleImageCache[number] { return cached }
+    let image = builtinSystemImage("\(number).circle.fill")
+    kNumberCircleImageCache[number] = image
+    return image
+}
 
 extension TextBuilder {
     @inline(__always)
@@ -71,29 +55,51 @@ extension TextBuilder {
         let context: MarkdownContent = view.content
         let theme: MarkdownTheme = view.theme
 
-        @discardableResult
-        func populateContextColorFromFirstRun(context: CGContext, line: CTLine) -> PlatformColor {
-            var textColor = theme.colors.body
+        /// Color and font a drawn marker takes from the line it belongs to.
+        ///
+        /// The marker's own run leads the line, so its attributes are the ones a
+        /// marker has to match: the color the theme gave that item, and the font
+        /// whose cap height places the marker column.
+        func markerStyle(of line: CTLine) -> (color: PlatformColor, font: PlatformFont) {
+            var color = theme.colors.body
+            var font = theme.fonts.body
             if let firstRun = line.glyphRuns().first,
-               let attributes = CTRunGetAttributes(firstRun) as? [NSAttributedString.Key: Any],
-               let color = attributes[.foregroundColor] as? PlatformColor
+               let attributes = CTRunGetAttributes(firstRun) as? [NSAttributedString.Key: Any]
             {
-                textColor = color
+                if let runColor = attributes[.foregroundColor] as? PlatformColor {
+                    color = runColor
+                }
+                if let runFont = attributes[.font] as? PlatformFont {
+                    font = runFont
+                }
             }
-            context.setStrokeColor(textColor.cgColor)
-            context.setFillColor(textColor.cgColor)
-            return textColor
+            return (color, font)
+        }
+
+        /// Draws a template symbol inside the marker column, scaled to fit it.
+        func drawSymbol(_ image: PlatformImage, in column: CGRect, color: PlatformColor, context: CGContext) {
+            #if canImport(UIKit)
+                guard let cgImage = image.cgImage else { return }
+            #elseif canImport(AppKit)
+                guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+            #endif
+            let targetRect = ListMarkerLayout.fit(imageSize: image.size, in: column)
+            context.clip(to: targetRect, mask: cgImage)
+            context.setFillColor(color.cgColor)
+            context.fill(targetRect)
         }
 
         return TextBuilder(nodes: context.blocks, context: context, viewProvider: viewProvider)
             .withTheme(theme)
             .withBulletDrawing { context, line, lineOrigin, depth in
+                let style = markerStyle(of: line)
+                let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: style.font)
+                context.setStrokeColor(style.color.cgColor)
+                context.setFillColor(style.color.cgColor)
                 let radius: CGFloat = 3
-                let boundingBox = lineBoundingBox(line, lineOrigin: lineOrigin)
-                populateContextColorFromFirstRun(context: context, line: line)
                 let rect = CGRect(
-                    x: boundingBox.minX - 16,
-                    y: boundingBox.midY - radius,
+                    x: column.midX - radius,
+                    y: column.midY - radius,
                     width: radius * 2,
                     height: radius * 2
                 )
@@ -106,40 +112,24 @@ extension TextBuilder {
                 }
             }
             .withNumberedDrawing { context, line, lineOrigin, num in
-                let rect = lineBoundingBox(line, lineOrigin: lineOrigin)
-                    .offsetBy(dx: -16, dy: 0)
-                    .offsetBy(dx: -8, dy: 0)
-                let textColor = populateContextColorFromFirstRun(context: context, line: line)
+                let style = markerStyle(of: line)
+                let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: style.font)
                 context.saveGState()
                 defer { context.restoreGState() }
                 if (0 ... 50).contains(num) {
-                    #if canImport(UIKit)
-                        let image = kNumberCircleImage(num)
-                        let cgImage = image.cgImage
-                    #elseif canImport(AppKit)
-                        let (image, cgImage) = kNumberCircleImageEntry(num)
-                    #endif
-                    if let cgImage {
-                        let imageSize = image.size
-                        let targetRect: CGRect = .init(
-                            x: rect.minX,
-                            y: rect.midY - imageSize.height / 2,
-                            width: imageSize.width,
-                            height: imageSize.height
-                        )
-                        context.clip(to: targetRect, mask: cgImage)
-                        context.setFillColor(textColor.cgColor)
-                        context.fill(targetRect)
-                        return
-                    }
+                    drawSymbol(kNumberCircleImage(num), in: column, color: style.color, context: context)
+                    return
                 }
+                // Past the symbols the number is typeset, and a number wider than the
+                // column has to grow away from the text rather than into it, so this one
+                // hangs from the column's trailing edge instead of sharing its center.
                 let font = PlatformFont.monospacedDigitSystemFont(
                     ofSize: theme.fonts.footnote.pointSize,
                     weight: .regular
                 )
                 let attributedText = NSAttributedString(string: "\(num).", attributes: [
                     .font: font,
-                    .foregroundColor: textColor,
+                    .foregroundColor: style.color,
                 ])
                 let textLine = CTLineCreateWithAttributedString(attributedText)
                 var ascent: CGFloat = 0
@@ -147,32 +137,23 @@ extension TextBuilder {
                 let width = CTLineGetTypographicBounds(textLine, &ascent, &descent, nil)
                 context.textMatrix = .identity
                 context.textPosition = .init(
-                    x: rect.minX + 16 - width,
-                    y: rect.midY - (ascent - descent) / 2
+                    x: column.maxX - width,
+                    y: column.midY - (ascent - descent) / 2
                 )
                 CTLineDraw(textLine, context)
             }
             .withCheckboxDrawing { context, line, lineOrigin, isChecked in
-                let rect = lineBoundingBox(line, lineOrigin: lineOrigin)
-                    .offsetBy(dx: -16, dy: 0)
-                    .offsetBy(dx: -8, dy: 0)
+                let style = markerStyle(of: line)
+                let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: style.font)
                 let image = if isChecked { kCheckedBoxImage } else { kUncheckedBoxImage }
-                #if canImport(UIKit)
-                    guard let cgImage = image.cgImage else { return }
-                #elseif canImport(AppKit)
-                    guard let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
-                #endif
-                let imageSize = image.size
-                let targetRect: CGRect = .init(
-                    x: rect.minX,
-                    y: rect.midY - imageSize.height / 2,
-                    width: imageSize.width,
-                    height: imageSize.height
+                context.saveGState()
+                defer { context.restoreGState() }
+                drawSymbol(
+                    image,
+                    in: column,
+                    color: style.color.withAlphaComponent(0.24),
+                    context: context
                 )
-                let textColor = populateContextColorFromFirstRun(context: context, line: line)
-                context.clip(to: targetRect, mask: cgImage)
-                context.setFillColor(textColor.withAlphaComponent(0.24).cgColor)
-                context.fill(targetRect)
             }
             .withThematicBreakDrawing { [weak view] context, line, lineOrigin in
                 guard let view else { return }
