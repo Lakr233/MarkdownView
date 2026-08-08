@@ -265,6 +265,50 @@ private func fittedTableColumnWidths(
             return mutableAttributedString
         }
 
+        /// What produced the cells this view is currently showing.
+        ///
+        /// Rendering a table means turning every cell's inline nodes into an
+        /// attributed string, and a stream asks for that on every token even
+        /// when the table itself has not changed since the last one. Comparing
+        /// the source the cells came from lets the builder skip that work
+        /// instead of doing it and then discovering it was not needed.
+        private struct RenderedSource {
+            let rows: [RawTableRow]
+            let columnAlignments: [RawTableColumnAlignment]
+            let theme: MarkdownTheme
+            let representedText: NSAttributedString
+        }
+
+        private var renderedSource: RenderedSource?
+
+        /// The text standing in for this table, if it already shows `rows`.
+        func representedText(
+            reusingRows rows: [RawTableRow],
+            columnAlignments: [RawTableColumnAlignment],
+            theme: MarkdownTheme
+        ) -> NSAttributedString? {
+            guard let renderedSource,
+                  renderedSource.theme == theme,
+                  renderedSource.columnAlignments == columnAlignments,
+                  renderedSource.rows == rows
+            else { return nil }
+            return renderedSource.representedText
+        }
+
+        func rememberRenderedSource(
+            rows: [RawTableRow],
+            columnAlignments: [RawTableColumnAlignment],
+            theme: MarkdownTheme,
+            representedText: NSAttributedString
+        ) {
+            renderedSource = .init(
+                rows: rows,
+                columnAlignments: columnAlignments,
+                theme: theme,
+                representedText: representedText
+            )
+        }
+
         private func contentsEqual(_ lhs: [Rows], _ rhs: [Rows]) -> Bool {
             guard lhs.count == rhs.count else { return false }
             for rowIndex in lhs.indices {
@@ -563,6 +607,50 @@ private func fittedTableColumnWidths(
                 range: NSRange(location: 0, length: mutableString.length)
             )
             return mutableAttributedString
+        }
+
+        /// What produced the cells this view is currently showing.
+        ///
+        /// Rendering a table means turning every cell's inline nodes into an
+        /// attributed string, and a stream asks for that on every token even
+        /// when the table itself has not changed since the last one. Comparing
+        /// the source the cells came from lets the builder skip that work
+        /// instead of doing it and then discovering it was not needed.
+        private struct RenderedSource {
+            let rows: [RawTableRow]
+            let columnAlignments: [RawTableColumnAlignment]
+            let theme: MarkdownTheme
+            let representedText: NSAttributedString
+        }
+
+        private var renderedSource: RenderedSource?
+
+        /// The text standing in for this table, if it already shows `rows`.
+        func representedText(
+            reusingRows rows: [RawTableRow],
+            columnAlignments: [RawTableColumnAlignment],
+            theme: MarkdownTheme
+        ) -> NSAttributedString? {
+            guard let renderedSource,
+                  renderedSource.theme == theme,
+                  renderedSource.columnAlignments == columnAlignments,
+                  renderedSource.rows == rows
+            else { return nil }
+            return renderedSource.representedText
+        }
+
+        func rememberRenderedSource(
+            rows: [RawTableRow],
+            columnAlignments: [RawTableColumnAlignment],
+            theme: MarkdownTheme,
+            representedText: NSAttributedString
+        ) {
+            renderedSource = .init(
+                rows: rows,
+                columnAlignments: columnAlignments,
+                theme: theme,
+                representedText: representedText
+            )
         }
 
         private func contentsEqual(_ lhs: [Rows], _ rhs: [Rows]) -> Bool {
