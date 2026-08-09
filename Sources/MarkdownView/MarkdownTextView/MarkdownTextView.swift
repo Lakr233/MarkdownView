@@ -11,7 +11,7 @@ import MarkdownParser
 #if canImport(UIKit)
     import UIKit
 
-    public final class MarkdownTextView: UIView {
+    open class MarkdownTextView: UIView {
         public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
         public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
@@ -69,7 +69,7 @@ import MarkdownParser
             fatalError("init(coder:) has not been implemented")
         }
 
-        override public func layoutSubviews() {
+        override open func layoutSubviews() {
             super.layoutSubviews()
             textLabelView.frame = bounds
             textLabelView.preferredMaxLayoutWidth = bounds.width
@@ -77,17 +77,56 @@ import MarkdownParser
             syncContextViewLayout()
         }
 
-        override public var intrinsicContentSize: CGSize {
+        override open var intrinsicContentSize: CGSize {
             textLabelView.intrinsicContentSize
         }
 
-        public func boundingSize(for width: CGFloat) -> CGSize {
+        open func boundingSize(for width: CGFloat) -> CGSize {
             textLabelView.preferredMaxLayoutWidth = width
             return textLabelView.intrinsicContentSize
         }
 
+        /// Decorates one run of rendered body text on its way into the document
+        /// — the seam a subclass reaches for to turn plain words into something
+        /// richer, an `@mention` chip being the case this exists for.
+        ///
+        /// Offered for every text run, including those nested inside emphasis,
+        /// strong or a link, and never for inline code, math, HTML, or an
+        /// image's source: each of those is its own inline node, so a pattern
+        /// that appears inside a code span is not mistaken for prose. What the
+        /// enclosing node does afterwards still applies — `strong` sweeps its
+        /// whole range for fonts, `link` for colour — so a decoration inside
+        /// one is styled by it.
+        ///
+        /// The default returns `text` unchanged. An override may return a
+        /// string of a different length, and may carry a Litext attachment: the
+        /// result deliberately sits outside the shared inline render cache, so
+        /// an attachment view built here belongs to this view alone rather than
+        /// to every view that happens to draw the same words. What is handed
+        /// *in*, on the other hand, comes straight from that cache and is read
+        /// by every other view showing the same words — copy it before
+        /// mutating.
+        ///
+        /// Decorated runs do live in this view's fragment cache across
+        /// rebuilds. Call ``invalidateInlineDecoration()`` when whatever an
+        /// override reads from has changed.
+        open func decorate(inlineText text: NSAttributedString, theme _: MarkdownTheme) -> NSAttributedString {
+            text
+        }
+
+        /// Rebuilds the document, dropping text decorated against state that
+        /// has since moved on.
+        public func invalidateInlineDecoration() {
+            assert(Thread.isMainThread)
+            blockFragmentCache = .init()
+            for case let tableView as TableView in contextViews {
+                tableView.forgetRenderedSource()
+            }
+            use(content)
+        }
+
         /// Replaces the displayed content immediately, bypassing the update throttle.
-        public func setContentImmediately(_ content: MarkdownContent) {
+        open func setContentImmediately(_ content: MarkdownContent) {
             assert(Thread.isMainThread)
             resetCombine()
             contentSubject.send(content)
@@ -97,7 +136,7 @@ import MarkdownParser
 
         /// Replaces the displayed content, coalesced by ``throttleInterval``.
         /// Safe to call at high frequency (e.g. while streaming).
-        public func setContent(_ content: MarkdownContent) {
+        open func setContent(_ content: MarkdownContent) {
             contentSubject.send(content)
         }
 
@@ -118,7 +157,7 @@ import MarkdownParser
             setContent(content)
         }
 
-        public func reset() {
+        open func reset() {
             assert(Thread.isMainThread)
             resetCombine()
             contentSubject.send(.init())
@@ -135,7 +174,7 @@ import MarkdownParser
 #elseif canImport(AppKit)
     import AppKit
 
-    public final class MarkdownTextView: NSView {
+    open class MarkdownTextView: NSView {
         public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
         public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
 
@@ -194,16 +233,16 @@ import MarkdownParser
             fatalError("init(coder:) has not been implemented")
         }
 
-        override public var isFlipped: Bool {
+        override open var isFlipped: Bool {
             true
         }
 
-        override public func viewDidChangeEffectiveAppearance() {
+        override open func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
             use(content)
         }
 
-        override public func layout() {
+        override open func layout() {
             super.layout()
             textLabelView.frame = bounds
             textLabelView.preferredMaxLayoutWidth = bounds.width
@@ -211,17 +250,56 @@ import MarkdownParser
             syncContextViewLayout()
         }
 
-        override public var intrinsicContentSize: CGSize {
+        override open var intrinsicContentSize: CGSize {
             textLabelView.intrinsicContentSize
         }
 
-        public func boundingSize(for width: CGFloat) -> CGSize {
+        open func boundingSize(for width: CGFloat) -> CGSize {
             textLabelView.preferredMaxLayoutWidth = width
             return textLabelView.intrinsicContentSize
         }
 
+        /// Decorates one run of rendered body text on its way into the document
+        /// — the seam a subclass reaches for to turn plain words into something
+        /// richer, an `@mention` chip being the case this exists for.
+        ///
+        /// Offered for every text run, including those nested inside emphasis,
+        /// strong or a link, and never for inline code, math, HTML, or an
+        /// image's source: each of those is its own inline node, so a pattern
+        /// that appears inside a code span is not mistaken for prose. What the
+        /// enclosing node does afterwards still applies — `strong` sweeps its
+        /// whole range for fonts, `link` for colour — so a decoration inside
+        /// one is styled by it.
+        ///
+        /// The default returns `text` unchanged. An override may return a
+        /// string of a different length, and may carry a Litext attachment: the
+        /// result deliberately sits outside the shared inline render cache, so
+        /// an attachment view built here belongs to this view alone rather than
+        /// to every view that happens to draw the same words. What is handed
+        /// *in*, on the other hand, comes straight from that cache and is read
+        /// by every other view showing the same words — copy it before
+        /// mutating.
+        ///
+        /// Decorated runs do live in this view's fragment cache across
+        /// rebuilds. Call ``invalidateInlineDecoration()`` when whatever an
+        /// override reads from has changed.
+        open func decorate(inlineText text: NSAttributedString, theme _: MarkdownTheme) -> NSAttributedString {
+            text
+        }
+
+        /// Rebuilds the document, dropping text decorated against state that
+        /// has since moved on.
+        public func invalidateInlineDecoration() {
+            assert(Thread.isMainThread)
+            blockFragmentCache = .init()
+            for case let tableView as TableView in contextViews {
+                tableView.forgetRenderedSource()
+            }
+            use(content)
+        }
+
         /// Replaces the displayed content immediately, bypassing the update throttle.
-        public func setContentImmediately(_ content: MarkdownContent) {
+        open func setContentImmediately(_ content: MarkdownContent) {
             assert(Thread.isMainThread)
             resetCombine()
             contentSubject.send(content)
@@ -231,7 +309,7 @@ import MarkdownParser
 
         /// Replaces the displayed content, coalesced by ``throttleInterval``.
         /// Safe to call at high frequency (e.g. while streaming).
-        public func setContent(_ content: MarkdownContent) {
+        open func setContent(_ content: MarkdownContent) {
             contentSubject.send(content)
         }
 
@@ -252,7 +330,7 @@ import MarkdownParser
             setContent(content)
         }
 
-        public func reset() {
+        open func reset() {
             assert(Thread.isMainThread)
             resetCombine()
             contentSubject.send(.init())

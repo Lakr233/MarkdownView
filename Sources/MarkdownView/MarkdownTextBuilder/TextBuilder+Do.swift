@@ -92,6 +92,10 @@ extension TextBuilder {
         return TextBuilder(nodes: context.blocks, context: context, viewProvider: viewProvider)
             .withTheme(theme)
             .withFragmentCache(view.blockFragmentCache)
+            .withInlineTextDecoration { [weak view] text in
+                guard let view else { return text }
+                return view.decorate(inlineText: text, theme: theme)
+            }
             .withBulletDrawing { context, line, lineOrigin, depth in
                 let style = markerStyle(of: line)
                 let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: style.font)
