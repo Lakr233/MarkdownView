@@ -22,6 +22,7 @@ final class ListProcessor {
     private let bulletDrawing: TextBuilder.BulletDrawingCallback?
     private let numberedDrawing: TextBuilder.NumberedDrawingCallback?
     private let checkboxDrawing: TextBuilder.CheckboxDrawingCallback?
+    private let inlineTextDecoration: TextBuilder.InlineTextDecoration?
 
     init(
         theme: MarkdownTheme,
@@ -29,7 +30,8 @@ final class ListProcessor {
         context: MarkdownContent,
         bulletDrawing: TextBuilder.BulletDrawingCallback?,
         numberedDrawing: TextBuilder.NumberedDrawingCallback?,
-        checkboxDrawing: TextBuilder.CheckboxDrawingCallback?
+        checkboxDrawing: TextBuilder.CheckboxDrawingCallback?,
+        inlineTextDecoration: TextBuilder.InlineTextDecoration?
     ) {
         self.theme = theme
         self.viewProvider = viewProvider
@@ -37,6 +39,7 @@ final class ListProcessor {
         self.bulletDrawing = bulletDrawing
         self.numberedDrawing = numberedDrawing
         self.checkboxDrawing = checkboxDrawing
+        self.inlineTextDecoration = inlineTextDecoration
     }
 
     func processBulletedList(items: [RawListItem]) -> NSAttributedString {
@@ -88,7 +91,7 @@ final class ListProcessor {
                 }),
             ]))
         }
-        string.append(item.paragraph.render(theme: theme, context: context, viewProvider: viewProvider))
+        string.append(item.paragraph.render(theme: theme, context: context, viewProvider: viewProvider, decoration: inlineTextDecoration))
 
         string.addAttributes(
             [.paragraphStyle: paragraphStyle],

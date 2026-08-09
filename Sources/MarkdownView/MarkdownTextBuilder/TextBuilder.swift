@@ -24,6 +24,7 @@ final class TextBuilder {
     private var numberedDrawing: NumberedDrawingCallback?
     private var checkboxDrawing: CheckboxDrawingCallback?
     private var thematicBreakDrawing: DrawingCallback?
+    private var inlineTextDecoration: InlineTextDecoration?
 
     init(
         nodes: [MarkdownBlockNode],
@@ -57,6 +58,11 @@ final class TextBuilder {
 
     func withThematicBreakDrawing(_ drawing: @escaping DrawingCallback) -> TextBuilder {
         thematicBreakDrawing = drawing
+        return self
+    }
+
+    func withInlineTextDecoration(_ decoration: @escaping InlineTextDecoration) -> TextBuilder {
+        inlineTextDecoration = decoration
         return self
     }
 
@@ -161,6 +167,7 @@ extension TextBuilder {
             viewProvider: viewProvider,
             context: context,
             thematicBreakDrawing: thematicBreakDrawing,
+            inlineTextDecoration: inlineTextDecoration,
         )
 
         let listProcessor = ListProcessor(
@@ -169,7 +176,8 @@ extension TextBuilder {
             context: context,
             bulletDrawing: bulletDrawing,
             numberedDrawing: numberedDrawing,
-            checkboxDrawing: checkboxDrawing
+            checkboxDrawing: checkboxDrawing,
+            inlineTextDecoration: inlineTextDecoration
         )
 
         switch node {

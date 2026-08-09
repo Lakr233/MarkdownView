@@ -309,6 +309,14 @@ private func fittedTableColumnWidths(
             )
         }
 
+        /// Drops the reuse record, so the next build renders the cells again
+        /// even though the rows and the theme are the ones it already drew.
+        /// What the cells rendered *to* can change without either of them
+        /// moving — an inline decoration reading state this table cannot see.
+        func forgetRenderedSource() {
+            renderedSource = nil
+        }
+
         private func contentsEqual(_ lhs: [Rows], _ rhs: [Rows]) -> Bool {
             guard lhs.count == rhs.count else { return false }
             for rowIndex in lhs.indices {
@@ -651,6 +659,14 @@ private func fittedTableColumnWidths(
                 theme: theme,
                 representedText: representedText
             )
+        }
+
+        /// Drops the reuse record, so the next build renders the cells again
+        /// even though the rows and the theme are the ones it already drew.
+        /// What the cells rendered *to* can change without either of them
+        /// moving — an inline decoration reading state this table cannot see.
+        func forgetRenderedSource() {
+            renderedSource = nil
         }
 
         private func contentsEqual(_ lhs: [Rows], _ rhs: [Rows]) -> Bool {
