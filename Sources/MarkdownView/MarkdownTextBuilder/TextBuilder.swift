@@ -86,13 +86,35 @@ final class TextBuilder {
         var subviewCollector = [PlatformView]()
         var nextFragmentCache = BlockFragmentCache(theme: theme, content: context)
         let reusesFragments = fragmentCache.isUsable(with: theme, for: context)
+        var fragments = [NSAttributedString]()
+        fragments.reserveCapacity(nodes.count)
+        // Where each newly built block landed, so its fonts can be resolved
+        // after the fact and the resolved copy kept for the next build.
+        var builtRanges = [(slot: Int, range: NSRange)]()
+
         for (index, node) in nodes.enumerated() {
-            let fragment = (reusesFragments ? fragmentCache.fragment(at: index, matching: node) : nil)
-                ?? processBlock(node, context: context, subviews: &subviewCollector)
-            text.append(fragment)
-            nextFragmentCache.record(fragment, for: node)
+            if reusesFragments, let cached = fragmentCache.fragment(at: index, matching: node) {
+                text.append(cached)
+                fragments.append(cached)
+                continue
+            }
+            let start = text.length
+            let built = processBlock(node, context: context, subviews: &subviewCollector)
+            text.append(built)
+            builtRanges.append((fragments.count, NSRange(location: start, length: built.length)))
+            fragments.append(built)
         }
-        text.fixAttributes(in: .init(location: 0, length: text.length))
+
+        for run in Self.coalesced(builtRanges.map(\.range)) {
+            text.fixAttributes(in: run)
+        }
+        for (slot, range) in builtRanges {
+            fragments[slot] = text.attributedSubstring(from: range)
+        }
+
+        for (index, node) in nodes.enumerated() {
+            nextFragmentCache.record(fragments[index], for: node)
+        }
         if !pendingHighlightRequests.isEmpty {
             CodeHighlighter.current.scheduleHighlight(requests: pendingHighlightRequests)
         }
@@ -108,6 +130,27 @@ final class TextBuilder {
 // MARK: - Block Processing
 
 extension TextBuilder {
+    /// Neighbouring ranges merged into one, so a stretch of freshly built
+    /// blocks is resolved in a single pass rather than one pass per block.
+    ///
+    /// A first render builds every block, and merging turns that back into the
+    /// one sweep it has always been; a streamed update builds only the tail,
+    /// and pays for the tail alone.
+    private static func coalesced(_ ranges: [NSRange]) -> [NSRange] {
+        var merged = [NSRange]()
+        for range in ranges where range.length > 0 {
+            if let last = merged.last, last.upperBound == range.location {
+                merged[merged.count - 1] = NSRange(
+                    location: last.location,
+                    length: last.length + range.length
+                )
+            } else {
+                merged.append(range)
+            }
+        }
+        return merged
+    }
+
     private func processBlock(
         _ node: MarkdownBlockNode,
         context: MarkdownContent,
