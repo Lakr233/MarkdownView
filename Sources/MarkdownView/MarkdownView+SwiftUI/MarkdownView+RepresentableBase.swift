@@ -42,8 +42,7 @@ extension MarkdownViewRepresentableBase {
                 coordinator.lastText = ""
                 coordinator.lastParseResult = nil
                 coordinator.lastContent = markdownContent
-                view.theme = theme
-                view.setContentImmediately(markdownContent)
+                view.setContentImmediately(markdownContent, theme: theme)
                 view.invalidateIntrinsicContentSize()
                 coordinator.lastTheme = theme
             }

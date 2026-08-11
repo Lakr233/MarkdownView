@@ -23,10 +23,12 @@ import MarkdownParser
 
         @available(*, deprecated, renamed: "textLabelView")
         public var textView: TextLabelView { textLabelView }
-        public var theme: MarkdownTheme = .default {
-            didSet {
-                guard oldValue != theme else { return }
-                textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+        var themeStorage: MarkdownTheme = .default
+        public var theme: MarkdownTheme {
+            get { themeStorage }
+            set {
+                guard themeStorage != newValue else { return }
+                applyWithoutRebuilding(theme: newValue)
                 use(content)
             }
         }
@@ -134,6 +136,27 @@ import MarkdownParser
             setupCombine()
         }
 
+        /// Replaces the displayed content and the theme in one build.
+        ///
+        /// Assigning ``theme`` alone rebuilds the document the view already
+        /// holds — right when the theme is all that changed, wasted when new
+        /// content lands in the same breath. A view fed themed content from
+        /// the outside (a sizing pass serving differently-inked bubbles, a
+        /// row being reconfigured) should use this instead of setting the
+        /// two properties in sequence.
+        open func setContentImmediately(_ content: MarkdownContent, theme: MarkdownTheme) {
+            applyWithoutRebuilding(theme: theme)
+            setContentImmediately(content)
+        }
+
+        /// Stores the theme and restyles the label without rebuilding the
+        /// current document — for callers about to replace it anyway.
+        func applyWithoutRebuilding(theme: MarkdownTheme) {
+            guard themeStorage != theme else { return }
+            themeStorage = theme
+            textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+        }
+
         /// Replaces the displayed content, coalesced by ``throttleInterval``.
         /// Safe to call at high frequency (e.g. while streaming).
         open func setContent(_ content: MarkdownContent) {
@@ -186,10 +209,12 @@ import MarkdownParser
 
         @available(*, deprecated, renamed: "textLabelView")
         public var textView: TextLabelView { textLabelView }
-        public var theme: MarkdownTheme = .default {
-            didSet {
-                guard oldValue != theme else { return }
-                textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
+        var themeStorage: MarkdownTheme = .default
+        public var theme: MarkdownTheme {
+            get { themeStorage }
+            set {
+                guard themeStorage != newValue else { return }
+                applyWithoutRebuilding(theme: newValue)
                 use(content)
             }
         }
@@ -305,6 +330,27 @@ import MarkdownParser
             contentSubject.send(content)
             use(content)
             setupCombine()
+        }
+
+        /// Replaces the displayed content and the theme in one build.
+        ///
+        /// Assigning ``theme`` alone rebuilds the document the view already
+        /// holds — right when the theme is all that changed, wasted when new
+        /// content lands in the same breath. A view fed themed content from
+        /// the outside (a sizing pass serving differently-inked bubbles, a
+        /// row being reconfigured) should use this instead of setting the
+        /// two properties in sequence.
+        open func setContentImmediately(_ content: MarkdownContent, theme: MarkdownTheme) {
+            applyWithoutRebuilding(theme: theme)
+            setContentImmediately(content)
+        }
+
+        /// Stores the theme and restyles the label without rebuilding the
+        /// current document — for callers about to replace it anyway.
+        func applyWithoutRebuilding(theme: MarkdownTheme) {
+            guard themeStorage != theme else { return }
+            themeStorage = theme
+            textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
         }
 
         /// Replaces the displayed content, coalesced by ``throttleInterval``.
