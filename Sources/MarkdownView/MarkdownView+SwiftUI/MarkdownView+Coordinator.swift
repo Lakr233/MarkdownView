@@ -99,8 +99,7 @@ final class MarkdownViewCoordinator {
         lastText = text
         lastParseResult = result
         lastContent = nil
-        view.theme = theme
-        view.setContentImmediately(content)
+        view.setContentImmediately(content, theme: theme)
         // A deferred (throttled) apply happens outside a SwiftUI update
         // cycle; invalidating the intrinsic size is what prompts SwiftUI to
         // re-query sizeThatFits(_:) for the new content.
