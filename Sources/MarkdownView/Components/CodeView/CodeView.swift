@@ -69,7 +69,7 @@ import Litext
         var preferredHeightDidChange: (() -> Void)?
 
         var isCollapsible: Bool {
-            cachedLineCount > Self.collapsedLineLimit
+            CodeBlockCollapse.isEnabled && cachedLineCount > Self.collapsedLineLimit
         }
 
         private var displayedLineCount: CGFloat {
