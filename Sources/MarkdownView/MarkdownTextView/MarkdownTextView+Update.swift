@@ -39,6 +39,11 @@ import Litext
             blockFragmentCache = artifacts.fragmentCache
 
             for view in artifacts.subviews {
+                // A view rebuilt into the document is part of it again: never
+                // let a stale hidden flag from an earlier pass survive into a
+                // rebuild, or the block stays blank until some unrelated layout
+                // happens to unhide it.
+                view.isHidden = false
                 if let view = view as? CodeView {
                     view.textView.delegate = self
                 }
@@ -90,6 +95,11 @@ import Litext
             blockFragmentCache = artifacts.fragmentCache
 
             for view in artifacts.subviews {
+                // A view rebuilt into the document is part of it again: never
+                // let a stale hidden flag from an earlier pass survive into a
+                // rebuild, or the block stays blank until some unrelated layout
+                // happens to unhide it.
+                view.isHidden = false
                 if let view = view as? CodeView {
                     view.textView.delegate = self
                 }

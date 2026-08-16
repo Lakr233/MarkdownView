@@ -24,11 +24,11 @@ enum CodeViewConfiguration {
         theme: MarkdownTheme = .default
     ) -> CGFloat {
         let numberOfRows = content.components(separatedBy: .newlines).count
-        return intrinsicHeight(lineCount: numberOfRows, theme: theme)
+        return intrinsicHeight(lineCount: CGFloat(numberOfRows), theme: theme)
     }
 
     static func intrinsicHeight(
-        lineCount: Int,
+        lineCount: CGFloat,
         theme: MarkdownTheme = .default
     ) -> CGFloat {
         let font = theme.fonts.code
@@ -38,9 +38,9 @@ enum CodeViewConfiguration {
             let lineHeight = font.ascender + abs(font.descender) + font.leading
         #endif
         let barHeight = lineHeight + barPadding * 2
-        let codeHeight = lineHeight * CGFloat(lineCount)
+        let codeHeight = lineHeight * lineCount
             + codePadding * 2
-            + codeLineSpacing * CGFloat(max(lineCount - 1, 0))
+            + codeLineSpacing * max(lineCount - 1, 0)
         return ceil(barHeight + codeHeight)
     }
 }
@@ -70,8 +70,15 @@ enum CodeViewConfiguration {
         }
 
         private func setupButtons() {
+            setupExpandButton()
             setupPreviewButton()
             setupCopyButton()
+        }
+
+        private func setupExpandButton() {
+            expandButton.addTarget(self, action: #selector(handleExpand(_:)), for: .touchUpInside)
+            expandButton.isHidden = true
+            barView.addSubview(expandButton)
         }
 
         private func setupPreviewButton() {
@@ -99,6 +106,7 @@ enum CodeViewConfiguration {
             scrollView.showsHorizontalScrollIndicator = false
             scrollView.alwaysBounceVertical = false
             scrollView.alwaysBounceHorizontal = false
+            scrollView.delegate = self
             addSubview(scrollView)
         }
 
@@ -122,37 +130,29 @@ enum CodeViewConfiguration {
 
             layoutBarView(barHeight: barHeight, labelSize: labelSize)
             layoutButtons()
-            layoutLineNumberView(barHeight: barHeight)
             layoutScrollViewAndTextView(barHeight: barHeight)
+            layoutLineNumberView(barHeight: barHeight)
         }
 
         private func layoutButtons() {
             let buttonSize = CGSize(width: 44, height: 44)
-            let hasPreview = previewAction != nil
+            var trailing = barView.bounds.width
 
-            if hasPreview {
-                copyButton.frame = CGRect(
-                    x: barView.bounds.width - buttonSize.width,
+            func place(_ button: UIButton) {
+                trailing -= buttonSize.width
+                button.frame = CGRect(
+                    x: trailing,
                     y: (barView.bounds.height - buttonSize.height) / 2,
                     width: buttonSize.width,
                     height: buttonSize.height
                 )
-                previewButton.isHidden = false
-                previewButton.frame = CGRect(
-                    x: copyButton.frame.minX - buttonSize.width,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-            } else {
-                copyButton.frame = CGRect(
-                    x: barView.bounds.width - buttonSize.width,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-                previewButton.isHidden = true
             }
+
+            place(copyButton)
+            previewButton.isHidden = previewAction == nil
+            if !previewButton.isHidden { place(previewButton) }
+            updateExpandButton()
+            if !expandButton.isHidden { place(expandButton) }
         }
 
         private func layoutBarView(barHeight: CGFloat, labelSize: CGSize) {
@@ -165,11 +165,12 @@ enum CodeViewConfiguration {
 
         private func layoutLineNumberView(barHeight: CGFloat) {
             let lineNumberSize = lineNumberView.intrinsicContentSize
+            let contentHeight = textView.intrinsicContentSize.height + CodeViewConfiguration.codePadding * 2
             lineNumberView.frame = CGRect(
                 x: 0,
-                y: barHeight,
+                y: barHeight - (isExpanded ? 0 : scrollView.contentOffset.y),
                 width: lineNumberSize.width,
-                height: bounds.height - barHeight
+                height: isExpanded ? bounds.height - barHeight : contentHeight
             )
         }
 
@@ -191,9 +192,15 @@ enum CodeViewConfiguration {
                 height: textContentSize.height
             )
 
+            let isVerticallyScrollable = isCollapsible && !isExpanded
+            let contentWidth = textView.frame.width + CodeViewConfiguration.codePadding * 2
+            scrollView.alwaysBounceVertical = isVerticallyScrollable
+            scrollView.isScrollEnabled = isVerticallyScrollable || contentWidth > scrollView.bounds.width
             scrollView.contentSize = CGSize(
-                width: textView.frame.width + CodeViewConfiguration.codePadding * 2,
-                height: 0
+                width: contentWidth,
+                height: isVerticallyScrollable
+                    ? textView.frame.height + CodeViewConfiguration.codePadding * 2
+                    : scrollView.bounds.height
             )
         }
     }

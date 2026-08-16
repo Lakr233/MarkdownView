@@ -36,6 +36,19 @@ import MarkdownParser
         /// Scroll view used for auto-scrolling while the user drags a text selection.
         public weak var trackedScrollView: UIScrollView?
 
+        /// Which fenced code blocks reserve their full height instead of the
+        /// collapsed preview height, addressed by their index in document
+        /// order so expanding one block leaves its siblings alone. Hosts
+        /// should keep this in sync for their sizing view and visible row.
+        public var expandedCodeBlocks: Set<Int> = [] {
+            didSet {
+                guard oldValue != expandedCodeBlocks else { return }
+                use(content)
+            }
+        }
+
+        public var codeBlockExpansionDidChange: ((_ blockIndex: Int, _ isExpanded: Bool) -> Void)?
+
         var contextViews: [UIView] = []
         var blockquoteBars: [BlockquoteBarView] = []
         /// Highlight cache keys of the code blocks this view is showing.

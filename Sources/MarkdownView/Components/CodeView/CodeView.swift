@@ -8,7 +8,7 @@ import Litext
 #if canImport(UIKit)
     import UIKit
 
-    final class CodeView: UIView {
+    final class CodeView: UIView, UIScrollViewDelegate {
         // MARK: - CONTENT
 
         private var needsTextRebuild = false
@@ -43,14 +43,38 @@ import Litext
                 guard oldValue != content || needsTextRebuild else { return }
                 needsTextRebuild = false
                 cachedLineCount = max(content.components(separatedBy: .newlines).count, 1)
+                if !isCollapsible { isExpanded = false }
                 textView.attributedText = highlightMap.apply(to: content, with: theme)
                 lineNumberView.updateForContent(content)
                 updateLineNumberView()
+                updateExpandButton()
             }
         }
 
+        private static let collapsedLineLimit = 15
+        /// The collapsed preview shows half a line past the limit: a cleanly
+        /// cut block reads as complete, while a clipped line tells the reader
+        /// there is more and the preview scrolls.
+        private static let collapsedPreviewLines: CGFloat = 15.5
+
         private var cachedLineCount: Int = 1
         private var highlightedContent: String = ""
+        var isExpanded = false
+
+        /// The block's index in document order; the expansion state lives
+        /// per index on the host view, so a rebuild always knows which
+        /// block this one is.
+        var codeBlockIndex: Int = 0
+
+        var preferredHeightDidChange: (() -> Void)?
+
+        var isCollapsible: Bool {
+            cachedLineCount > Self.collapsedLineLimit
+        }
+
+        private var displayedLineCount: CGFloat {
+            isExpanded || !isCollapsible ? CGFloat(cachedLineCount) : Self.collapsedPreviewLines
+        }
 
         /// Applies content and its highlight map together. Pass `nil` while the
         /// map for `newContent` is still being computed: the previous map is kept
@@ -86,6 +110,7 @@ import Litext
         lazy var textView: TextLabelView = .init()
         lazy var copyButton: UIButton = .init()
         lazy var previewButton: UIButton = .init()
+        lazy var expandButton: UIButton = .init()
         lazy var lineNumberView: LineNumberView = .init()
 
         override init(frame: CGRect) {
@@ -110,7 +135,7 @@ import Litext
         }
 
         func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
-            for button in [previewButton, copyButton] where !button.isHidden {
+            for button in [expandButton, previewButton, copyButton] where !button.isHidden {
                 let buttonPoint = button.convert(point, from: self)
                 guard button.bounds.contains(buttonPoint) else { continue }
                 return button.hitTest(buttonPoint, with: event) ?? button
@@ -126,6 +151,7 @@ import Litext
             let scrollPoint = scrollView.convert(point, from: self)
             if scrollView.bounds.contains(scrollPoint),
                scrollView.contentSize.width > scrollView.bounds.width + 1
+                    || scrollView.contentSize.height > scrollView.bounds.height + 1
             {
                 return scrollView
             }
@@ -147,7 +173,7 @@ import Litext
             let labelSize = languageLabel.intrinsicContentSize
             let barHeight = labelSize.height + CodeViewConfiguration.barPadding * 2
             let textSize = textView.intrinsicContentSize
-            let supposedHeight = CodeViewConfiguration.intrinsicHeight(lineCount: cachedLineCount, theme: theme)
+            let supposedHeight = CodeViewConfiguration.intrinsicHeight(lineCount: displayedLineCount, theme: theme)
 
             let lineNumberWidth = lineNumberView.intrinsicContentSize.width
 
@@ -156,10 +182,12 @@ import Litext
                     labelSize.width + CodeViewConfiguration.barPadding * 2,
                     lineNumberWidth + textSize.width + CodeViewConfiguration.codePadding * 2
                 ),
-                height: max(
-                    barHeight + textSize.height + CodeViewConfiguration.codePadding * 2,
-                    supposedHeight
-                )
+                height: isCollapsible && !isExpanded
+                    ? supposedHeight
+                    : max(
+                        barHeight + textSize.height + CodeViewConfiguration.codePadding * 2,
+                        supposedHeight
+                    )
             )
         }
 
@@ -175,6 +203,33 @@ import Litext
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             #endif
             previewAction?(language, textView.attributedText)
+        }
+
+        @objc func handleExpand(_: UIButton) {
+            isExpanded.toggle()
+            scrollView.setContentOffset(.zero, animated: false)
+            updateExpandButton()
+            invalidateIntrinsicContentSize()
+            setNeedsLayout()
+            preferredHeightDidChange?()
+        }
+
+        func updateExpandButton() {
+            expandButton.isHidden = !isCollapsible
+            let imageName = isExpanded
+                ? "arrow.down.right.and.arrow.up.left"
+                : "arrow.up.left.and.arrow.down.right"
+            expandButton.setImage(
+                UIImage(systemName: imageName, withConfiguration: UIImage.SymbolConfiguration(scale: .small)),
+                for: .normal
+            )
+        }
+
+        func scrollViewDidScroll(_ scrollView: UIScrollView) {
+            guard scrollView === self.scrollView, !isExpanded else { return }
+            let labelSize = languageLabel.intrinsicContentSize
+            let barHeight = max(languageLabel.font?.lineHeight ?? 16, labelSize.height) + CodeViewConfiguration.barPadding * 2
+            lineNumberView.frame.origin.y = barHeight - scrollView.contentOffset.y
         }
 
         func updateLineNumberView() {
@@ -357,7 +412,7 @@ import Litext
             let labelSize = languageLabel.intrinsicContentSize
             let barHeight = labelSize.height + CodeViewConfiguration.barPadding * 2
             let textSize = textView.intrinsicContentSize
-            let supposedHeight = CodeViewConfiguration.intrinsicHeight(lineCount: cachedLineCount, theme: theme)
+            let supposedHeight = CodeViewConfiguration.intrinsicHeight(lineCount: CGFloat(cachedLineCount), theme: theme)
 
             let lineNumberWidth = lineNumberView.intrinsicContentSize.width
 

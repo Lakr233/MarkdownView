@@ -81,13 +81,24 @@ final class BlockProcessor {
     func processCodeBlock(
         language: String?,
         content: String,
-        highlightMap: CodeHighlighter.HighlightMap?
+        highlightMap: CodeHighlighter.HighlightMap?,
+        codeBlockIndex: Int = 0,
+        isExpanded: Bool = false
     ) -> (NSAttributedString, CodeView) {
         let content = content.deletingSuffix(of: .whitespacesAndNewlines)
         let codeView = viewProvider.acquireCodeView()
         codeView.theme = theme
         codeView.language = language ?? ""
         codeView.setContent(content, highlightMap: highlightMap)
+        #if canImport(UIKit)
+            // The height reserved below must match the expansion state this
+            // build is measured against. A pooled view otherwise carries the
+            // state of its previous occupant into the reservation — a stale
+            // expanded view flashes tall for one build, a stale collapsed one
+            // measures short while the host expects the full height.
+            codeView.codeBlockIndex = codeBlockIndex
+            codeView.isExpanded = isExpanded && codeView.isCollapsible
+        #endif
         let text = buildWithParagraphSync { paragraph in
             // Reserve exactly what the view will occupy. Estimating the height from
             // the source text instead lets the two numbers drift apart, and the view

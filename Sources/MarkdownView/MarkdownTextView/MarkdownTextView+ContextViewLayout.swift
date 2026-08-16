@@ -13,9 +13,17 @@ import Litext
 
     extension MarkdownTextView {
         func syncContextViewLayout() {
+            // A container with no width lays out no runs, and hiding every
+            // context view against that empty layout blanks them until a later
+            // pass happens to re-place them. Keep whatever a previous pass
+            // placed until the container has a size again.
+            guard textLabelView.bounds.width > 0 else { return }
+
             var placed: Set<PlatformView> = []
+            var runCount = 0
 
             for run in textLabelView.layoutRuns(matching: .contextView) {
+                runCount += 1
                 if let codeView = run.attributes[.contextView] as? CodeView {
                     syncCodeView(codeView, with: run)
                     placed.insert(codeView)
@@ -30,9 +38,14 @@ import Litext
 
             // A view whose line did not survive this layout pass has no known
             // position, and its previous frame belongs to a layout that no longer
-            // exists. Hide it rather than let it paint over the text.
-            for view in contextViews {
-                view.isHidden = !placed.contains(view)
+            // exists. Hide it rather than let it paint over the text — but only
+            // once this pass actually saw runs. A rebuild caught before the text
+            // layout produced any would otherwise hide every block and blank it
+            // until a later, unrelated layout pass puts it back.
+            if runCount > 0 || contextViews.isEmpty {
+                for view in contextViews {
+                    view.isHidden = !placed.contains(view)
+                }
             }
 
             syncBlockquoteBars()
@@ -68,6 +81,27 @@ import Litext
             }
             codeView.textView.delegate = self
             codeView.previewAction = codePreviewHandler
+            codeView.isExpanded = expandedCodeBlocks.contains(codeView.codeBlockIndex) && codeView.isCollapsible
+            // Content and state change on rebuilds that keep this view's
+            // frame — a stream growing past the preview height never moves
+            // the frame again. Scroll geometry and the bar buttons are only
+            // recomputed in the view's own layout, so ask for one on every
+            // sync rather than let them go stale.
+            codeView.setNeedsLayout()
+            codeView.preferredHeightDidChange = { [weak self, weak codeView] in
+                guard let self, let codeView, codeView.superview === self else { return }
+                let blockIndex = codeView.codeBlockIndex
+                let isExpanded = codeView.isExpanded
+                DispatchQueue.main.async { [weak self, weak codeView] in
+                    guard let self, let codeView, codeView.superview === self else { return }
+                    if isExpanded {
+                        self.expandedCodeBlocks.insert(blockIndex)
+                    } else {
+                        self.expandedCodeBlocks.remove(blockIndex)
+                    }
+                    self.codeBlockExpansionDidChange?(blockIndex, isExpanded)
+                }
+            }
             setFrameIfNeeded(
                 for: codeView,
                 to: contextViewFrame(for: run, height: codeView.intrinsicContentSize.height)
@@ -114,9 +148,17 @@ import Litext
 
     extension MarkdownTextView {
         func syncContextViewLayout() {
+            // A container with no width lays out no runs, and hiding every
+            // context view against that empty layout blanks them until a later
+            // pass happens to re-place them. Keep whatever a previous pass
+            // placed until the container has a size again.
+            guard textLabelView.bounds.width > 0 else { return }
+
             var placed: Set<PlatformView> = []
+            var runCount = 0
 
             for run in textLabelView.layoutRuns(matching: .contextView) {
+                runCount += 1
                 if let codeView = run.attributes[.contextView] as? CodeView {
                     syncCodeView(codeView, with: run)
                     placed.insert(codeView)
@@ -131,9 +173,14 @@ import Litext
 
             // A view whose line did not survive this layout pass has no known
             // position, and its previous frame belongs to a layout that no longer
-            // exists. Hide it rather than let it paint over the text.
-            for view in contextViews {
-                view.isHidden = !placed.contains(view)
+            // exists. Hide it rather than let it paint over the text — but only
+            // once this pass actually saw runs. A rebuild caught before the text
+            // layout produced any would otherwise hide every block and blank it
+            // until a later, unrelated layout pass puts it back.
+            if runCount > 0 || contextViews.isEmpty {
+                for view in contextViews {
+                    view.isHidden = !placed.contains(view)
+                }
             }
 
             syncBlockquoteBars()
