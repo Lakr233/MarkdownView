@@ -35,6 +35,10 @@ struct BlockFragmentCache {
     private var entries: [Entry?] = []
     /// The theme these fragments were built against.
     private let theme: MarkdownTheme?
+    /// The locale these fragments chose their languages and fallback fonts in.
+    ///
+    /// Held as the identifier, the same key the shared body-text cache uses.
+    private let localeIdentifier: String?
     /// Whether the content carried rendered math when these were built.
     ///
     /// A math run draws from an image map owned by the content rather than by
@@ -46,18 +50,23 @@ struct BlockFragmentCache {
 
     init() {
         theme = nil
+        localeIdentifier = nil
         carriesMath = false
     }
 
     init(theme: MarkdownTheme, content: MarkdownContent) {
         self.theme = theme
+        localeIdentifier = content.locale.identifier
         carriesMath = !content.rendered.isEmpty
         entries.reserveCapacity(content.blocks.count)
     }
 
     /// Whether anything in this cache may be reused for the coming build.
     func isUsable(with theme: MarkdownTheme, for content: MarkdownContent) -> Bool {
-        self.theme == theme && !carriesMath && content.rendered.isEmpty
+        self.theme == theme
+            && localeIdentifier == content.locale.identifier
+            && !carriesMath
+            && content.rendered.isEmpty
     }
 
     /// The fragment built for this block last time.

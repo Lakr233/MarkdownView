@@ -175,7 +175,6 @@ extension ListProcessor {
                         let isTask = item.isDone != nil
                         let isDone = item.isDone ?? false
                         result.append(.init(depth: currentDepth, ordered: isOrdered, index: index, isTask: isTask, isDone: isDone, showsMarker: isFirstParagraph, paragraph: contents))
-                        if isFirstParagraph { index += 1 }
                         isFirstParagraph = false
                     case let .bulletedList(_, sublist):
                         result.append(contentsOf: flatList(.bulleted(sublist), currentDepth: currentDepth + 1))
@@ -187,6 +186,9 @@ extension ListProcessor {
                         print("WARNING: Unhandled list item: \(child)")
                     }
                 }
+                // Every item takes a number, including one that opens with a
+                // nested list or is empty, so the items after it keep theirs.
+                index += 1
             }
         }
 

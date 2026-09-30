@@ -140,6 +140,7 @@ extension MarkdownInlineNode {
 
             if let item = context.rendered[replacementIdentifier], let image = item.image {
                 let imageSize = image.size
+                let textColor = theme.colors.body
                 let contextKey = NSAttributedString.Key.contextIdentifier.rawValue as CFString
 
                 let drawingCallback = TextLabel.LineDrawingAction { context, line, lineOrigin in
@@ -182,10 +183,9 @@ extension MarkdownInlineNode {
                     #else
                         assert(image.isTemplate)
                         if let cgImage = image.cgImage(forProposedRect: nil, context: nil, hints: nil) {
-                            // Resolve label color at draw time for dynamic appearance updates
-                            let labelColor = NSColor.labelColor.cgColor
+                            // Resolve the theme's colour at draw time for dynamic appearance updates
                             context.clip(to: rect, mask: cgImage)
-                            context.setFillColor(labelColor)
+                            context.setFillColor(textColor.cgColor)
                             context.fill(rect)
                         } else {
                             assertionFailure()

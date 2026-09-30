@@ -42,6 +42,28 @@ enum MarkdownContentLocale {
         }
     }
 
+    /// Picks each run's fallback font for the language it is written in.
+    ///
+    /// The language attribute is applied, the fonts are resolved against it,
+    /// and then it is dropped wherever it no longer changes what the reader
+    /// sees — see ``affectsShaping(_:)``. A run whose font is replaced after
+    /// this has lost the language it was resolved for, so it must come back
+    /// through here rather than being left to the pass over the document.
+    static func resolveFonts(
+        in attributedString: NSMutableAttributedString,
+        fallbackLocale: Locale
+    ) {
+        applyLanguageAttributes(to: attributedString, fallbackLocale: fallbackLocale)
+        let fullRange = NSRange(location: 0, length: attributedString.length)
+        attributedString.fixAttributes(in: fullRange)
+        attributedString.enumerateAttribute(.coreTextLanguage, in: fullRange, options: []) { value, range, _ in
+            guard let language = value as? String,
+                  !affectsShaping(language)
+            else { return }
+            attributedString.removeAttribute(.coreTextLanguage, range: range)
+        }
+    }
+
     /// Whether a language still has work to do once the font is resolved.
     ///
     /// The attribute exists so CoreText picks the right font and the right
