@@ -243,12 +243,25 @@ extension CodeHighlighter {
         renderCache.value(forKey: key)
     }
 
+    /// Queues `requests` ahead of anything already waiting.
+    ///
+    /// Every view shares this queue, so what another view asked for stays
+    /// queued behind the caller's requests. A waiting request whose content the
+    /// caller's now extends is a block that streamed on, and is dropped: its
+    /// map would never be looked up again.
     func scheduleHighlight(requests: [CodeHighlightRequest]) {
         var pending: OrderedDictionary<Int, CodeHighlightRequest> = [:]
         for request in requests {
             guard request.key != inflightKey else { continue }
             guard renderCache.value(forKey: request.key) == nil else { continue }
             pending[request.key] = request
+        }
+        for (key, waiting) in pendingRequests where pending[key] == nil {
+            let isSuperseded = pending.values.contains {
+                $0.language == waiting.language && $0.content.hasPrefix(waiting.content)
+            }
+            guard !isSuperseded else { continue }
+            pending[key] = waiting
         }
         pendingRequests = pending
         processNextRequestIfNeeded()
