@@ -43,6 +43,45 @@ private struct BacktickRun {
     let isFence: Bool
 }
 
+/// The offset just past a line's indentation and container markers: quote
+/// markers, and bullets or ordinals followed by a space or the line's end.
+private func containerPrefixEnd(in units: [UInt16], from start: Int) -> Int {
+    func isSpaceOrEnd(_ index: Int) -> Bool {
+        guard index < units.count else { return true }
+        switch units[index] {
+        case UInt16(UInt8(ascii: " ")), UInt16(UInt8(ascii: "\t")),
+             UInt16(UInt8(ascii: "\r")), UInt16(UInt8(ascii: "\n")):
+            return true
+        default:
+            return false
+        }
+    }
+    let digits = UInt16(UInt8(ascii: "0")) ... UInt16(UInt8(ascii: "9"))
+    var index = start
+    while index < units.count {
+        switch units[index] {
+        case UInt16(UInt8(ascii: " ")), UInt16(UInt8(ascii: "\t")), UInt16(UInt8(ascii: ">")):
+            index += 1
+        case UInt16(UInt8(ascii: "-")), UInt16(UInt8(ascii: "*")), UInt16(UInt8(ascii: "+")):
+            guard isSpaceOrEnd(index + 1) else { return index }
+            index += 1
+        case digits:
+            var end = index
+            while end < units.count, digits.contains(units[end]) {
+                end += 1
+            }
+            guard end < units.count,
+                  units[end] == UInt16(UInt8(ascii: ".")) || units[end] == UInt16(UInt8(ascii: ")")),
+                  isSpaceOrEnd(end + 1)
+            else { return index }
+            index = end + 1
+        default:
+            return index
+        }
+    }
+    return index
+}
+
 /// Ranges spanned by paired backtick runs, following cmark's rule that a code
 /// span opener pairs with the next backtick run of the same length. A code
 /// span ends at a blank line, so only a fence pairs across one.
@@ -54,11 +93,11 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
     let backtick = UInt16(UInt8(ascii: "`"))
     var runs: [BacktickRun] = []
     var chunk = 0
-    // Whether the line so far holds more than indentation and container
-    // markers (`>`, `-`, `1.`), which a fence may follow and which alone
-    // leave a line as blank as far as a code span is concerned.
+    // Whether the line holds more than indentation and its container prefix
+    // (`>`, `-`, `1.`), which a fence may follow and which alone leave a line
+    // as blank as far as a code span is concerned.
     var lineHasContent = false
-    var index = 0
+    var index = containerPrefixEnd(in: units, from: 0)
     while index < units.count {
         let unit = units[index]
         guard unit == backtick else {
@@ -66,10 +105,9 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
             case UInt16(UInt8(ascii: "\n")):
                 if !lineHasContent { chunk += 1 }
                 lineHasContent = false
-            case UInt16(UInt8(ascii: " ")), UInt16(UInt8(ascii: "\t")), UInt16(UInt8(ascii: "\r")),
-                 UInt16(UInt8(ascii: ">")), UInt16(UInt8(ascii: "-")), UInt16(UInt8(ascii: "*")),
-                 UInt16(UInt8(ascii: "+")), UInt16(UInt8(ascii: ".")), UInt16(UInt8(ascii: ")")),
-                 UInt16(UInt8(ascii: "0")) ... UInt16(UInt8(ascii: "9")):
+                index = containerPrefixEnd(in: units, from: index + 1)
+                continue
+            case UInt16(UInt8(ascii: " ")), UInt16(UInt8(ascii: "\t")), UInt16(UInt8(ascii: "\r")):
                 break
             default:
                 lineHasContent = true

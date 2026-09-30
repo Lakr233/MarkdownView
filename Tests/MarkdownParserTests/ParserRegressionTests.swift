@@ -52,6 +52,15 @@ struct ParserRegressionTests {
         #expect(mathContents(in: allInlines(in: result.document)) == ["x"])
     }
 
+    @Test("A line of digits inside a code span does not end it")
+    func digitLineDoesNotEndCodeSpan() {
+        let result = MarkdownParser().parse("`a $$x$$\n2024\nb` then $$y$$")
+        let inlines = allInlines(in: result.document)
+
+        #expect(inlines.contains(.code("a $$x$$ 2024 b")))
+        #expect(mathContents(in: inlines) == ["y"])
+    }
+
     @Test("Code blocks keep math beside a backtick exactly as written")
     func codeBlocksKeepMathBesideBacktickVerbatim() {
         let indented = MarkdownParser().parse("    `a`$$x$$")
