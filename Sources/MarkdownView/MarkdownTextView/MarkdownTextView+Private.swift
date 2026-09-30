@@ -49,6 +49,30 @@ extension MarkdownTextView {
         }
     }
 
+    /// Rebuilds the throttle for a new interval.
+    ///
+    /// The old throttle may be holding content it has not delivered yet, and
+    /// the new subscription drops the subject's current value, so that
+    /// content is shown now rather than lost.
+    func resubscribeKeepingPendingContent() {
+        setupCombine()
+        let pending = contentSubject.value
+        guard pending !== content else { return }
+        use(pending)
+    }
+
+    /// Hands the current handlers to the code and table views already on
+    /// screen; layout does the same for views placed later.
+    func syncContextViewHandlers() {
+        for view in contextViews {
+            if let codeView = view as? CodeView {
+                codeView.previewAction = codePreviewHandler
+            } else if let tableView = view as? TableView {
+                tableView.linkHandler = linkHandler
+            }
+        }
+    }
+
     func use(_ content: MarkdownContent) {
         assert(Thread.isMainThread)
         self.content = content
@@ -56,6 +80,9 @@ extension MarkdownTextView {
         // there might be a large of unknown empty whitespace inside the table
         // thus we hereby call the autoreleasepool to avoid large memory consumption
         autoreleasepool { updateTextExecute() }
+        // The height changes with the document. Auto Layout hosts and the
+        // SwiftUI representable both learn of it only through this.
+        invalidateIntrinsicContentSize()
 
         #if canImport(UIKit)
             layoutIfNeeded()

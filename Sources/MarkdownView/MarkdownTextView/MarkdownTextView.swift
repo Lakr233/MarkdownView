@@ -12,8 +12,13 @@ import MarkdownParser
     import UIKit
 
     open class MarkdownTextView: UIView {
-        public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
-        public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
+        public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)? {
+            didSet { syncContextViewHandlers() }
+        }
+
+        public var codePreviewHandler: ((String?, NSAttributedString) -> Void)? {
+            didSet { syncContextViewHandlers() }
+        }
 
         public internal(set) var content: MarkdownContent = .init()
 
@@ -47,7 +52,7 @@ import MarkdownParser
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
-            didSet { setupCombine() }
+            didSet { resubscribeKeepingPendingContent() }
         }
 
         let viewProvider: ReusableViewProvider
@@ -202,8 +207,13 @@ import MarkdownParser
     import AppKit
 
     open class MarkdownTextView: NSView {
-        public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
-        public var codePreviewHandler: ((String?, NSAttributedString) -> Void)?
+        public var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)? {
+            didSet { syncContextViewHandlers() }
+        }
+
+        public var codePreviewHandler: ((String?, NSAttributedString) -> Void)? {
+            didSet { syncContextViewHandlers() }
+        }
 
         public internal(set) var content: MarkdownContent = .init()
 
@@ -237,7 +247,7 @@ import MarkdownParser
         var cancellables = Set<AnyCancellable>()
         let contentSubject = CurrentValueSubject<MarkdownContent, Never>(.init())
         public var throttleInterval: TimeInterval? = 1 / 20 { // x fps
-            didSet { setupCombine() }
+            didSet { resubscribeKeepingPendingContent() }
         }
 
         let viewProvider: ReusableViewProvider
