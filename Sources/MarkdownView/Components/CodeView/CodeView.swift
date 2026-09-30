@@ -26,7 +26,9 @@ import Litext
 
         var language: String = "" {
             didSet {
+                guard oldValue != language else { return }
                 languageLabel.text = language.isEmpty ? "</>" : language
+                setNeedsLayout()
             }
         }
 
@@ -46,6 +48,9 @@ import Litext
                 textView.attributedText = highlightMap.apply(to: content, with: theme)
                 lineNumberView.updateForContent(content)
                 updateLineNumberView()
+                // A line can grow without the frame changing, and the text
+                // view and scroll extent are sized in layout.
+                setNeedsLayout()
             }
         }
 
@@ -223,7 +228,9 @@ import Litext
 
         var language: String = "" {
             didSet {
+                guard oldValue != language else { return }
                 languageLabel.stringValue = language.isEmpty ? "</>" : language
+                needsLayout = true
             }
         }
 
@@ -243,6 +250,9 @@ import Litext
                 textView.attributedText = highlightMap.apply(to: content, with: theme)
                 lineNumberView.updateForContent(content)
                 updateLineNumberView()
+                // A line can grow without the frame changing, and the text
+                // view and scroll extent are sized in layout.
+                needsLayout = true
             }
         }
 
