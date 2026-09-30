@@ -166,7 +166,8 @@ final class BlockProcessor {
         if let reused = tableView.representedText(
             reusingRows: rows,
             columnAlignments: columnAlignments,
-            theme: theme
+            theme: theme,
+            content: context
         ) {
             representedText = reused
         } else {
@@ -185,6 +186,7 @@ final class BlockProcessor {
                 rows: rows,
                 columnAlignments: columnAlignments,
                 theme: theme,
+                content: context,
                 representedText: representedText
             )
         }

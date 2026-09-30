@@ -276,19 +276,28 @@ private func fittedTableColumnWidths(
             let rows: [RawTableRow]
             let columnAlignments: [RawTableColumnAlignment]
             let theme: MarkdownTheme
+            let localeIdentifier: String
             let representedText: NSAttributedString
         }
 
         private var renderedSource: RenderedSource?
 
         /// The text standing in for this table, if it already shows `rows`.
+        ///
+        /// Cells also depend on the content's locale, which picks their
+        /// fallback fonts, and on its rendered math, which the rows only name.
+        /// Math is not compared: like the block cache, a document carrying any
+        /// renders its tables again.
         func representedText(
             reusingRows rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
-            theme: MarkdownTheme
+            theme: MarkdownTheme,
+            content: MarkdownContent
         ) -> NSAttributedString? {
             guard let renderedSource,
+                  content.rendered.isEmpty,
                   renderedSource.theme == theme,
+                  renderedSource.localeIdentifier == content.locale.identifier,
                   renderedSource.columnAlignments == columnAlignments,
                   renderedSource.rows == rows
             else { return nil }
@@ -299,12 +308,14 @@ private func fittedTableColumnWidths(
             rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
             theme: MarkdownTheme,
+            content: MarkdownContent,
             representedText: NSAttributedString
         ) {
             renderedSource = .init(
                 rows: rows,
                 columnAlignments: columnAlignments,
                 theme: theme,
+                localeIdentifier: content.locale.identifier,
                 representedText: representedText
             )
         }
@@ -628,19 +639,28 @@ private func fittedTableColumnWidths(
             let rows: [RawTableRow]
             let columnAlignments: [RawTableColumnAlignment]
             let theme: MarkdownTheme
+            let localeIdentifier: String
             let representedText: NSAttributedString
         }
 
         private var renderedSource: RenderedSource?
 
         /// The text standing in for this table, if it already shows `rows`.
+        ///
+        /// Cells also depend on the content's locale, which picks their
+        /// fallback fonts, and on its rendered math, which the rows only name.
+        /// Math is not compared: like the block cache, a document carrying any
+        /// renders its tables again.
         func representedText(
             reusingRows rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
-            theme: MarkdownTheme
+            theme: MarkdownTheme,
+            content: MarkdownContent
         ) -> NSAttributedString? {
             guard let renderedSource,
+                  content.rendered.isEmpty,
                   renderedSource.theme == theme,
+                  renderedSource.localeIdentifier == content.locale.identifier,
                   renderedSource.columnAlignments == columnAlignments,
                   renderedSource.rows == rows
             else { return nil }
@@ -651,12 +671,14 @@ private func fittedTableColumnWidths(
             rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
             theme: MarkdownTheme,
+            content: MarkdownContent,
             representedText: NSAttributedString
         ) {
             renderedSource = .init(
                 rows: rows,
                 columnAlignments: columnAlignments,
                 theme: theme,
+                localeIdentifier: content.locale.identifier,
                 representedText: representedText
             )
         }
