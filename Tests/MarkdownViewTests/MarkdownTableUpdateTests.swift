@@ -301,4 +301,30 @@ struct MarkdownTableUpdateTests {
         let expected = tableView(in: fresh).map { cells(in: $0).map(\.attributedText.string) } ?? []
         #expect(withMath == expected, "before: \(withoutMath)")
     }
+
+    @MainActor
+    @Test("A table without math still reuses its cells beside math elsewhere")
+    func tableWithoutMathReusesBesideMath() {
+        let markdown = "$x^2$\n\n" + table("| 1 | one |")
+        let content = RenderProbe.content(markdown)
+        #expect(!content.rendered.isEmpty)
+
+        let view = RenderProbe.view(markdown)
+        guard let tableView = tableView(in: view),
+              case let .table(alignments, rows) = content.blocks.first(where: {
+                  if case .table = $0 { return true }
+                  return false
+              })
+        else {
+            Issue.record("no table was built")
+            return
+        }
+        let reused = tableView.representedText(
+            reusingRows: rows,
+            columnAlignments: alignments,
+            theme: .default,
+            content: content
+        )
+        #expect(reused != nil, "math outside the table stopped it reusing its cells")
+    }
 }
