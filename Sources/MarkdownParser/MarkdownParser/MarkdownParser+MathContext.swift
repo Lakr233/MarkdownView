@@ -49,33 +49,36 @@ private struct BacktickRun {
 private func backtickDelimitedRanges(in text: String) -> [NSRange] {
     guard text.utf8.contains(UInt8(ascii: "`")) else { return [] }
 
-    let backtick = unichar(UInt8(ascii: "`"))
-    let newline = unichar(UInt8(ascii: "\n"))
-    let whitespace: Set<unichar> = [
-        unichar(UInt8(ascii: " ")),
-        unichar(UInt8(ascii: "\t")),
-        unichar(UInt8(ascii: "\r")),
-    ]
-    let nsText = text as NSString
+    // UTF-16 code units, so offsets line up with the NSRanges matched later.
+    let units = Array(text.utf16)
+    let backtick = UInt16(UInt8(ascii: "`"))
     var runs: [BacktickRun] = []
     var chunk = 0
+    // Whether the line so far holds more than indentation and container
+    // markers (`>`, `-`, `1.`), which a fence may follow and which alone
+    // leave a line as blank as far as a code span is concerned.
     var lineHasContent = false
     var index = 0
-    while index < nsText.length {
-        let character = nsText.character(at: index)
-        if character == newline {
-            if !lineHasContent { chunk += 1 }
-            lineHasContent = false
-            index += 1
-            continue
-        }
-        guard character == backtick else {
-            if !whitespace.contains(character) { lineHasContent = true }
+    while index < units.count {
+        let unit = units[index]
+        guard unit == backtick else {
+            switch unit {
+            case UInt16(UInt8(ascii: "\n")):
+                if !lineHasContent { chunk += 1 }
+                lineHasContent = false
+            case UInt16(UInt8(ascii: " ")), UInt16(UInt8(ascii: "\t")), UInt16(UInt8(ascii: "\r")),
+                 UInt16(UInt8(ascii: ">")), UInt16(UInt8(ascii: "-")), UInt16(UInt8(ascii: "*")),
+                 UInt16(UInt8(ascii: "+")), UInt16(UInt8(ascii: ".")), UInt16(UInt8(ascii: ")")),
+                 UInt16(UInt8(ascii: "0")) ... UInt16(UInt8(ascii: "9")):
+                break
+            default:
+                lineHasContent = true
+            }
             index += 1
             continue
         }
         var end = index + 1
-        while end < nsText.length, nsText.character(at: end) == backtick {
+        while end < units.count, units[end] == backtick {
             end += 1
         }
         runs.append(BacktickRun(
@@ -130,11 +133,33 @@ private func extractMathMatches(in text: String, using regex: NSRegularExpressio
     }
 }
 
+/// Whether a backtick run ends just before `location` with at least one of its
+/// backticks unescaped — one that would still join a code span delimiter.
+private func endsInUnescapedBacktick(_ text: NSString, before location: Int) -> Bool {
+    let backtick = unichar(UInt8(ascii: "`"))
+    let backslash = unichar(UInt8(ascii: "\\"))
+    var index = location
+    while index > 0, text.character(at: index - 1) == backtick {
+        index -= 1
+    }
+    let run = location - index
+    guard run > 0 else { return false }
+    var backslashes = 0
+    while index > 0, text.character(at: index - 1) == backslash {
+        index -= 1
+        backslashes += 1
+    }
+    // An odd number of backslashes escapes the run's first backtick only.
+    return run - backslashes % 2 > 0
+}
+
 public extension MarkdownParser {
     final class MathContext {
         private let document: String
         private(set) var indexedContent: String?
         private var sourceContents: [Int: String] = [:]
+        /// Placeholders inserted with a space beside them, as inserted.
+        private var paddedPlaceholders: [Int: String] = [:]
 
         public fileprivate(set) var contents: [Int: String] = [:]
 
@@ -163,7 +188,8 @@ public extension MarkdownParser {
 
             // The placeholder is a code span; a backtick right beside it (from
             // user code or another placeholder) would merge into its delimiter
-            // run, so a space keeps the two apart.
+            // run, so a space keeps the two apart. Where the placeholder ends
+            // up literal, in a code block, restoring it takes the space too.
             let backtick = unichar(UInt8(ascii: "`"))
             for match in matches {
                 if match.range.location > lastEnd {
@@ -172,13 +198,16 @@ public extension MarkdownParser {
                     )
                 }
                 let matchEnd = match.range.location + match.range.length
-                if result.hasSuffix("`") {
-                    result += " "
+                let followsPlaceholder = match.range.location == lastEnd && lastEnd > 0
+                let spaceBefore = followsPlaceholder
+                    || endsInUnescapedBacktick(nsText, before: match.range.location)
+                let spaceAfter = matchEnd < nsText.length && nsText.character(at: matchEnd) == backtick
+                let placeholder = register(content: match.content, source: match.source)
+                let inserted = (spaceBefore ? " " : "") + placeholder + (spaceAfter ? " " : "")
+                if inserted != placeholder {
+                    paddedPlaceholders[contents.count - 1] = inserted
                 }
-                result += register(content: match.content, source: match.source)
-                if matchEnd < nsText.length, nsText.character(at: matchEnd) == backtick {
-                    result += " "
-                }
+                result += inserted
                 lastEnd = matchEnd
             }
 
@@ -219,6 +248,9 @@ public extension MarkdownParser {
             return contents.sorted(by: { $0.key < $1.key }).reduce(into: content) { partialResult, element in
                 let placeholder = MarkdownParser.replacementText(for: .math, identifier: .init(element.key))
                 let source = sourceContents[element.key] ?? element.value
+                if let padded = paddedPlaceholders[element.key] {
+                    partialResult = partialResult.replacingOccurrences(of: padded, with: source)
+                }
                 partialResult = partialResult.replacingOccurrences(of: placeholder, with: source)
             }
         }

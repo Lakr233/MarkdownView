@@ -44,6 +44,40 @@ struct ParserRegressionTests {
         #expect(content == "`\n\n$$x$$\n")
     }
 
+    @Test("A fence opened after a list marker still pairs across blank lines")
+    func fenceAfterListMarkerPairsAcrossBlankLines() {
+        let markdown = "- ```\n  a\n\n  b\n  ```\n\n$$x$$\n\n```\nc\n```"
+        let result = MarkdownParser().parse(markdown)
+
+        #expect(mathContents(in: allInlines(in: result.document)) == ["x"])
+    }
+
+    @Test("Code blocks keep math beside a backtick exactly as written")
+    func codeBlocksKeepMathBesideBacktickVerbatim() {
+        let indented = MarkdownParser().parse("    `a`$$x$$")
+        guard case let .codeBlock(_, indentedContent) = indented.document.first else {
+            Issue.record("Expected an indented code block")
+            return
+        }
+        #expect(indentedContent == "`a`$$x$$\n")
+
+        let tilde = MarkdownParser().parse("~~~\n`a`$$x$$\n~~~")
+        guard case let .codeBlock(_, tildeContent) = tilde.document.first else {
+            Issue.record("Expected a tilde-fenced code block")
+            return
+        }
+        #expect(tildeContent == "`a`$$x$$\n")
+    }
+
+    @Test("An escaped backtick before math adds no space")
+    func escapedBacktickBeforeMathAddsNoSpace() {
+        let result = MarkdownParser().parse("\\`$$x$$")
+        let inlines = allInlines(in: result.document)
+
+        #expect(inlines.first == .text("`"))
+        #expect(mathContents(in: inlines) == ["x"])
+    }
+
     @Test("Nested lists mixing task and plain items stay homogeneous")
     func nestedListsMixingTaskAndPlainItemsStayHomogeneous() {
         let result = MarkdownParser().parse("- a\n  - [ ] x\n  - y")
