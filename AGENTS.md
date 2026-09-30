@@ -10,7 +10,11 @@ then bump the app's `Package.resolved`.
 - `Script/test.sh` is the build gate: it builds the `Example` scheme in
   `Example/Example.xcworkspace` across macOS, **Mac Catalyst**, iOS, iOS
   Simulator, xrOS and xrOS Simulator. All six must pass — this package ships on
-  all of them, and the platform splits are where it breaks.
+  all of them, and the platform splits are where it breaks. It then runs
+  `build-for-testing` for Mac Catalyst, so `MarkdownViewCatalystTests` compiles
+  (a plain build skips it; coverage is off because it breaks the link), and
+  builds the `ExampleWatch Watch App` scheme for watchOS and watchOS Simulator,
+  where `WatchMarkdownView` ships.
 - `swift test` runs `MarkdownParserTests` and `MarkdownViewTests`.
 - Pipe `xcodebuild` through `xcbeautify` to save context and tokens.
 - **Performance claims are measured, not asserted.** `MarkdownViewBenchmark` is
