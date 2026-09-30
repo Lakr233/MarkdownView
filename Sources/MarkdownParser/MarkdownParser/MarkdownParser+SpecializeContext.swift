@@ -206,39 +206,13 @@ private extension MarkdownParser.SpecializeContext {
         return flattenedChildren
     }
 
-    func extractParagraphsFromListItem(_ children: [MarkdownBlockNode]) -> [MarkdownBlockNode] {
-        var paragraphs: [MarkdownBlockNode] = []
-
-        for child in children {
-            switch child {
-            case let .paragraph(content):
-                paragraphs.append(.paragraph(content: content))
-            case let .heading(_, content):
-                paragraphs.append(.paragraph(content: content))
-            case let .codeBlock(_, content):
-                paragraphs.append(.paragraph(content: [.text(content)]))
-            case .blockquote:
-                // blockquote 应该已经被提取到顶级，这里不应该出现
-                assertionFailure("blockquote should not appear in list items")
-            case let .bulletedList(_, items):
-                paragraphs.append(contentsOf: extractParagraphs(from: items))
-            case let .numberedList(_, _, items):
-                paragraphs.append(contentsOf: extractParagraphs(from: items))
-            case let .taskList(_, items):
-                paragraphs.append(contentsOf: extractParagraphs(from: items))
-            default:
-                continue
-            }
-        }
-
-        return paragraphs
-    }
-
+    /// List items inside a blockquote are flattened like the blockquote itself:
+    /// a nested blockquote or table in an item keeps its text.
     func extractParagraphs(from items: [RawListItem]) -> [MarkdownBlockNode] {
-        items.flatMap { extractParagraphsFromListItem($0.children) }
+        items.flatMap { flattenBlockquoteChildren($0.children) }
     }
 
     func extractParagraphs(from items: [RawTaskListItem]) -> [MarkdownBlockNode] {
-        items.flatMap { extractParagraphsFromListItem($0.children) }
+        items.flatMap { flattenBlockquoteChildren($0.children) }
     }
 }

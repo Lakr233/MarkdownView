@@ -34,17 +34,43 @@ private struct MathMatch {
     let source: String
 }
 
+private struct BacktickRun {
+    let range: NSRange
+    /// Index of the blank-line-separated chunk the run sits in.
+    let chunk: Int
+    /// A run of three or more at the start of a line opens or closes a fence,
+    /// which, unlike a code span, may contain blank lines.
+    let isFence: Bool
+}
+
 /// Ranges spanned by paired backtick runs, following cmark's rule that a code
-/// span opener pairs with the next backtick run of the same length.
+/// span opener pairs with the next backtick run of the same length. A code
+/// span ends at a blank line, so only a fence pairs across one.
 private func backtickDelimitedRanges(in text: String) -> [NSRange] {
     guard text.utf8.contains(UInt8(ascii: "`")) else { return [] }
 
     let backtick = unichar(UInt8(ascii: "`"))
+    let newline = unichar(UInt8(ascii: "\n"))
+    let whitespace: Set<unichar> = [
+        unichar(UInt8(ascii: " ")),
+        unichar(UInt8(ascii: "\t")),
+        unichar(UInt8(ascii: "\r")),
+    ]
     let nsText = text as NSString
-    var runs: [NSRange] = []
+    var runs: [BacktickRun] = []
+    var chunk = 0
+    var lineHasContent = false
     var index = 0
     while index < nsText.length {
-        guard nsText.character(at: index) == backtick else {
+        let character = nsText.character(at: index)
+        if character == newline {
+            if !lineHasContent { chunk += 1 }
+            lineHasContent = false
+            index += 1
+            continue
+        }
+        guard character == backtick else {
+            if !whitespace.contains(character) { lineHasContent = true }
             index += 1
             continue
         }
@@ -52,7 +78,12 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
         while end < nsText.length, nsText.character(at: end) == backtick {
             end += 1
         }
-        runs.append(NSRange(location: index, length: end - index))
+        runs.append(BacktickRun(
+            range: NSRange(location: index, length: end - index),
+            chunk: chunk,
+            isFence: !lineHasContent && end - index >= 3
+        ))
+        lineHasContent = true
         index = end
     }
 
@@ -61,17 +92,22 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
     while openerIndex < runs.count {
         let opener = runs[openerIndex]
         var closerIndex = openerIndex + 1
-        while closerIndex < runs.count, runs[closerIndex].length != opener.length {
+        while closerIndex < runs.count,
+              runs[closerIndex].range.length != opener.range.length,
+              opener.isFence || runs[closerIndex].chunk == opener.chunk
+        {
             closerIndex += 1
         }
-        guard closerIndex < runs.count else {
+        guard closerIndex < runs.count,
+              opener.isFence || runs[closerIndex].chunk == opener.chunk
+        else {
             openerIndex += 1
             continue
         }
-        let closer = runs[closerIndex]
+        let closer = runs[closerIndex].range
         ranges.append(NSRange(
-            location: opener.location,
-            length: closer.location + closer.length - opener.location
+            location: opener.range.location,
+            length: closer.location + closer.length - opener.range.location
         ))
         openerIndex = closerIndex + 1
     }
@@ -125,14 +161,25 @@ public extension MarkdownParser {
             result.reserveCapacity(document.utf8.count)
             var lastEnd = 0
 
+            // The placeholder is a code span; a backtick right beside it (from
+            // user code or another placeholder) would merge into its delimiter
+            // run, so a space keeps the two apart.
+            let backtick = unichar(UInt8(ascii: "`"))
             for match in matches {
                 if match.range.location > lastEnd {
                     result += nsText.substring(
                         with: NSRange(location: lastEnd, length: match.range.location - lastEnd)
                     )
                 }
+                let matchEnd = match.range.location + match.range.length
+                if result.hasSuffix("`") {
+                    result += " "
+                }
                 result += register(content: match.content, source: match.source)
-                lastEnd = match.range.location + match.range.length
+                if matchEnd < nsText.length, nsText.character(at: matchEnd) == backtick {
+                    result += " "
+                }
+                lastEnd = matchEnd
             }
 
             if lastEnd < nsText.length {
