@@ -123,6 +123,12 @@ import Testing
             view.textLabelView(view.textLabelView, didDragSelectionAt: .init(x: 10, y: -200))
             #expect(clipView.bounds.minY == -40)
 
+            // Dragging 5pt into the bottom edge zone scrolls by 5pt, not by
+            // that plus the top inset.
+            let edge = scrollView.documentVisibleRect.maxY - 16
+            view.textLabelView(view.textLabelView, didDragSelectionAt: .init(x: 10, y: edge + 5))
+            #expect(abs(clipView.bounds.minY - (-40 + 5)) < 0.5)
+
             // Dragging far below must reach the bottom inset.
             view.textLabelView(
                 view.textLabelView,

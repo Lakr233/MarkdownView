@@ -92,6 +92,7 @@ extension TextBuilder {
         return TextBuilder(nodes: context.blocks, context: context, viewProvider: viewProvider)
             .withTheme(theme)
             .withFragmentCache(view.blockFragmentCache)
+            .withHighlightRequester(ObjectIdentifier(view))
             .withInlineTextDecoration { [weak view] text in
                 guard let view else { return text }
                 return view.decorate(inlineText: text, theme: theme)

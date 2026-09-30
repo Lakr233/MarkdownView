@@ -26,9 +26,9 @@ import Litext
 
         var language: String = "" {
             didSet {
-                guard oldValue != language else { return }
                 languageLabel.text = language.isEmpty ? "</>" : language
-                setNeedsLayout()
+                // The label is sized in layout.
+                if oldValue != language { setNeedsLayout() }
             }
         }
 
@@ -228,9 +228,9 @@ import Litext
 
         var language: String = "" {
             didSet {
-                guard oldValue != language else { return }
                 languageLabel.stringValue = language.isEmpty ? "</>" : language
-                needsLayout = true
+                // The label is sized in layout.
+                if oldValue != language { needsLayout = true }
             }
         }
 

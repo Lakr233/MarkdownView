@@ -71,6 +71,11 @@ final class TextBuilder {
         return self
     }
 
+    func withHighlightRequester(_ requester: ObjectIdentifier) -> TextBuilder {
+        highlightRequester = requester
+        return self
+    }
+
     struct BuildResult {
         let document: NSAttributedString
         let subviews: [PlatformView]
@@ -82,6 +87,7 @@ final class TextBuilder {
     }
 
     private var pendingHighlightRequests: [CodeHighlightRequest] = []
+    private var highlightRequester: ObjectIdentifier?
     private var highlightKeys: Set<Int> = []
     private var fragmentCache: BlockFragmentCache = .init()
 
@@ -122,7 +128,10 @@ final class TextBuilder {
             nextFragmentCache.record(fragments[index], for: node)
         }
         if !pendingHighlightRequests.isEmpty {
-            CodeHighlighter.current.scheduleHighlight(requests: pendingHighlightRequests)
+            CodeHighlighter.current.scheduleHighlight(
+                requests: pendingHighlightRequests,
+                requester: highlightRequester
+            )
         }
         return .init(
             document: text,

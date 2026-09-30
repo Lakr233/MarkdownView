@@ -70,4 +70,19 @@ struct CodeViewLayoutTests {
         #expect(after === before)
         #expect(after.languageLabel.frame.width >= after.languageLabel.intrinsicContentSize.width - 0.5)
     }
+
+    @MainActor
+    @Test("A code block without a language is labelled as code")
+    func unlabelledBlockShowsCodeGlyph() {
+        let view = RenderProbe.view("```\nlet a = 1\n```", width: 320)
+        guard let codeView = codeView(in: view) else {
+            Issue.record("no code view was built")
+            return
+        }
+        #if canImport(UIKit)
+            #expect(codeView.languageLabel.text == "</>")
+        #elseif canImport(AppKit)
+            #expect(codeView.languageLabel.stringValue == "</>")
+        #endif
+    }
 }

@@ -28,7 +28,8 @@ extension MarkdownTextView {
                 {
                     return
                 }
-                use(content)
+                // A highlight colours text it already laid out.
+                use(content, resizes: false)
             }
             .store(in: &cancellables)
     }
@@ -73,7 +74,12 @@ extension MarkdownTextView {
         }
     }
 
-    func use(_ content: MarkdownContent) {
+    /// Rebuilds the document for `content`.
+    ///
+    /// `resizes` is false for a rebuild that only recolours what is on
+    /// screen, which leaves the height alone and so need not send SwiftUI back
+    /// through `sizeThatFits(_:)`.
+    func use(_ content: MarkdownContent, resizes: Bool = true) {
         assert(Thread.isMainThread)
         self.content = content
         // due to a bug in model gemini-flash
@@ -82,7 +88,7 @@ extension MarkdownTextView {
         autoreleasepool { updateTextExecute() }
         // The height changes with the document. Auto Layout hosts and the
         // SwiftUI representable both learn of it only through this.
-        invalidateIntrinsicContentSize()
+        if resizes { invalidateIntrinsicContentSize() }
 
         #if canImport(UIKit)
             layoutIfNeeded()

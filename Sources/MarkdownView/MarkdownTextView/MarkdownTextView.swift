@@ -282,7 +282,7 @@ import MarkdownParser
 
         override open func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
-            use(content)
+            use(content, resizes: false)
         }
 
         override open func layout() {
