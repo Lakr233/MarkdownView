@@ -329,7 +329,73 @@ struct MarkdownViewBenchmark {
             })
         }
 
+        // An answer made mostly of quotes, so the quote paragraph style's cost
+        // on every update is not diluted by the other block kinds.
+        let quotePrefixes = streamingPrefixes(of: quoteHeavyMarkdown, updates: 120)
+        cases.append(BenchmarkCase(
+            name: "stream/quote_heavy",
+            operations: quotePrefixes.count,
+            iterationLimit: 3
+        ) { iterations in
+            for _ in 0 ..< iterations {
+                let view = MarkdownTextView()
+                for prefix in quotePrefixes {
+                    autoreleasepool {
+                        let content = MarkdownContent(
+                            parserResult: parser.parse(prefix),
+                            theme: theme
+                        )
+                        view.setContentImmediately(content)
+                        _ = view.boundingSize(for: 600)
+                    }
+                }
+            }
+        })
+
+        // The cases above only measure. A host also lays the view out at the
+        // measured size, and that layout reuses the measurement's typesetting
+        // only when the text layout could measure from a laid-out frame. These
+        // pay for both, the way an update reaches the screen.
+        let hostedStreams: [(String, [String])] = [
+            ("4", streamingPrefixes(of: benchmarkDocument(sections: 4), updates: 120)),
+            ("quote_heavy", quotePrefixes),
+        ]
+        for (name, prefixes) in hostedStreams {
+            cases.append(BenchmarkCase(
+                name: "stream/hosted/\(name)",
+                operations: prefixes.count,
+                iterationLimit: 3
+            ) { iterations in
+                for _ in 0 ..< iterations {
+                    let view = MarkdownTextView()
+                    for prefix in prefixes {
+                        autoreleasepool {
+                            let content = MarkdownContent(
+                                parserResult: parser.parse(prefix),
+                                theme: theme
+                            )
+                            view.setContentImmediately(content)
+                            let height = view.boundingSize(for: 600).height
+                            view.frame = .init(x: 0, y: 0, width: 600, height: height)
+                            layoutNow(view)
+                        }
+                    }
+                }
+            })
+        }
+
         return cases
+    }
+
+    @MainActor
+    private static func layoutNow(_ view: MarkdownTextView) {
+        #if canImport(UIKit)
+            view.setNeedsLayout()
+            view.layoutIfNeeded()
+        #elseif canImport(AppKit)
+            view.needsLayout = true
+            view.layoutSubtreeIfNeeded()
+        #endif
     }
 
     // MARK: - Documents weighted towards one kind of content
@@ -348,6 +414,7 @@ struct MarkdownViewBenchmark {
             ("list_heavy", listHeavyMarkdown),
             ("code_heavy", codeHeavyMarkdown),
             ("latin_only", latinOnlyMarkdown),
+            ("quote_heavy", quoteHeavyMarkdown),
         ]
 
         var cases = shapes.map { name, markdown in
@@ -568,6 +635,19 @@ private let codeHeavyMarkdown: String = (1 ... 12).map { index in
         }
     }
     ```
+    """
+}.joined(separator: "\n\n")
+
+/// Quotes interleaved with prose, nested and wrapping, so the blockquote
+/// paragraph style is on most of the document.
+private let quoteHeavyMarkdown: String = (1 ... 20).map { index in
+    """
+    段落 \(index) between the quotes, with English prose to wrap.
+
+    > 引用 \(index)：a quoted paragraph long enough to wrap into several lines
+    > at the measured width, with **加粗** and `code` inside.
+    >
+    > > 嵌套引用 \(index) nested inside the outer quote.
     """
 }.joined(separator: "\n\n")
 

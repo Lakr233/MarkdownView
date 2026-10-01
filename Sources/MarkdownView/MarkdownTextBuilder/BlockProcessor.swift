@@ -122,7 +122,9 @@ final class BlockProcessor {
         let baseParagraphStyle = NSMutableParagraphStyle()
         baseParagraphStyle.firstLineHeadIndent = 16
         baseParagraphStyle.headIndent = 16
-        baseParagraphStyle.tailIndent = -4
+        // No tail indent: a negative one hides from line origins and widths, so
+        // the text layout gives up measuring from the laid-out frame and
+        // typesets every document holding a quote twice per update.
         baseParagraphStyle.paragraphSpacing = 8
         baseParagraphStyle.lineSpacing = 4
 
