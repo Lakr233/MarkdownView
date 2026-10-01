@@ -30,6 +30,17 @@
         }
       }
     },
+    "Copy as Markdown" : {
+      "comment" : "Menu command that copies the selected table cells as a Markdown table.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "拷贝为 Markdown"
+          }
+        }
+      }
+    },
     "Done" : {
       "comment" : "Closes the full table.",
       "localizations" : {

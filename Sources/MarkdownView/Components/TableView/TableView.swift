@@ -89,6 +89,11 @@ final class TableView: PlatformView {
     /// What the summary row's text was built from, so a stream that
     /// does not change the count does not rebuild it.
     private var summarySource: (hiddenRowCount: Int, theme: MarkdownTheme, size: CGSize)?
+    /// The cells as one selection, row by row, so a drag can run from one
+    /// cell into the next.
+    let selectionGroup = TextSelectionGroup()
+    /// Where each cell sits among the rows drawn.
+    var cellPositions: [ObjectIdentifier: TableCellPosition] = [:]
 
     // MARK: - Computed Properties
 
@@ -132,6 +137,7 @@ final class TableView: PlatformView {
     // MARK: - Setup
 
     private func configureSubviews() {
+        configureSelectionGroup()
         #if canImport(UIKit)
             scrollView.showsVerticalScrollIndicator = false
             scrollView.showsHorizontalScrollIndicator = false
@@ -388,6 +394,7 @@ final class TableView: PlatformView {
             in: cellContainer,
             metrics: layoutMetrics
         )
+        updateSelectionGroup()
 
         widths = cellManager.widths
         heights = cellManager.heights
