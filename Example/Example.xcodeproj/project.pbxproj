@@ -777,7 +777,7 @@
 			repositoryURL = "https://github.com/LookInsideApp/LookInside-Release.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 0.2.2;
+				minimumVersion = 0.2.9;
 			};
 		};
 /* End XCRemoteSwiftPackageReference section */
