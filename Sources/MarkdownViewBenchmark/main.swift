@@ -299,6 +299,36 @@ struct MarkdownViewBenchmark {
             }
         })
 
+        // A table arriving token by token: every update leaves all but the
+        // cell being typed as they were.
+        // `table_8x5` stays under the visible-row cap, so it moves only with
+        // the per-cell work; `table_20x5` also crosses it.
+        for (rows, columns) in [(20, 5), (8, 5)] {
+            let tablePrefixes = streamingPrefixes(
+                of: streamingTableMarkdown(rows: rows, columns: columns),
+                updates: 120
+            )
+            cases.append(BenchmarkCase(
+                name: "stream/table_\(rows)x\(columns)",
+                operations: tablePrefixes.count,
+                iterationLimit: 5
+            ) { iterations in
+                for _ in 0 ..< iterations {
+                    let view = MarkdownTextView()
+                    for prefix in tablePrefixes {
+                        autoreleasepool {
+                            let content = MarkdownContent(
+                                parserResult: parser.parse(prefix),
+                                theme: theme
+                            )
+                            view.setContentImmediately(content)
+                            _ = view.boundingSize(for: 600)
+                        }
+                    }
+                }
+            })
+        }
+
         return cases
     }
 
@@ -443,6 +473,25 @@ private func streamingPrefixes(of markdown: String, updates: Int) -> [String] {
         prefixes.append(String(characters[0 ..< cursor]))
     }
     return prefixes
+}
+
+/// A table of `rows` data rows and `columns` columns, mixing scripts, numbers
+/// and inline code the way a model's comparison table does.
+private func streamingTableMarkdown(rows: Int, columns: Int) -> String {
+    var out = "下面是对比结果：\n\n"
+    out += "| " + (1 ... columns).map { "列 \($0) Column" }.joined(separator: " | ") + " |\n"
+    out += "|" + String(repeating: " --- |", count: columns) + "\n"
+    for row in 1 ... rows {
+        let cells = (1 ... columns).map { column -> String in
+            switch column % 3 {
+            case 0: "`v\(row).\(column)`"
+            case 1: "\(row * 37 % 101).\(column)"
+            default: "中文 \(row) English"
+            }
+        }
+        out += "| " + cells.joined(separator: " | ") + " |\n"
+    }
+    return out
 }
 
 /// A long assistant answer: mixed scripts, every block kind, `sections` of it.

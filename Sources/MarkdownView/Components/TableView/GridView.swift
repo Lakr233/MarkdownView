@@ -22,6 +22,9 @@
         var padding: CGFloat = 2
         private var theme: MarkdownTheme = .default
         private var hasHeaderRow: Bool = false
+        /// Whether the last row is one cell across every column, drawn
+        /// without the column separators.
+        private(set) var mergesLastRow = false
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -149,6 +152,9 @@
             let cornerRadius = theme.table.cornerRadius
             let lineWidth = theme.table.borderWidth
             let halfLineWidth = lineWidth / 2
+            let columnSeparatorBottom = mergesLastRow
+                ? padding + totalHeight - (heights.last ?? 0)
+                : totalHeight + padding - halfLineWidth
 
             let outerRect = CGRect(
                 x: padding + halfLineWidth,
@@ -165,7 +171,7 @@
                 if index < widths.count - 1 {
                     x += width
                     path.move(to: .init(x: x, y: padding + halfLineWidth))
-                    path.addLine(to: .init(x: x, y: totalHeight + padding - halfLineWidth))
+                    path.addLine(to: .init(x: x, y: columnSeparatorBottom))
                 }
             }
 
@@ -241,6 +247,12 @@
             hasHeaderRow = hasHeader
             setNeedsLayout()
         }
+
+        func setMergesLastRow(_ merges: Bool) {
+            guard mergesLastRow != merges else { return }
+            mergesLastRow = merges
+            setNeedsLayout()
+        }
     }
 
 #elseif canImport(AppKit)
@@ -259,6 +271,9 @@
         var padding: CGFloat = 2
         private var theme: MarkdownTheme = .default
         private var hasHeaderRow: Bool = false
+        /// Whether the last row is one cell across every column, drawn
+        /// without the column separators.
+        private(set) var mergesLastRow = false
 
         override init(frame: CGRect) {
             super.init(frame: frame)
@@ -395,6 +410,9 @@
             let cornerRadius = theme.table.cornerRadius
             let lineWidth = theme.table.borderWidth
             let halfLineWidth = lineWidth / 2
+            let columnSeparatorBottom = mergesLastRow
+                ? padding + totalHeight - (heights.last ?? 0)
+                : totalHeight + padding - halfLineWidth
 
             let outerRect = CGRect(
                 x: padding + halfLineWidth,
@@ -411,7 +429,7 @@
                 if index < widths.count - 1 {
                     x += width
                     path.move(to: .init(x: x, y: padding + halfLineWidth))
-                    path.line(to: .init(x: x, y: totalHeight + padding - halfLineWidth))
+                    path.line(to: .init(x: x, y: columnSeparatorBottom))
                 }
             }
 
@@ -485,6 +503,12 @@
 
         func setHeaderRow(_ hasHeader: Bool) {
             hasHeaderRow = hasHeader
+            needsLayout = true
+        }
+
+        func setMergesLastRow(_ merges: Bool) {
+            guard mergesLastRow != merges else { return }
+            mergesLastRow = merges
             needsLayout = true
         }
     }

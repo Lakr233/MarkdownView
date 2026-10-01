@@ -92,6 +92,23 @@ Alignment and wrapping:
 | a considerably longer cell that has to wrap | **bold** and `code` | 1145141919810 |
 | 中文单元格内容 | [link](https://example.com) | -42 |
 
+A long table shows its first eight rows; tap the last row or the expand button to see all of them and sort by a column:
+
+| Rank | Language | Stars | Notes |
+| ---: | :------- | ----: | :---- |
+| 1 | Swift | 67,800 | `async`/`await` |
+| 2 | Rust | 98,100 | [rust-lang.org](https://www.rust-lang.org) |
+| 3 | Go | 123,000 | 中文社区活跃 |
+| 4 | Kotlin | 49,300 | |
+| 5 | TypeScript | 101,000 | **typed** JavaScript |
+| 6 | Zig | 35,200 | `comptime` |
+| 7 | Python | 63,400 | 日本語のドキュメント |
+| 8 | C | 9,800 | |
+| 9 | Haskell | 3,000 | *lazy* |
+| 10 | Elixir | 24,100 | BEAM |
+| 11 | Dart | 10,300 | Flutter |
+| 12 | Julia | 45,600 | 科学计算 |
+
 ## Blockquotes
 
 > This is a blockquote.

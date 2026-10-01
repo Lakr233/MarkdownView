@@ -46,8 +46,15 @@ private func fittedTableColumnWidths(
 
         // MARK: - Properties
 
+        /// Every row, header first, as given: what copying the table yields
+        /// and what the full-table sheet shows.
         private(set) var contents: [Rows] = []
         private(set) var columnAlignments: [RawTableColumnAlignment] = []
+        let mode: TableViewMode
+        /// The rows drawn, picked from `contents`.
+        private(set) var display = TableDisplay(contents: [], mode: .inline, sort: nil)
+        /// The column the sheet is sorted by; always nil inline.
+        private(set) var sort: TableSort?
 
         private var cellManager = TableViewCellManager()
         private var widths: [CGFloat] = []
@@ -55,11 +62,35 @@ private func fittedTableColumnWidths(
         private(set) var theme: MarkdownTheme = .default
         weak var textSelectionDelegate: TextLabelViewDelegate?
         var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
+        /// Opens the full table. Unset, the table presents it in a sheet.
+        var expandHandler: ((TableView) -> Void)?
+        /// Told after a sort changed what the table draws.
+        var sortHandler: ((TableView) -> Void)?
+
+        /// The header's trailing button that opens the full table.
+        private(set) lazy var expandControl: TableTapControl = makeExpandControl()
+        /// The last row of a truncated table, counting the rows left out.
+        private(set) lazy var summaryControl: TableTapControl = makeSummaryControl()
+        /// One per column in the sheet, over the header cell.
+        private(set) var sortControls: [TableTapControl] = []
+        /// What the summary row's text was built from, so a stream that
+        /// does not change the count does not rebuild it.
+        private var summarySource: (hiddenRowCount: Int, theme: MarkdownTheme, size: CGSize)?
 
         // MARK: - Computed Properties
 
         private var numberOfRows: Int {
-            contents.count
+            display.rows.count
+        }
+
+        /// Cells the last content change styled and measured again.
+        var lastRestyledCellCount: Int {
+            cellManager.lastRestyledCellCount
+        }
+
+        /// The cells drawn, row by row.
+        var cellViews: [TextLabelView] {
+            cellManager.cells
         }
 
         private var numberOfColumns: Int {
@@ -69,7 +100,14 @@ private func fittedTableColumnWidths(
         // MARK: - Initialization
 
         override init(frame: CGRect) {
+            mode = .inline
             super.init(frame: frame)
+            configureSubviews()
+        }
+
+        init(mode: TableViewMode) {
+            self.mode = mode
+            super.init(frame: .zero)
             configureSubviews()
         }
 
@@ -148,9 +186,13 @@ private func fittedTableColumnWidths(
             gridView.update(widths: layoutWidths, heights: heights)
 
             layoutCells(using: layoutWidths)
+            layoutControls(using: layoutWidths)
         }
 
         func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
+            if let control = control(at: point) {
+                return control
+            }
             for cell in cellManager.cells.reversed() {
                 let cellPoint = cell.convert(point, from: self)
                 guard cell.bounds.contains(cellPoint) else { continue }
@@ -200,10 +242,14 @@ private func fittedTableColumnWidths(
                     let cellHeight = ceil(idealCellSize.height)
                     let verticalOffset = max(0, (heights[row] - cellHeight) / 2)
 
+                    let accessoryWidth = row == 0
+                        ? display.headerAccessoryWidths[safe: column] ?? 0
+                        : 0
+
                     cell.frame = .init(
                         x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
                         y: y + verticalOffset + tableViewPadding,
-                        width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2),
+                        width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth),
                         height: cellHeight
                     )
 
@@ -235,22 +281,47 @@ private func fittedTableColumnWidths(
         // MARK: - Cell Configuration
 
         private func configureCells() {
+            display = TableDisplay(contents: contents, mode: mode, sort: sort)
             cellManager.setTheme(theme)
             cellManager.setDelegate(self)
             cellManager.configureCells(
-                for: contents,
+                for: display.rows,
                 columnAlignments: columnAlignments,
+                headerAccessoryWidths: display.headerAccessoryWidths,
                 in: scrollView,
                 metrics: layoutMetrics
             )
 
             widths = cellManager.widths
             heights = cellManager.heights
+            if display.rowLimit.isTruncated {
+                let size = summaryTextSize(hiddenRowCount: display.rowLimit.hiddenRowCount)
+                widths = TableDisplay.columnWidths(
+                    widths,
+                    fitting: size.width + layoutMetrics.horizontalCellPadding * 2
+                )
+                heights.append(max(
+                    layoutMetrics.minimumRowHeight,
+                    size.height + layoutMetrics.verticalCellPadding * 2
+                ))
+            }
 
             gridView.padding = tableViewPadding
             gridView.update(widths: widths, heights: heights)
 
             gridView.setHeaderRow(numberOfRows > 0)
+            gridView.setMergesLastRow(display.rowLimit.isTruncated)
+            configureControls(in: scrollView)
+        }
+
+        /// Sorts the sheet by `sort`, or puts it back in source order for nil.
+        func applySort(_ sort: TableSort?) {
+            guard mode == .sheet, self.sort != sort else { return }
+            self.sort = sort
+            guard !contents.isEmpty else { return }
+            configureCells()
+            setNeedsLayout()
+            sortHandler?(self)
         }
 
         private func processContent(
@@ -401,8 +472,15 @@ private func fittedTableColumnWidths(
 
         // MARK: - Properties
 
+        /// Every row, header first, as given: what copying the table yields
+        /// and what the full-table sheet shows.
         private(set) var contents: [Rows] = []
         private(set) var columnAlignments: [RawTableColumnAlignment] = []
+        let mode: TableViewMode
+        /// The rows drawn, picked from `contents`.
+        private(set) var display = TableDisplay(contents: [], mode: .inline, sort: nil)
+        /// The column the sheet is sorted by; always nil inline.
+        private(set) var sort: TableSort?
 
         private var cellManager = TableViewCellManager()
         private var widths: [CGFloat] = []
@@ -410,11 +488,35 @@ private func fittedTableColumnWidths(
         private(set) var theme: MarkdownTheme = .default
         weak var textSelectionDelegate: TextLabelViewDelegate?
         var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
+        /// Opens the full table. Unset, the table presents it in a sheet.
+        var expandHandler: ((TableView) -> Void)?
+        /// Told after a sort changed what the table draws.
+        var sortHandler: ((TableView) -> Void)?
+
+        /// The header's trailing button that opens the full table.
+        private(set) lazy var expandControl: TableTapControl = makeExpandControl()
+        /// The last row of a truncated table, counting the rows left out.
+        private(set) lazy var summaryControl: TableTapControl = makeSummaryControl()
+        /// One per column in the sheet, over the header cell.
+        private(set) var sortControls: [TableTapControl] = []
+        /// What the summary row's text was built from, so a stream that
+        /// does not change the count does not rebuild it.
+        private var summarySource: (hiddenRowCount: Int, theme: MarkdownTheme, size: CGSize)?
 
         // MARK: - Computed Properties
 
         private var numberOfRows: Int {
-            contents.count
+            display.rows.count
+        }
+
+        /// Cells the last content change styled and measured again.
+        var lastRestyledCellCount: Int {
+            cellManager.lastRestyledCellCount
+        }
+
+        /// The cells drawn, row by row.
+        var cellViews: [TextLabelView] {
+            cellManager.cells
         }
 
         private var numberOfColumns: Int {
@@ -424,7 +526,14 @@ private func fittedTableColumnWidths(
         // MARK: - Initialization
 
         override init(frame: CGRect) {
+            mode = .inline
             super.init(frame: frame)
+            configureSubviews()
+        }
+
+        init(mode: TableViewMode) {
+            self.mode = mode
+            super.init(frame: .zero)
             configureSubviews()
         }
 
@@ -501,9 +610,13 @@ private func fittedTableColumnWidths(
             gridView.frame = CGRect(origin: .zero, size: contentSize)
             gridView.update(widths: layoutWidths, heights: heights)
             layoutCells(using: layoutWidths)
+            layoutControls(using: layoutWidths)
         }
 
         func interactionTarget(at point: CGPoint) -> NSView? {
+            if let control = control(at: point) {
+                return control
+            }
             for cell in cellManager.cells.reversed() {
                 let cellPoint = cell.convert(point, from: self)
                 guard cell.bounds.contains(cellPoint) else { continue }
@@ -572,10 +685,14 @@ private func fittedTableColumnWidths(
                     let cellHeight = ceil(idealCellSize.height)
                     let verticalOffset = max(0, (heights[row] - cellHeight) / 2)
 
+                    let accessoryWidth = row == 0
+                        ? display.headerAccessoryWidths[safe: column] ?? 0
+                        : 0
+
                     cell.frame = .init(
                         x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
                         y: y + verticalOffset + tableViewPadding,
-                        width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2),
+                        width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth),
                         height: cellHeight
                     )
 
@@ -607,22 +724,47 @@ private func fittedTableColumnWidths(
         // MARK: - Cell Configuration
 
         private func configureCells() {
+            display = TableDisplay(contents: contents, mode: mode, sort: sort)
             cellManager.setTheme(theme)
             cellManager.setDelegate(self)
             cellManager.configureCells(
-                for: contents,
+                for: display.rows,
                 columnAlignments: columnAlignments,
+                headerAccessoryWidths: display.headerAccessoryWidths,
                 in: gridView,
                 metrics: layoutMetrics
             )
 
             widths = cellManager.widths
             heights = cellManager.heights
+            if display.rowLimit.isTruncated {
+                let size = summaryTextSize(hiddenRowCount: display.rowLimit.hiddenRowCount)
+                widths = TableDisplay.columnWidths(
+                    widths,
+                    fitting: size.width + layoutMetrics.horizontalCellPadding * 2
+                )
+                heights.append(max(
+                    layoutMetrics.minimumRowHeight,
+                    size.height + layoutMetrics.verticalCellPadding * 2
+                ))
+            }
 
             gridView.padding = tableViewPadding
             gridView.update(widths: widths, heights: heights)
 
             gridView.setHeaderRow(numberOfRows > 0)
+            gridView.setMergesLastRow(display.rowLimit.isTruncated)
+            configureControls(in: gridView)
+        }
+
+        /// Sorts the sheet by `sort`, or puts it back in source order for nil.
+        func applySort(_ sort: TableSort?) {
+            guard mode == .sheet, self.sort != sort else { return }
+            self.sort = sort
+            guard !contents.isEmpty else { return }
+            configureCells()
+            needsLayout = true
+            sortHandler?(self)
         }
 
         private func processContent(
@@ -760,3 +902,167 @@ private extension RawTableRow {
         }
     }
 }
+
+// MARK: - Controls
+
+#if canImport(UIKit) || canImport(AppKit)
+    extension TableView {
+        /// The control under `point`, in the table's coordinates.
+        fileprivate func control(at point: CGPoint) -> TableTapControl? {
+            let controls = [expandControl, summaryControl] + sortControls
+            return controls.first { control in
+                guard !control.isHidden, control.superview != nil else { return false }
+                return control.bounds.contains(control.convert(point, from: self))
+            }
+        }
+
+        fileprivate func makeExpandControl() -> TableTapControl {
+            let control = TableTapControl()
+            control.setSymbol(TableSymbol.expand, fallback: TableSymbol.expandFallback)
+            control.setAccessibleTitle(TableSummaryText.showFullTable)
+            control.isHidden = true
+            control.handler = { [weak self] in self?.openFullTable() }
+            return control
+        }
+
+        fileprivate func makeSummaryControl() -> TableTapControl {
+            let control = TableTapControl()
+            control.isHidden = true
+            control.handler = { [weak self] in self?.openFullTable() }
+            return control
+        }
+
+        /// The theme the cells were last styled with.
+        var currentTheme: MarkdownTheme {
+            theme
+        }
+
+        /// Opens every row, through `expandHandler` when one is set.
+        func openFullTable() {
+            if let expandHandler {
+                expandHandler(self)
+            } else {
+                TableSheetPresenter.present(self)
+            }
+        }
+
+        /// The summary text's size, built again only when the count or the
+        /// theme moved.
+        fileprivate func summaryTextSize(hiddenRowCount: Int) -> CGSize {
+            if let summarySource,
+               summarySource.hiddenRowCount == hiddenRowCount,
+               summarySource.theme == theme
+            {
+                return summarySource.size
+            }
+            let text = TableSummaryText.attributedText(hiddenRowCount: hiddenRowCount, theme: theme)
+            let bounds = text.boundingRect(
+                with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
+                context: nil
+            )
+            let size = CGSize(width: ceil(bounds.width), height: ceil(bounds.height))
+            summaryControl.attributedText = text
+            summaryControl.setAccessibleTitle(text.string)
+            summarySource = (hiddenRowCount, theme, size)
+            return size
+        }
+
+        /// Adds the controls this mode draws, sized to the current columns.
+        fileprivate func configureControls(in container: PlatformView) {
+            switch mode {
+            case .inline:
+                for control in [expandControl, summaryControl] where control.superview !== container {
+                    container.addSubview(control)
+                }
+                expandControl.isHidden = numberOfColumns == 0
+                summaryControl.isHidden = !display.rowLimit.isTruncated
+            case .sheet:
+                while sortControls.count < numberOfColumns {
+                    let column = sortControls.count
+                    let control = TableTapControl()
+                    control.handler = { [weak self] in
+                        guard let self else { return }
+                        applySort(TableSort.next(afterTapping: column, current: sort))
+                    }
+                    container.addSubview(control)
+                    sortControls.append(control)
+                }
+                while sortControls.count > numberOfColumns {
+                    sortControls.removeLast().removeFromSuperview()
+                }
+                for (column, control) in sortControls.enumerated() {
+                    let direction = sort?.column == column ? sort?.direction : nil
+                    switch direction {
+                    case .ascending:
+                        control.setSymbol(TableSymbol.sortAscending)
+                    case .descending:
+                        control.setSymbol(TableSymbol.sortDescending)
+                    case nil:
+                        control.setSymbol(nil)
+                    }
+                    control.setAccessibleTitle(display.rows.first?[safe: column]?.string)
+                }
+            }
+        }
+
+        /// Places the controls over the columns as laid out at `layoutWidths`.
+        fileprivate func layoutControls(using layoutWidths: [CGFloat]) {
+            guard let headerHeight = heights.first, layoutWidths.count == numberOfColumns else {
+                expandControl.isHidden = true
+                summaryControl.isHidden = true
+                return
+            }
+            var x = tableViewPadding
+            let headerFrames = layoutWidths.map { width -> CGRect in
+                defer { x += width }
+                return CGRect(x: x, y: tableViewPadding, width: width, height: headerHeight)
+            }
+
+            switch mode {
+            case .inline:
+                if let lastColumn = headerFrames.last {
+                    let slot = TableHeaderSlot(
+                        columnFrame: lastColumn,
+                        horizontalPadding: layoutMetrics.horizontalCellPadding,
+                        accessoryWidth: TableHeaderAccessory.width
+                    )
+                    expandControl.frame = slot.hitFrame
+                    expandControl.glyphFrame = slot.glyphFrame.offsetBy(
+                        dx: -slot.hitFrame.minX,
+                        dy: -slot.hitFrame.minY
+                    )
+                }
+                if display.rowLimit.isTruncated, let summaryHeight = heights.last {
+                    let frame = CGRect(
+                        x: tableViewPadding,
+                        y: tableViewPadding + heights.dropLast().reduce(0, +),
+                        width: layoutWidths.reduce(0, +),
+                        height: summaryHeight
+                    )
+                    summaryControl.frame = frame
+                    summaryControl.textFrame = CGRect(
+                        x: layoutMetrics.horizontalCellPadding,
+                        y: 0,
+                        width: max(0, frame.width - layoutMetrics.horizontalCellPadding * 2),
+                        height: frame.height
+                    )
+                }
+            case .sheet:
+                for (column, control) in sortControls.enumerated() {
+                    guard let columnFrame = headerFrames[safe: column] else { continue }
+                    let slot = TableHeaderSlot(
+                        columnFrame: columnFrame,
+                        horizontalPadding: layoutMetrics.horizontalCellPadding,
+                        accessoryWidth: TableHeaderAccessory.width
+                    )
+                    control.frame = columnFrame
+                    control.glyphFrame = slot.glyphFrame.offsetBy(
+                        dx: -columnFrame.minX,
+                        dy: -columnFrame.minY
+                    )
+                }
+            }
+        }
+    }
+#endif

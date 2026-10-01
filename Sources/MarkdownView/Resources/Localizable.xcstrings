@@ -1,7 +1,68 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-
+    "%lld more rows hidden" : {
+      "comment" : "The last row of a long table, before the View All link.",
+      "localizations" : {
+        "en" : {
+          "variations" : {
+            "plural" : {
+              "one" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more row hidden"
+                }
+              },
+              "other" : {
+                "stringUnit" : {
+                  "state" : "translated",
+                  "value" : "%lld more rows hidden"
+                }
+              }
+            }
+          }
+        },
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "省略更多 %lld 行数据"
+          }
+        }
+      }
+    },
+    "Done" : {
+      "comment" : "Closes the full table.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "完成"
+          }
+        }
+      }
+    },
+    "Show Full Table" : {
+      "comment" : "Accessibility label of the button that opens a table in full.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看完整表格"
+          }
+        }
+      }
+    },
+    "View All" : {
+      "comment" : "Opens a long table in full. Shown underlined after the hidden-row count.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "查看全部"
+          }
+        }
+      }
+    }
   },
   "version" : "1.0"
 }
