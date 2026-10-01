@@ -104,7 +104,7 @@ enum CodeViewConfiguration {
 
         private func setupTextView() {
             textView.backgroundColor = .clear
-            textView.preferredMaxLayoutWidth = .infinity
+            textView.preferredMaxLayoutWidth = .greatestFiniteMagnitude
             textView.isSelectable = true
             textView.selectionBackgroundColor = theme.colors.selectionBackground
             scrollView.addSubview(textView)
@@ -266,7 +266,7 @@ enum CodeViewConfiguration {
         private func setupTextView() {
             textView.wantsLayer = true
             textView.layer?.backgroundColor = NSColor.clear.cgColor
-            textView.preferredMaxLayoutWidth = .infinity
+            textView.preferredMaxLayoutWidth = .greatestFiniteMagnitude
             textView.isSelectable = true
             textView.selectionBackgroundColor = theme.colors.selectionBackground
             scrollView.documentView = textView

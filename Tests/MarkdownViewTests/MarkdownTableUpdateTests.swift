@@ -312,7 +312,9 @@ struct MarkdownTableUpdateTests {
         let view = RenderProbe.view(markdown)
         guard let tableView = tableView(in: view),
               case let .table(alignments, rows) = content.blocks.first(where: {
-                  if case .table = $0 { return true }
+                  if case .table = $0 {
+                      return true
+                  }
                   return false
               })
         else {

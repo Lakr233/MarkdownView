@@ -203,14 +203,18 @@ enum WatchTableRenderer {
         for r in 0 ... numRows {
             ctx.move(to: CGPoint(x: 0, y: lineY))
             ctx.addLine(to: CGPoint(x: totalWidth, y: lineY))
-            if r < numRows { lineY -= rowHeights[r] + borderWidth }
+            if r < numRows {
+                lineY -= rowHeights[r] + borderWidth
+            }
         }
 
         var lineX: CGFloat = 0
         for c in 0 ... numCols {
             ctx.move(to: CGPoint(x: lineX, y: 0))
             ctx.addLine(to: CGPoint(x: lineX, y: totalHeight))
-            if c < numCols { lineX += colWidths[c] + borderWidth }
+            if c < numCols {
+                lineX += colWidths[c] + borderWidth
+            }
         }
         ctx.strokePath()
 

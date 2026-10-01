@@ -385,7 +385,7 @@ struct MarkdownViewLayoutTests {
             container.addSubview(codeView)
             layout(view: codeView)
 
-            codeView.scrollView.scrollWheel(with: try makeScrollWheelEvent(deltaY: 1))
+            try codeView.scrollView.scrollWheel(with: makeScrollWheelEvent(deltaY: 1))
 
             #expect(container.eventCount == 1)
         }
@@ -411,7 +411,7 @@ struct MarkdownViewLayoutTests {
 
     @MainActor
     @Test("MarkdownView coordinator sizes representable to full content height")
-    func markdownViewCoordinatorSizesRepresentableToFullContentHeight() async throws {
+    func markdownViewCoordinatorSizesRepresentableToFullContentHeight() throws {
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 388, height: 925)
         let filler = Array(
@@ -559,8 +559,20 @@ struct MarkdownViewLayoutTests {
         let size = view.boundingSize(for: 320)
 
         #expect(content.blocks.count >= 5)
-        #expect(content.blocks.contains { if case .table = $0 { true } else { false } })
-        #expect(content.blocks.contains { if case .codeBlock = $0 { true } else { false } })
+        #expect(content.blocks.contains {
+            if case .table = $0 {
+                true
+            } else {
+                false
+            }
+        })
+        #expect(content.blocks.contains {
+            if case .codeBlock = $0 {
+                true
+            } else {
+                false
+            }
+        })
         #expect(view.contextViews.contains { $0 is TableView })
         #expect(view.contextViews.contains { $0 is CodeView })
         #expect(size.width > 0)

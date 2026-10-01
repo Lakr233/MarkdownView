@@ -1,5 +1,5 @@
 //
-//  TextLabel.Attachment+Extension.swift
+//  TextLabelAttachment+Extension.swift
 //  WatchMarkdownView
 //
 

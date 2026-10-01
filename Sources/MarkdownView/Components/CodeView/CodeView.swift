@@ -28,7 +28,9 @@ import Litext
             didSet {
                 languageLabel.text = language.isEmpty ? "</>" : language
                 // The label is sized in layout.
-                if oldValue != language { setNeedsLayout() }
+                if oldValue != language {
+                    setNeedsLayout()
+                }
             }
         }
 
@@ -230,7 +232,9 @@ import Litext
             didSet {
                 languageLabel.stringValue = language.isEmpty ? "</>" : language
                 // The label is sized in layout.
-                if oldValue != language { needsLayout = true }
+                if oldValue != language {
+                    needsLayout = true
+                }
             }
         }
 

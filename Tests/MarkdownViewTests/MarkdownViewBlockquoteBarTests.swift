@@ -13,7 +13,7 @@ struct MarkdownViewBlockquoteBarTests {
     @Test("Each blockquote gets one bar spanning all of its lines", arguments: [
         160.0 as CGFloat, 240, 360, 640,
     ])
-    func blockquoteBarSpansEveryLine(width: CGFloat) throws {
+    func blockquoteBarSpansEveryLine(width: CGFloat) {
         let view = makeView("""
         Intro paragraph.
 

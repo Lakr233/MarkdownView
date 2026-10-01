@@ -25,7 +25,9 @@ struct MarkdownBlockIdentityTests {
             options: []
         ) { value, _, _ in
             guard let group = value as? BlockquoteGroup else { return }
-            if !groups.contains(where: { $0 === group }) { groups.append(group) }
+            if !groups.contains(where: { $0 === group }) {
+                groups.append(group)
+            }
         }
         return groups
     }

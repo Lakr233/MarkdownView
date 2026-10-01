@@ -103,7 +103,9 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
         guard unit == backtick else {
             switch unit {
             case UInt16(UInt8(ascii: "\n")):
-                if !lineHasContent { chunk += 1 }
+                if !lineHasContent {
+                    chunk += 1
+                }
                 lineHasContent = false
                 index = containerPrefixEnd(in: units, from: index + 1)
                 continue
@@ -217,7 +219,9 @@ public extension MarkdownParser {
             let matches = extractMathMatches(in: document, using: regex).filter { match in
                 !literalRanges.contains { NSIntersectionRange($0, match.range).length > 0 }
             }
-            if matches.isEmpty { return }
+            if matches.isEmpty {
+                return
+            }
 
             let nsText = document as NSString
             var result = ""
@@ -316,8 +320,12 @@ private let mathPatternWithinBlock: NSRegularExpression? = {
 private func textMayContainInlineMath(_ text: String) -> Bool {
     var previous: UInt8 = 0
     for byte in text.utf8 {
-        if byte == UInt8(ascii: "$") { return true }
-        if previous == UInt8(ascii: "\\"), byte == UInt8(ascii: "(") { return true }
+        if byte == UInt8(ascii: "$") {
+            return true
+        }
+        if previous == UInt8(ascii: "\\"), byte == UInt8(ascii: "(") {
+            return true
+        }
         previous = byte
     }
     return false
@@ -356,7 +364,9 @@ extension MarkdownParser {
         guard textMayContainInlineMath(text) else { return [.text(text)] }
         guard let regex = mathPatternWithinBlock else { return [.text(text)] }
         let matches = extractMathMatches(in: text, using: regex)
-        if matches.isEmpty { return [.text(text)] }
+        if matches.isEmpty {
+            return [.text(text)]
+        }
 
         let nsText = text as NSString
         var result: [MarkdownInlineNode] = []
@@ -367,7 +377,9 @@ extension MarkdownParser {
                 let beforeText = nsText.substring(
                     with: NSRange(location: lastEnd, length: match.range.location - lastEnd)
                 )
-                if !beforeText.isEmpty { result.append(.text(beforeText)) }
+                if !beforeText.isEmpty {
+                    result.append(.text(beforeText))
+                }
             }
 
             result.append(

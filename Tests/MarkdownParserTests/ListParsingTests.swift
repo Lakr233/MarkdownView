@@ -3,7 +3,7 @@ import Testing
 
 struct ListParsingTests {
     @Test("Lists mixing task and plain items stay homogeneous")
-    func listsMixingTaskAndPlainItemsStayHomogeneous() throws {
+    func listsMixingTaskAndPlainItemsStayHomogeneous() {
         let result = MarkdownParser().parse("""
         - [ ] task
         - plain

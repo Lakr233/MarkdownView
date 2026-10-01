@@ -693,7 +693,7 @@ private extension WatchTextBuilder {
         }
     }
 
-    func markerIndent(for marker: ListMarker, font: CTFont, theme: WatchMarkdownTheme) -> CGFloat {
+    func markerIndent(for marker: ListMarker, font _: CTFont, theme _: WatchMarkdownTheme) -> CGFloat {
         let gap: CGFloat = 6
         switch marker {
         case .bullet:

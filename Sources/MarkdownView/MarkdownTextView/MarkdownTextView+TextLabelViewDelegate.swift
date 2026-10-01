@@ -1,5 +1,5 @@
 //
-//  MarkdownTextView+LTXDelegate.swift
+//  MarkdownTextView+TextLabelViewDelegate.swift
 //  MarkdownView
 //
 //  Created by 秋星桥 on 7/9/25.
@@ -43,7 +43,6 @@ import Litext
         }
 
         public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
-
             if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
                 presentMathPreview(for: latexContent, theme: theme)
                 return
@@ -95,7 +94,6 @@ import Litext
         }
 
         public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
-
             if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
                 presentMathPreview(for: latexContent, theme: theme)
                 return

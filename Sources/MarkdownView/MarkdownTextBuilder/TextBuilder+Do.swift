@@ -36,7 +36,9 @@ private func builtinSystemImage(_ name: String) -> PlatformImage {
 @MainActor private var kNumberCircleImageCache: [Int: PlatformImage] = [:]
 
 @MainActor private func kNumberCircleImage(_ number: Int) -> PlatformImage {
-    if let cached = kNumberCircleImageCache[number] { return cached }
+    if let cached = kNumberCircleImageCache[number] {
+        return cached
+    }
     let image = builtinSystemImage("\(number).circle.fill")
     kNumberCircleImageCache[number] = image
     return image
@@ -55,11 +57,11 @@ extension TextBuilder {
         let context: MarkdownContent = view.content
         let theme: MarkdownTheme = view.theme
 
-        /// Color and font a drawn marker takes from the line it belongs to.
-        ///
-        /// The marker's own run leads the line, so its attributes are the ones a
-        /// marker has to match: the color the theme gave that item, and the font
-        /// whose cap height places the marker column.
+        // Color and font a drawn marker takes from the line it belongs to.
+        //
+        // The marker's own run leads the line, so its attributes are the ones a
+        // marker has to match: the color the theme gave that item, and the font
+        // whose cap height places the marker column.
         func markerStyle(of line: CTLine) -> (color: PlatformColor, font: PlatformFont) {
             var color = theme.colors.body
             var font = theme.fonts.body
@@ -76,7 +78,7 @@ extension TextBuilder {
             return (color, font)
         }
 
-        /// Draws a template symbol inside the marker column, scaled to fit it.
+        // Draws a template symbol inside the marker column, scaled to fit it.
         func drawSymbol(_ image: PlatformImage, in column: CGRect, color: PlatformColor, context: CGContext) {
             #if canImport(UIKit)
                 guard let cgImage = image.cgImage else { return }
@@ -151,7 +153,11 @@ extension TextBuilder {
             .withCheckboxDrawing { context, line, lineOrigin, isChecked in
                 let style = markerStyle(of: line)
                 let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: style.font)
-                let image = if isChecked { kCheckedBoxImage } else { kUncheckedBoxImage }
+                let image = if isChecked {
+                    kCheckedBoxImage
+                } else {
+                    kUncheckedBoxImage
+                }
                 context.saveGState()
                 defer { context.restoreGState() }
                 drawSymbol(

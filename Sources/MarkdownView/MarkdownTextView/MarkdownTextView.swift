@@ -23,11 +23,17 @@ import MarkdownParser
         public internal(set) var content: MarkdownContent = .init()
 
         @available(*, deprecated, renamed: "content")
-        public var document: MarkdownContent { content }
+        public var document: MarkdownContent {
+            content
+        }
+
         public let textLabelView: TextLabelView
 
         @available(*, deprecated, renamed: "textLabelView")
-        public var textView: TextLabelView { textLabelView }
+        public var textView: TextLabelView {
+            textLabelView
+        }
+
         var themeStorage: MarkdownTheme = .default
         public var theme: MarkdownTheme {
             get { themeStorage }
@@ -218,11 +224,17 @@ import MarkdownParser
         public internal(set) var content: MarkdownContent = .init()
 
         @available(*, deprecated, renamed: "content")
-        public var document: MarkdownContent { content }
+        public var document: MarkdownContent {
+            content
+        }
+
         public let textLabelView: TextLabelView
 
         @available(*, deprecated, renamed: "textLabelView")
-        public var textView: TextLabelView { textLabelView }
+        public var textView: TextLabelView {
+            textLabelView
+        }
+
         var themeStorage: MarkdownTheme = .default
         public var theme: MarkdownTheme {
             get { themeStorage }

@@ -67,7 +67,37 @@ struct MarkdownViewBenchmark {
 
     @MainActor
     private static func benchmarkCases() -> [BenchmarkCase] {
-        legacyCases() + scalingCases() + streamingCases() + shapeCases()
+        legacyCases() + scalingCases() + streamingCases() + shapeCases() + highlightCases()
+    }
+
+    // MARK: - Code highlighting
+
+    /// One code block highlighted from scratch per operation, per language.
+    ///
+    /// Each operation passes a key never used before, so the highlighter's cache
+    /// never answers and the cost measured is the tokenizer's own.
+    @MainActor
+    private static func highlightCases() -> [BenchmarkCase] {
+        let samples: [(String, String)] = [
+            ("swift", highlightSwiftSample),
+            ("python", highlightPythonSample),
+            ("json", highlightJSONSample),
+        ]
+        var nextKey = Int.min
+        return samples.map { language, source in
+            BenchmarkCase(name: "highlight/\(language)", operations: 8) { iterations in
+                for _ in 0 ..< iterations * 8 {
+                    autoreleasepool {
+                        nextKey += 1
+                        _ = CodeHighlighter.current.highlight(
+                            key: nextKey,
+                            content: source,
+                            language: language
+                        )
+                    }
+                }
+            }
+        }
     }
 
     // MARK: - Cases carried over from the original benchmark
@@ -460,6 +490,56 @@ private let codeHeavyMarkdown: String = (1 ... 12).map { index in
     ```
     """
 }.joined(separator: "\n\n")
+
+/// About 60 lines each: the size of a typical code block in an answer.
+private let highlightSwiftSample: String = (1 ... 6).map { index in
+    """
+    /// Loads model \(index) and reports how long it took.
+    @MainActor
+    final class Loader\(index): Sendable {
+        private let url = URL(string: "https://example.com/\(index)")!
+        var retries = \(index) // retried before giving up
+
+        func load(_ query: String) async throws -> [Model\(index)] {
+            guard !query.isEmpty else { return [] }
+            let (data, _) = try await URLSession.shared.data(from: url)
+            return try JSONDecoder().decode([Model\(index)].self, from: data)
+        }
+    }
+    """
+}.joined(separator: "\n\n")
+
+private let highlightPythonSample: String = (1 ... 6).map { index in
+    """
+    @dataclass
+    class Loader\(index):
+        \"\"\"Loads model \(index) and reports how long it took.\"\"\"
+        url: str = "https://example.com/\(index)"
+        retries: int = \(index)  # retried before giving up
+
+        def load(self, query: str) -> list[dict]:
+            if not query:
+                return []
+            response = requests.get(self.url, params={"q": query}, timeout=3.5)
+            return [item for item in response.json() if item.get("ok") is True]
+    """
+}.joined(separator: "\n\n")
+
+private let highlightJSONSample: String = """
+[
+\((1 ... 12).map { index in
+    """
+      {
+        "id": \(index),
+        "title": "Model \(index)",
+        "score": \(Double(index) * 1.5),
+        "tags": ["alpha", "beta", null],
+        "enabled": \(index % 2 == 0 ? "true" : "false")
+      }
+    """
+}.joined(separator: ",\n"))
+]
+"""
 
 /// The same weight of text with no script switching, to separate the cost of
 /// the language attributes from the cost of the text itself.
