@@ -29,6 +29,8 @@ import Litext
                 languageLabel.text = language.isEmpty ? "</>" : language
                 // The label is sized in layout.
                 if oldValue != language {
+                    resetCopyFeedback()
+                    reloadActions()
                     setNeedsLayout()
                 }
             }
@@ -44,6 +46,11 @@ import Litext
 
         var content: String = "" {
             didSet {
+                // A reused view takes another block, and a streaming block's
+                // copy is already stale; either way it no longer shows "copied".
+                if oldValue != content {
+                    resetCopyFeedback()
+                }
                 guard oldValue != content || needsTextRebuild else { return }
                 needsTextRebuild = false
                 cachedLineCount = max(content.components(separatedBy: .newlines).count, 1)
@@ -84,15 +91,26 @@ import Litext
             }
         }
 
+        /// Supplies the host's own buttons, asked again when the language changes.
+        weak var actionProvider: CodeBlockActionProvider? {
+            didSet {
+                guard oldValue !== actionProvider else { return }
+                reloadActions()
+            }
+        }
+
+        var actions: [CodeBlockAction] = []
+
         private let callerIdentifier = UUID()
         private var currentTaskIdentifier: UUID?
 
         lazy var barView: UIView = .init()
-        lazy var scrollView: UIScrollView = .init()
+        lazy var scrollView: HorizontalClippingScrollView = .init()
         lazy var languageLabel: UILabel = .init()
         lazy var textView: TextLabelView = .init()
         lazy var copyButton: UIButton = .init()
         lazy var previewButton: UIButton = .init()
+        var actionButtons: [UIButton] = []
         lazy var lineNumberView: LineNumberView = .init()
 
         override init(frame: CGRect) {
@@ -117,7 +135,7 @@ import Litext
         }
 
         func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
-            for button in [previewButton, copyButton] where !button.isHidden {
+            for button in [previewButton, copyButton] + actionButtons where !button.isHidden {
                 let buttonPoint = button.convert(point, from: self)
                 guard button.bounds.contains(buttonPoint) else { continue }
                 return button.hitTest(buttonPoint, with: event) ?? button
@@ -175,6 +193,7 @@ import Litext
             #if !os(visionOS)
                 UINotificationFeedbackGenerator().notificationOccurred(.success)
             #endif
+            showCopyFeedback()
         }
 
         @objc func handlePreview(_: UIButton) {
@@ -233,6 +252,8 @@ import Litext
                 languageLabel.stringValue = language.isEmpty ? "</>" : language
                 // The label is sized in layout.
                 if oldValue != language {
+                    resetCopyFeedback()
+                    reloadActions()
                     needsLayout = true
                 }
             }
@@ -248,6 +269,11 @@ import Litext
 
         var content: String = "" {
             didSet {
+                // A reused view takes another block, and a streaming block's
+                // copy is already stale; either way it no longer shows "copied".
+                if oldValue != content {
+                    resetCopyFeedback()
+                }
                 guard oldValue != content || needsTextRebuild else { return }
                 needsTextRebuild = false
                 cachedLineCount = max(content.components(separatedBy: .newlines).count, 1)
@@ -286,6 +312,16 @@ import Litext
             }
         }
 
+        /// Supplies the host's own buttons, asked again when the language changes.
+        weak var actionProvider: CodeBlockActionProvider? {
+            didSet {
+                guard oldValue !== actionProvider else { return }
+                reloadActions()
+            }
+        }
+
+        var actions: [CodeBlockAction] = []
+
         private let callerIdentifier = UUID()
         private var currentTaskIdentifier: UUID?
 
@@ -309,6 +345,7 @@ import Litext
         lazy var textView: TextLabelView = .init()
         lazy var copyButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var previewButton: NSButton = .init(title: "", target: nil, action: nil)
+        var actionButtons: [NSButton] = []
         lazy var lineNumberView: LineNumberView = .init()
 
         override init(frame: CGRect) {
@@ -337,7 +374,7 @@ import Litext
         }
 
         func interactionTarget(at point: CGPoint) -> NSView? {
-            for button in [previewButton, copyButton] where !button.isHidden {
+            for button in [previewButton, copyButton] + actionButtons where !button.isHidden {
                 let buttonPoint = button.convert(point, from: self)
                 guard button.bounds.contains(buttonPoint) else { continue }
                 return button.hitTest(buttonPoint) ?? button
@@ -391,6 +428,7 @@ import Litext
             let pasteboard = NSPasteboard.general
             pasteboard.clearContents()
             pasteboard.setString(content, forType: .string)
+            showCopyFeedback()
         }
 
         @objc func handlePreview(_: Any?) {

@@ -11,8 +11,11 @@ import Litext
     import UIKit
 
     extension MarkdownTextView: TextLabelViewDelegate {
-        public func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {
-            // reserved for future use
+        public func textLabelView(_ label: TextLabelView, didChangeSelection _: NSRange?) {
+            // Code and table views report their own labels here too; only the
+            // document's selection can run across them.
+            guard label === textLabelView else { return }
+            syncContextViewSelection()
         }
 
         public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
@@ -62,8 +65,11 @@ import Litext
     import AppKit
 
     extension MarkdownTextView: TextLabelViewDelegate {
-        public func textLabelView(_: TextLabelView, didChangeSelection _: NSRange?) {
-            // reserved for future use
+        public func textLabelView(_ label: TextLabelView, didChangeSelection _: NSRange?) {
+            // Code and table views report their own labels here too; only the
+            // document's selection can run across them.
+            guard label === textLabelView else { return }
+            syncContextViewSelection()
         }
 
         public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {

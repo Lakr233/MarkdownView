@@ -20,6 +20,11 @@ import MarkdownParser
             didSet { syncContextViewHandlers() }
         }
 
+        /// Adds the host's own buttons to code blocks; see `CodeBlockActionProvider`.
+        public weak var codeBlockActionProvider: CodeBlockActionProvider? {
+            didSet { syncContextViewHandlers() }
+        }
+
         public internal(set) var content: MarkdownContent = .init()
 
         @available(*, deprecated, renamed: "content")
@@ -49,6 +54,9 @@ import MarkdownParser
 
         var contextViews: [UIView] = []
         var blockquoteBars: [BlockquoteBarView] = []
+        /// Where each placed code or table view's attachment sits in the text,
+        /// so a selection can tell which of them it covers.
+        var contextViewLocations: [ObjectIdentifier: Int] = [:]
         /// Highlight cache keys of the code blocks this view is showing.
         var renderedHighlightKeys: Set<Int> = []
         /// What each block rendered to last time, so an unchanged block is not
@@ -221,6 +229,11 @@ import MarkdownParser
             didSet { syncContextViewHandlers() }
         }
 
+        /// Adds the host's own buttons to code blocks; see `CodeBlockActionProvider`.
+        public weak var codeBlockActionProvider: CodeBlockActionProvider? {
+            didSet { syncContextViewHandlers() }
+        }
+
         public internal(set) var content: MarkdownContent = .init()
 
         @available(*, deprecated, renamed: "content")
@@ -250,6 +263,9 @@ import MarkdownParser
 
         var contextViews: [NSView] = []
         var blockquoteBars: [BlockquoteBarView] = []
+        /// Where each placed code or table view's attachment sits in the text,
+        /// so a selection can tell which of them it covers.
+        var contextViewLocations: [ObjectIdentifier: Int] = [:]
         /// Highlight cache keys of the code blocks this view is showing.
         var renderedHighlightKeys: Set<Int> = []
         /// What each block rendered to last time, so an unchanged block is not

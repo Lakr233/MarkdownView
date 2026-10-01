@@ -68,6 +68,7 @@ extension MarkdownTextView {
         for view in contextViews {
             if let codeView = view as? CodeView {
                 codeView.previewAction = codePreviewHandler
+                codeView.actionProvider = codeBlockActionProvider
             } else if let tableView = view as? TableView {
                 tableView.linkHandler = linkHandler
             }

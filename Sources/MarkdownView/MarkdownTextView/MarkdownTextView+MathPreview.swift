@@ -6,7 +6,6 @@
 //
 
 #if canImport(UIKit)
-    import QuickLook
     import UIKit
 
     extension MarkdownTextView {
@@ -23,77 +22,101 @@
                 return
             }
 
-            guard let pngData = image.pngData() else { return }
-
-            let tempURL = FileManager.default.temporaryDirectory
-                .appendingPathComponent(UUID().uuidString)
-                .appendingPathExtension("png")
-
-            do {
-                try pngData.write(to: tempURL)
-
-                let previewItem = MathPreviewItem(url: tempURL, title: "Math Equation")
-                let controller = MathPreviewController(item: previewItem) {
-                    try? FileManager.default.removeItem(at: tempURL)
+            let navigation = UINavigationController(rootViewController: MathPreviewController(image: image))
+            // An equation is a line or two tall; a half-height sheet shows it
+            // without taking over the screen, and can still be pulled up.
+            // visionOS has no detents; its page sheet is already a window-sized panel.
+            navigation.modalPresentationStyle = .pageSheet
+            #if !os(visionOS)
+                if let sheet = navigation.sheetPresentationController {
+                    sheet.detents = [.medium(), .large()]
+                    sheet.prefersGrabberVisible = true
                 }
+            #endif
 
-                var presenter = window?.rootViewController
-                while let presented = presenter?.presentedViewController {
-                    presenter = presented
-                }
-                presenter?.present(controller, animated: true)
-            } catch {
-                print("[MarkdownView] Failed to create temp file for math preview: \(error)")
+            var presenter = window?.rootViewController
+            while let presented = presenter?.presentedViewController {
+                presenter = presented
             }
+            presenter?.present(navigation, animated: true)
         }
     }
 
-    // MARK: - QuickLook Support
+    /// Shows a rendered equation centred, shrunk to fit and zoomable.
+    private final class MathPreviewController: UIViewController, UIScrollViewDelegate {
+        private let image: UIImage
+        private let scrollView = UIScrollView()
+        private let imageView: UIImageView
 
-    private class MathPreviewController: QLPreviewController {
-        private let myDataSource: MathPreviewDataSource
-
-        init(item: MathPreviewItem, cleanup: @Sendable @escaping () -> Void) {
-            myDataSource = MathPreviewDataSource(item: item, cleanup: cleanup)
+        init(image: UIImage) {
+            self.image = image
+            imageView = UIImageView(image: image)
+            // The equation is a template image; untinted it takes the app's
+            // accent colour instead of the text's.
+            imageView.tintColor = .label
             super.init(nibName: nil, bundle: nil)
-            dataSource = myDataSource
+            title = "Math Equation"
         }
 
         @available(*, unavailable)
         required init?(coder _: NSCoder) {
             fatalError("init(coder:) has not been implemented")
         }
-    }
 
-    private class MathPreviewItem: NSObject, QLPreviewItem {
-        let previewItemURL: URL?
-        let previewItemTitle: String?
+        override func viewDidLoad() {
+            super.viewDidLoad()
+            view.backgroundColor = .systemBackground
+            navigationItem.rightBarButtonItem = UIBarButtonItem(
+                systemItem: .close,
+                primaryAction: UIAction { [weak self] _ in self?.dismiss(animated: true) }
+            )
 
-        init(url: URL, title: String) {
-            previewItemURL = url
-            previewItemTitle = title
-        }
-    }
-
-    private class MathPreviewDataSource: NSObject, QLPreviewControllerDataSource {
-        let item: MathPreviewItem
-        let cleanup: @Sendable () -> Void
-
-        init(item: MathPreviewItem, cleanup: @escaping @Sendable () -> Void) {
-            self.item = item
-            self.cleanup = cleanup
+            scrollView.delegate = self
+            scrollView.showsVerticalScrollIndicator = false
+            scrollView.showsHorizontalScrollIndicator = false
+            scrollView.contentInsetAdjustmentBehavior = .never
+            scrollView.addSubview(imageView)
+            view.addSubview(scrollView)
         }
 
-        func numberOfPreviewItems(in _: QLPreviewController) -> Int {
-            1
+        override func viewDidLayoutSubviews() {
+            super.viewDidLayoutSubviews()
+            let frame = view.bounds.inset(by: view.safeAreaInsets)
+            guard scrollView.frame != frame else { return }
+            scrollView.frame = frame
+            imageView.frame = CGRect(origin: .zero, size: image.size)
+            scrollView.contentSize = image.size
+
+            // Never enlarge past the rendered size, which would blur it.
+            let padding: CGFloat = 20
+            let fit = min(
+                1,
+                max(1, frame.width - padding * 2) / max(1, image.size.width),
+                max(1, frame.height - padding * 2) / max(1, image.size.height)
+            )
+            scrollView.minimumZoomScale = fit
+            scrollView.maximumZoomScale = max(fit * 4, 2)
+            scrollView.zoomScale = fit
+            centerImage()
         }
 
-        func previewController(_: QLPreviewController, previewItemAt _: Int) -> any QLPreviewItem {
-            item
+        func viewForZooming(in _: UIScrollView) -> UIView? {
+            imageView
         }
 
-        deinit {
-            cleanup()
+        func scrollViewDidZoom(_: UIScrollView) {
+            centerImage()
+        }
+
+        private func centerImage() {
+            let size = scrollView.bounds.size
+            let content = imageView.frame.size
+            scrollView.contentInset = UIEdgeInsets(
+                top: max(0, (size.height - content.height) / 2),
+                left: max(0, (size.width - content.width) / 2),
+                bottom: 0,
+                right: 0
+            )
         }
     }
 

@@ -14,8 +14,12 @@ import Litext
     extension MarkdownTextView {
         func syncContextViewLayout() {
             var placed: Set<PlatformView> = []
+            contextViewLocations.removeAll(keepingCapacity: true)
 
             for run in textLabelView.layoutRuns(matching: .contextView) {
+                if let view = run.attributes[.contextView] as? PlatformView {
+                    contextViewLocations[ObjectIdentifier(view)] = run.stringRange.location
+                }
                 if let codeView = run.attributes[.contextView] as? CodeView {
                     syncCodeView(codeView, with: run)
                     placed.insert(codeView)
@@ -36,6 +40,7 @@ import Litext
             }
 
             syncBlockquoteBars()
+            syncContextViewSelection()
         }
 
         /// Gives every blockquote a bar spanning all of its lines.
@@ -68,6 +73,7 @@ import Litext
             }
             codeView.textView.delegate = self
             codeView.previewAction = codePreviewHandler
+            codeView.actionProvider = codeBlockActionProvider
             setFrameIfNeeded(
                 for: codeView,
                 to: contextViewFrame(for: run, height: codeView.intrinsicContentSize.height)
@@ -115,8 +121,12 @@ import Litext
     extension MarkdownTextView {
         func syncContextViewLayout() {
             var placed: Set<PlatformView> = []
+            contextViewLocations.removeAll(keepingCapacity: true)
 
             for run in textLabelView.layoutRuns(matching: .contextView) {
+                if let view = run.attributes[.contextView] as? PlatformView {
+                    contextViewLocations[ObjectIdentifier(view)] = run.stringRange.location
+                }
                 if let codeView = run.attributes[.contextView] as? CodeView {
                     syncCodeView(codeView, with: run)
                     placed.insert(codeView)
@@ -137,6 +147,7 @@ import Litext
             }
 
             syncBlockquoteBars()
+            syncContextViewSelection()
         }
 
         /// Gives every blockquote a bar spanning all of its lines.
@@ -169,6 +180,7 @@ import Litext
             }
             codeView.textView.delegate = self
             codeView.previewAction = codePreviewHandler
+            codeView.actionProvider = codeBlockActionProvider
             setFrameIfNeeded(
                 for: codeView,
                 to: contextViewFrame(for: run, height: codeView.intrinsicContentSize.height)

@@ -38,6 +38,30 @@ import Testing
         }
 
         @MainActor
+        @Test("A selection across a code block or table tints them, and only while it covers them")
+        func selectionTintsCoveredContextViews() throws {
+            let view = RenderProbe.view("before\n\n" + Self.codeAndTable + "\n\nafter")
+            let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
+            let tableView = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
+            func isTinted(_ view: NSView) -> Bool {
+                view.layer?.sublayers?.contains { $0.name == "MarkdownView.selectionTint" } ?? false
+            }
+            let text = view.textLabelView.attributedText.string as NSString
+
+            view.textLabelView.selectionRange = NSRange(location: 0, length: text.length)
+            #expect(isTinted(codeView))
+            #expect(isTinted(tableView))
+
+            view.textLabelView.selectionRange = text.range(of: "before")
+            #expect(!isTinted(codeView))
+            #expect(!isTinted(tableView))
+
+            view.textLabelView.selectionRange = NSRange(location: 0, length: text.length)
+            view.textLabelView.selectionRange = nil
+            #expect(!isTinted(tableView))
+        }
+
+        @MainActor
         @Test("Changing the throttle interval keeps the pending content")
         func throttleIntervalChangeKeepsPendingContent() async throws {
             let view = MarkdownTextView()

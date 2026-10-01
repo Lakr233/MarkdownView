@@ -41,7 +41,7 @@ private func fittedTableColumnWidths(
 
         // MARK: - UI Components
 
-        private lazy var scrollView: UIScrollView = .init()
+        private lazy var scrollView: HorizontalClippingScrollView = .init()
         private lazy var gridView: GridView = .init()
 
         // MARK: - Properties

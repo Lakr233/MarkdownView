@@ -59,12 +59,17 @@ enum CodeViewConfiguration {
         private func setupViewAppearance() {
             layer.cornerRadius = 8
             layer.cornerCurve = .continuous
-            clipsToBounds = true
+            // Not clipped, so a selection's handles can reach past the code;
+            // the bar rounds its own corners instead.
+            clipsToBounds = false
             backgroundColor = .gray.withAlphaComponent(0.05)
         }
 
         private func setupBarView() {
             barView.backgroundColor = .gray.withAlphaComponent(0.05)
+            barView.layer.cornerRadius = layer.cornerRadius
+            barView.layer.cornerCurve = .continuous
+            barView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
             addSubview(barView)
             barView.addSubview(languageLabel)
         }
@@ -80,16 +85,18 @@ enum CodeViewConfiguration {
                 withConfiguration: UIImage.SymbolConfiguration(scale: .small)
             )
             previewButton.setImage(previewImage, for: .normal)
+            previewButton.tintColor = .label
             previewButton.addTarget(self, action: #selector(handlePreview(_:)), for: .touchUpInside)
             barView.addSubview(previewButton)
         }
 
         private func setupCopyButton() {
             let copyImage = UIImage(
-                systemName: "doc.on.doc",
+                systemName: CodeView.copySymbol,
                 withConfiguration: UIImage.SymbolConfiguration(scale: .small)
             )
             copyButton.setImage(copyImage, for: .normal)
+            copyButton.tintColor = .label
             copyButton.addTarget(self, action: #selector(handleCopy(_:)), for: .touchUpInside)
             barView.addSubview(copyButton)
         }
@@ -99,6 +106,8 @@ enum CodeViewConfiguration {
             scrollView.showsHorizontalScrollIndicator = false
             scrollView.alwaysBounceVertical = false
             scrollView.alwaysBounceHorizontal = false
+            scrollView.blankLeadingWidth = CodeViewConfiguration.codePadding
+            scrollView.blankTrailingWidth = CodeViewConfiguration.codePadding
             addSubview(scrollView)
         }
 
@@ -112,7 +121,8 @@ enum CodeViewConfiguration {
 
         private func setupLineNumberView() {
             lineNumberView.backgroundColor = .clear
-            addSubview(lineNumberView)
+            // Under the code, so a selection's handles draw over the gutter.
+            insertSubview(lineNumberView, belowSubview: scrollView)
             updateLineNumberView()
         }
 
@@ -126,32 +136,20 @@ enum CodeViewConfiguration {
             layoutScrollViewAndTextView(barHeight: barHeight)
         }
 
+        /// Lays the bar's buttons out from the trailing edge: Copy, then
+        /// Preview when there is a handler, then the host's actions.
         private func layoutButtons() {
             let buttonSize = CGSize(width: 44, height: 44)
-            let hasPreview = previewAction != nil
-
-            if hasPreview {
-                copyButton.frame = CGRect(
-                    x: barView.bounds.width - buttonSize.width,
+            previewButton.isHidden = previewAction == nil
+            var trailing = barView.bounds.width
+            for button in [copyButton, previewButton] + actionButtons.reversed() where !button.isHidden {
+                trailing -= buttonSize.width
+                button.frame = CGRect(
+                    x: trailing,
                     y: (barView.bounds.height - buttonSize.height) / 2,
                     width: buttonSize.width,
                     height: buttonSize.height
                 )
-                previewButton.isHidden = false
-                previewButton.frame = CGRect(
-                    x: copyButton.frame.minX - buttonSize.width,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-            } else {
-                copyButton.frame = CGRect(
-                    x: barView.bounds.width - buttonSize.width,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-                previewButton.isHidden = true
             }
         }
 
@@ -235,17 +233,19 @@ enum CodeViewConfiguration {
             previewButton.action = #selector(handlePreview(_:))
             previewButton.bezelStyle = .inline
             previewButton.isBordered = false
+            previewButton.contentTintColor = .labelColor
             barView.addSubview(previewButton)
         }
 
         private func setupCopyButton() {
-            if let copyImage = NSImage(systemSymbolName: "doc.on.doc", accessibilityDescription: nil) {
+            if let copyImage = NSImage(systemSymbolName: CodeView.copySymbol, accessibilityDescription: nil) {
                 copyButton.image = copyImage
             }
             copyButton.target = self
             copyButton.action = #selector(handleCopy(_:))
             copyButton.bezelStyle = .inline
             copyButton.isBordered = false
+            copyButton.contentTintColor = .labelColor
             barView.addSubview(copyButton)
         }
 
@@ -291,32 +291,20 @@ enum CodeViewConfiguration {
             layoutScrollViewAndTextView(barHeight: barHeight)
         }
 
+        /// Lays the bar's buttons out from the trailing edge: Copy, then
+        /// Preview when there is a handler, then the host's actions.
         private func layoutButtons() {
             let buttonSize = CGSize(width: 44, height: 44)
-            let hasPreview = previewAction != nil
-
-            if hasPreview {
-                copyButton.frame = CGRect(
-                    x: barView.bounds.width - buttonSize.width,
+            previewButton.isHidden = previewAction == nil
+            var trailing = barView.bounds.width
+            for button in [copyButton, previewButton] + actionButtons.reversed() where !button.isHidden {
+                trailing -= buttonSize.width
+                button.frame = CGRect(
+                    x: trailing,
                     y: (barView.bounds.height - buttonSize.height) / 2,
                     width: buttonSize.width,
                     height: buttonSize.height
                 )
-                previewButton.isHidden = false
-                previewButton.frame = CGRect(
-                    x: copyButton.frame.minX - buttonSize.width,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-            } else {
-                copyButton.frame = CGRect(
-                    x: barView.bounds.width - buttonSize.width,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-                previewButton.isHidden = true
             }
         }
 
