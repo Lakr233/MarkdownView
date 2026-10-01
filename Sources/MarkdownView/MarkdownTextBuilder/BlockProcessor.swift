@@ -44,10 +44,15 @@ final class BlockProcessor {
             paragraph.paragraphSpacingBefore = theme.spacings.headingBefore
         } content: {
             let string = contents.render(theme: theme, context: context, viewProvider: viewProvider, decoration: inlineTextDecoration)
-            string.addAttributes(
-                [.font: font],
-                range: NSRange(location: 0, length: string.length)
-            )
+            let fullRange = NSRange(location: 0, length: string.length)
+            string.enumerateAttribute(.font, in: fullRange, options: []) { value, range, _ in
+                // Inline code keeps its monospaced face inside a heading.
+                guard (value as? PlatformFont) != theme.fonts.codeInline else { return }
+                string.addAttribute(.font, value: font, range: range)
+            }
+            // Replacing the font discarded the fallback the body text resolved
+            // for its language, so resolve it again for the title font.
+            MarkdownContentLocale.resolveFonts(in: string, fallbackLocale: context.locale)
             return string
         }
     }
@@ -161,7 +166,8 @@ final class BlockProcessor {
         if let reused = tableView.representedText(
             reusingRows: rows,
             columnAlignments: columnAlignments,
-            theme: theme
+            theme: theme,
+            content: context
         ) {
             representedText = reused
         } else {
@@ -180,6 +186,7 @@ final class BlockProcessor {
                 rows: rows,
                 columnAlignments: columnAlignments,
                 theme: theme,
+                content: context,
                 representedText: representedText
             )
         }

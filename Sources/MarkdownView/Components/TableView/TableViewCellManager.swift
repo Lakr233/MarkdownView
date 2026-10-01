@@ -242,8 +242,7 @@ struct TableLayoutMetrics: Equatable {
                 attributedText.enumerateAttribute(.font, in: range, options: []) {
                     value, subRange, _ in
                     if let existingFont = value as? PlatformFont {
-                        let boldFont = PlatformFont.boldSystemFont(ofSize: existingFont.pointSize)
-                        attributedText.addAttribute(.font, value: boldFont, range: subRange)
+                        attributedText.addAttribute(.font, value: headerFont(from: existingFont), range: subRange)
                     } else {
                         attributedText.addAttribute(.font, value: theme.fonts.bold, range: subRange)
                     }
@@ -262,6 +261,20 @@ struct TableLayoutMetrics: Equatable {
 
             applyParagraphStyle(to: attributedText, alignment: alignment)
             return attributedText
+        }
+
+        /// The header weight of `font`, the way `**strong**` text gets it:
+        /// body text takes the theme's bold font, and anything else, such as
+        /// inline code or a fallback font, keeps its face and gains the bold trait.
+        private func headerFont(from font: PlatformFont) -> PlatformFont {
+            guard font != theme.fonts.body else { return theme.fonts.bold }
+            #if canImport(UIKit)
+                let traits = font.fontDescriptor.symbolicTraits.union(.traitBold)
+                return font.fontDescriptor.withSymbolicTraits(traits)
+                    .map { UIFont(descriptor: $0, size: 0) } ?? font
+            #elseif canImport(AppKit)
+                return font.bold
+            #endif
         }
 
         private func applyParagraphStyle(

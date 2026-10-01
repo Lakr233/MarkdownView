@@ -86,9 +86,12 @@ import Litext
             } else {
                 newOrigin.y += abs(locationInScrollView.y - visibleRect.maxY)
             }
-            newOrigin.y = max(0, newOrigin.y)
-            newOrigin.y = min(newOrigin.y, documentView.bounds.height - scrollView.bounds.height)
-            documentView.scroll(newOrigin)
+            // The clip view knows its own limits — content insets and the
+            // room scrollers take — so let it clamp the origin.
+            let clipView = scrollView.contentView
+            let proposed = CGRect(origin: newOrigin, size: clipView.bounds.size)
+            clipView.scroll(to: clipView.constrainBoundsRect(proposed).origin)
+            scrollView.reflectScrolledClipView(clipView)
         }
 
         public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {

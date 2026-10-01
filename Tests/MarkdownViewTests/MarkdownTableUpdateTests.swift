@@ -205,4 +205,126 @@ struct MarkdownTableUpdateTests {
         #expect(!fonts.isEmpty)
         #expect(fonts.contains { $0 != bodyFont })
     }
+
+    @MainActor
+    private func cell(_ text: String, in tableView: TableView) -> TextLabelView? {
+        cells(in: tableView).first { $0.attributedText.string == text }
+    }
+
+    @MainActor
+    private func traits(of font: PlatformFont) -> (bold: Bool, monospace: Bool) {
+        #if canImport(UIKit)
+            let traits = font.fontDescriptor.symbolicTraits
+            return (traits.contains(.traitBold), traits.contains(.traitMonoSpace))
+        #elseif canImport(AppKit)
+            let traits = font.fontDescriptor.symbolicTraits
+            return (traits.contains(.bold), traits.contains(.monoSpace))
+        #endif
+    }
+
+    @MainActor
+    @Test("A header cell is bold without losing its inline font")
+    func headerKeepsInlineFonts() {
+        var theme = MarkdownTheme.default
+        let size = theme.fonts.body.pointSize
+        guard let serif = PlatformFont(name: "Georgia", size: size),
+              let serifBold = PlatformFont(name: "Georgia-Bold", size: size)
+        else {
+            Issue.record("Georgia is not installed")
+            return
+        }
+        theme.fonts.body = serif
+        theme.fonts.bold = serifBold
+
+        let markdown = """
+        | `code` | plain |
+        | - | - |
+        | 1 | 2 |
+        """
+        let view = RenderProbe.view(markdown, theme: theme)
+        guard let tableView = tableView(in: view) else {
+            Issue.record("no table view was built")
+            return
+        }
+        func font(_ text: String) -> PlatformFont? {
+            guard let cell = cell(text, in: tableView), cell.attributedText.length > 0 else { return nil }
+            return cell.attributedText.attribute(.font, at: 0, effectiveRange: nil) as? PlatformFont
+        }
+        guard let code = font("code"), let plain = font("plain") else {
+            Issue.record("header cells are missing")
+            return
+        }
+
+        #expect(traits(of: code).monospace, "inline code in a header lost its monospace font: \(code)")
+        #expect(traits(of: code).bold)
+        #expect(plain.familyName == serif.familyName, "a header dropped the theme's font: \(plain)")
+        #expect(traits(of: plain).bold)
+    }
+
+    @MainActor
+    @Test("A changed locale reaches cells of an unchanged table")
+    func changedLocaleReachesTheCells() {
+        let markdown = table("| 漢字內容 | keep |")
+        let view = RenderProbe.view(markdown, locale: .init(identifier: "zh-Hant"))
+        guard let tableView = tableView(in: view), let before = cell("漢字內容", in: tableView) else {
+            Issue.record("no table cell was built")
+            return
+        }
+        let languageBefore = before.attributedText.attribute(.coreTextLanguage, at: 0, effectiveRange: nil) as? String
+        #expect(languageBefore == "zh-Hant")
+
+        RenderProbe.show(markdown, in: view, locale: .init(identifier: "ko_KR"))
+        guard let tableView = self.tableView(in: view), let after = cell("漢字內容", in: tableView) else {
+            Issue.record("the table cell went away")
+            return
+        }
+        let languageAfter = after.attributedText.attribute(.coreTextLanguage, at: 0, effectiveRange: nil) as? String
+        #expect(languageAfter == "ko", "the table kept cells rendered for the previous locale")
+    }
+
+    @MainActor
+    @Test("A math render arriving for an unchanged table reaches its cells")
+    func mathRenderReachesTheCells() {
+        let parsed = MarkdownParser().parse(table("| $x^2$ | keep |"))
+        let view = MarkdownTextView()
+        // First without the rendered math, as a caller building content by hand
+        // might, then with it.
+        view.setContentImmediately(.init(blocks: parsed.document, rendered: [:], highlightMaps: [:]))
+        view.frame = .init(x: 0, y: 0, width: 480, height: view.boundingSize(for: 480).height)
+        RenderProbe.layout(view)
+        let withoutMath = tableView(in: view).map { cells(in: $0).map(\.attributedText.string) } ?? []
+
+        RenderProbe.show(table("| $x^2$ | keep |"), in: view)
+        let withMath = tableView(in: view).map { cells(in: $0).map(\.attributedText.string) } ?? []
+
+        let fresh = RenderProbe.view(table("| $x^2$ | keep |"))
+        let expected = tableView(in: fresh).map { cells(in: $0).map(\.attributedText.string) } ?? []
+        #expect(withMath == expected, "before: \(withoutMath)")
+    }
+
+    @MainActor
+    @Test("A table without math still reuses its cells beside math elsewhere")
+    func tableWithoutMathReusesBesideMath() {
+        let markdown = "$x^2$\n\n" + table("| 1 | one |")
+        let content = RenderProbe.content(markdown)
+        #expect(!content.rendered.isEmpty)
+
+        let view = RenderProbe.view(markdown)
+        guard let tableView = tableView(in: view),
+              case let .table(alignments, rows) = content.blocks.first(where: {
+                  if case .table = $0 { return true }
+                  return false
+              })
+        else {
+            Issue.record("no table was built")
+            return
+        }
+        let reused = tableView.representedText(
+            reusingRows: rows,
+            columnAlignments: alignments,
+            theme: .default,
+            content: content
+        )
+        #expect(reused != nil, "math outside the table stopped it reusing its cells")
+    }
 }

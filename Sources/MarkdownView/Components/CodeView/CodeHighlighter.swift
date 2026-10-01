@@ -25,6 +25,8 @@ struct CodeHighlightRequest {
     let key: Int
     let content: String
     let language: String?
+    /// The view that asked, or nil when content asked while being built.
+    var requester: ObjectIdentifier? = nil
 }
 
 @MainActor
@@ -243,12 +245,24 @@ extension CodeHighlighter {
         renderCache.value(forKey: key)
     }
 
-    func scheduleHighlight(requests: [CodeHighlightRequest]) {
+    /// Queues `requests` ahead of anything already waiting.
+    ///
+    /// What `requester` asked for before is replaced: a streamed block asks
+    /// again with every token, and its earlier prefixes would never be looked
+    /// up. Every view shares this queue, so what another view asked for stays
+    /// queued behind. Requests made while content was built name no view; the
+    /// view showing that content asks again, so any caller replaces them.
+    func scheduleHighlight(requests: [CodeHighlightRequest], requester: ObjectIdentifier? = nil) {
         var pending: OrderedDictionary<Int, CodeHighlightRequest> = [:]
-        for request in requests {
+        for var request in requests {
             guard request.key != inflightKey else { continue }
             guard renderCache.value(forKey: request.key) == nil else { continue }
+            request.requester = requester
             pending[request.key] = request
+        }
+        for (key, waiting) in pendingRequests where pending[key] == nil {
+            guard let owner = waiting.requester, owner != requester else { continue }
+            pending[key] = waiting
         }
         pendingRequests = pending
         processNextRequestIfNeeded()

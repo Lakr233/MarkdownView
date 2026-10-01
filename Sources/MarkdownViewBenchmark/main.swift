@@ -174,11 +174,25 @@ struct MarkdownViewBenchmark {
                 }
             })
             // The rebuild proper: everything between "content is ready" and
-            // "the document is typeset and measured".
+            // "the document is typeset and measured". The view is reused, so
+            // after the first iteration every block is a fragment-cache hit:
+            // this is the cost of a rebuild that changed nothing.
             cases.append(BenchmarkCase(name: "scale/build/\(sections)") { iterations in
                 let view = MarkdownTextView()
                 for _ in 0 ..< iterations {
                     autoreleasepool {
+                        view.setContentImmediately(content)
+                        _ = view.boundingSize(for: 600)
+                    }
+                }
+            })
+            // The same build into a fresh view, so no block comes from the
+            // view's fragment cache. Inline text still hits the process-wide
+            // render cache once warm, as it would for a new row in an app.
+            cases.append(BenchmarkCase(name: "scale/cold_build/\(sections)") { iterations in
+                for _ in 0 ..< iterations {
+                    autoreleasepool {
+                        let view = MarkdownTextView()
                         view.setContentImmediately(content)
                         _ = view.boundingSize(for: 600)
                     }
@@ -333,8 +347,9 @@ private struct Configuration {
     let filter: String?
 
     init(arguments: [String]) {
-        iterations = Self.value(for: "--iterations", in: arguments) ?? 30
-        warmupIterations = Self.value(for: "--warmup", in: arguments) ?? 3
+        // At least one timed iteration, so the averages never divide by zero.
+        iterations = max(1, Self.value(for: "--iterations", in: arguments) ?? 30)
+        warmupIterations = max(0, Self.value(for: "--warmup", in: arguments) ?? 3)
         filter = Self.string(for: "--filter", in: arguments)
     }
 

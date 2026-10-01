@@ -276,19 +276,29 @@ private func fittedTableColumnWidths(
             let rows: [RawTableRow]
             let columnAlignments: [RawTableColumnAlignment]
             let theme: MarkdownTheme
+            let localeIdentifier: String
+            let carriesMath: Bool
             let representedText: NSAttributedString
         }
 
         private var renderedSource: RenderedSource?
 
         /// The text standing in for this table, if it already shows `rows`.
+        ///
+        /// Cells also depend on the content's locale, which picks their
+        /// fallback fonts, and on its rendered math, which the rows only name.
+        /// Math images are not compared, so a table whose cells hold math is
+        /// rendered again; a table without math never reads them.
         func representedText(
             reusingRows rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
-            theme: MarkdownTheme
+            theme: MarkdownTheme,
+            content: MarkdownContent
         ) -> NSAttributedString? {
             guard let renderedSource,
+                  !renderedSource.carriesMath,
                   renderedSource.theme == theme,
+                  renderedSource.localeIdentifier == content.locale.identifier,
                   renderedSource.columnAlignments == columnAlignments,
                   renderedSource.rows == rows
             else { return nil }
@@ -299,12 +309,15 @@ private func fittedTableColumnWidths(
             rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
             theme: MarkdownTheme,
+            content: MarkdownContent,
             representedText: NSAttributedString
         ) {
             renderedSource = .init(
                 rows: rows,
                 columnAlignments: columnAlignments,
                 theme: theme,
+                localeIdentifier: content.locale.identifier,
+                carriesMath: rows.contains { $0.carriesMath },
                 representedText: representedText
             )
         }
@@ -628,19 +641,29 @@ private func fittedTableColumnWidths(
             let rows: [RawTableRow]
             let columnAlignments: [RawTableColumnAlignment]
             let theme: MarkdownTheme
+            let localeIdentifier: String
+            let carriesMath: Bool
             let representedText: NSAttributedString
         }
 
         private var renderedSource: RenderedSource?
 
         /// The text standing in for this table, if it already shows `rows`.
+        ///
+        /// Cells also depend on the content's locale, which picks their
+        /// fallback fonts, and on its rendered math, which the rows only name.
+        /// Math images are not compared, so a table whose cells hold math is
+        /// rendered again; a table without math never reads them.
         func representedText(
             reusingRows rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
-            theme: MarkdownTheme
+            theme: MarkdownTheme,
+            content: MarkdownContent
         ) -> NSAttributedString? {
             guard let renderedSource,
+                  !renderedSource.carriesMath,
                   renderedSource.theme == theme,
+                  renderedSource.localeIdentifier == content.locale.identifier,
                   renderedSource.columnAlignments == columnAlignments,
                   renderedSource.rows == rows
             else { return nil }
@@ -651,12 +674,15 @@ private func fittedTableColumnWidths(
             rows: [RawTableRow],
             columnAlignments: [RawTableColumnAlignment],
             theme: MarkdownTheme,
+            content: MarkdownContent,
             representedText: NSAttributedString
         ) {
             renderedSource = .init(
                 rows: rows,
                 columnAlignments: columnAlignments,
                 theme: theme,
+                localeIdentifier: content.locale.identifier,
+                carriesMath: rows.contains { $0.carriesMath },
                 representedText: representedText
             )
         }
@@ -708,3 +734,15 @@ private func fittedTableColumnWidths(
         }
     }
 #endif
+
+private extension RawTableRow {
+    /// Whether any cell draws math, whose image the rows only name.
+    var carriesMath: Bool {
+        cells.contains { cell in
+            !cell.content.collect { node -> [Void] in
+                if case .math = node { return [()] }
+                return []
+            }.isEmpty
+        }
+    }
+}

@@ -40,7 +40,9 @@ private extension WatchTextBuilder {
 
     enum ListMarker {
         case bullet(depth: Int)
-        case numbered(Int)
+        /// `columnWidth` is the widest marker in the item's list, so every
+        /// item's text starts in the same column across 9. and 10.
+        case numbered(Int, columnWidth: CGFloat)
         case task(isCompleted: Bool)
     }
 
@@ -453,6 +455,7 @@ private extension WatchTextBuilder {
         theme: WatchMarkdownTheme
     ) {
         let paragraphSpacing = isTight ? 2 : theme.blockSpacing
+        var columnWidths: [ClosedRange<Int>: CGFloat] = [:]
         for item in items {
             var itemContext = context
             itemContext.leadingInset += listIndent(depth: item.depth, theme: theme)
@@ -460,7 +463,14 @@ private extension WatchTextBuilder {
             let marker: ListMarker = if item.isTask {
                 .task(isCompleted: item.isDone)
             } else if item.ordered {
-                .numbered(item.index)
+                .numbered(
+                    item.index,
+                    columnWidth: numberColumnWidth(
+                        for: item.siblingIndices,
+                        cache: &columnWidths,
+                        theme: theme
+                    )
+                )
             } else {
                 .bullet(depth: item.depth)
             }
@@ -551,7 +561,7 @@ private extension WatchTextBuilder {
             context.setFillColor(theme.textColor)
             context.fillEllipse(in: rect)
 
-        case let .numbered(index):
+        case let .numbered(index, _):
             let markerText = NSAttributedString(
                 string: "\(index).",
                 attributes: baseAttributes(font: font, theme: theme)
@@ -688,16 +698,30 @@ private extension WatchTextBuilder {
         switch marker {
         case .bullet:
             return 12 + gap
-        case let .numbered(index):
-            let string = NSAttributedString(
-                string: "\(index).",
-                attributes: baseAttributes(font: font, theme: theme)
-            )
-            let ctLine = CTLineCreateWithAttributedString(string as CFAttributedString)
-            return CGFloat(CTLineGetTypographicBounds(ctLine, nil, nil, nil)) + gap
+        case let .numbered(_, columnWidth):
+            return columnWidth + gap
         case .task:
             return 10 + gap
         }
+    }
+
+    /// The width of the widest `N.` marker among `indices`, measured once per list.
+    func numberColumnWidth(
+        for indices: ClosedRange<Int>,
+        cache: inout [ClosedRange<Int>: CGFloat],
+        theme: WatchMarkdownTheme
+    ) -> CGFloat {
+        if let cached = cache[indices] {
+            return cached
+        }
+        let attributes = baseAttributes(font: theme.bodyFont, theme: theme)
+        let width = indices.map { index -> CGFloat in
+            let string = NSAttributedString(string: "\(index).", attributes: attributes)
+            let ctLine = CTLineCreateWithAttributedString(string as CFAttributedString)
+            return CGFloat(CTLineGetTypographicBounds(ctLine, nil, nil, nil))
+        }.max() ?? 0
+        cache[indices] = width
+        return width
     }
 
     func listIndent(depth: Int, theme: WatchMarkdownTheme) -> CGFloat {
@@ -752,6 +776,7 @@ private extension WatchTextBuilder {
         func handle(_ items: [MappedItem], startAt: Int = 0, orderedValue: Bool) {
             nextIndex = startAt
             ordered = orderedValue
+            let siblingIndices = startAt ... startAt + max(items.count - 1, 0)
 
             for item in items {
                 var isFirstParagraph = true
@@ -766,6 +791,7 @@ private extension WatchTextBuilder {
                                 isTask: item.isDone != nil,
                                 isDone: item.isDone ?? false,
                                 showsMarker: isFirstParagraph,
+                                siblingIndices: siblingIndices,
                                 paragraph: contents
                             )
                         )
@@ -813,6 +839,8 @@ private extension WatchTextBuilder {
         let isTask: Bool
         let isDone: Bool
         let showsMarker: Bool
+        /// Every index its list numbers, for sizing the marker column.
+        let siblingIndices: ClosedRange<Int>
         let paragraph: [MarkdownInlineNode]
     }
 }

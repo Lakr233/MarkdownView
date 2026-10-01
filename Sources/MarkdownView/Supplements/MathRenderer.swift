@@ -21,8 +21,11 @@ public enum MathRenderer {
     static let renderCache = LRUCache<String, PlatformImage>(countLimit: 256)
 
     private static func preprocessLatex(_ latex: String) -> String {
+        // `\dots` is a prefix of amsmath's `\dotsb`, `\dotsc`, `\dotsi`,
+        // `\dotsm` and `\dotso`, so each is matched as a whole command name.
         latex
-            .replacingOccurrences(of: "\\dots", with: "\\ldots")
+            .replacingOccurrences(of: #"\\dots[bim](?![A-Za-z])"#, with: #"\\cdots"#, options: .regularExpression)
+            .replacingOccurrences(of: #"\\dots[co]?(?![A-Za-z])"#, with: #"\\ldots"#, options: .regularExpression)
             .replacingOccurrences(of: "\\implies", with: "\\Rightarrow")
             .replacingOccurrences(of: "\\begin{align}", with: "\\begin{aligned}")
             .replacingOccurrences(of: "\\end{align}", with: "\\end{aligned}")
@@ -51,7 +54,7 @@ public enum MathRenderer {
         #elseif canImport(AppKit)
             // Resolve dynamic colors in the current appearance context for SwiftMath
             var resolvedTextColor = textColor
-            NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+            drawingAppearance.performAsCurrentDrawingAppearance {
                 resolvedTextColor = textColor.usingColorSpace(.sRGB) ?? textColor
             }
         #endif
@@ -70,7 +73,7 @@ public enum MathRenderer {
         }
 
         #if canImport(UIKit)
-            let result = image.withRenderingMode(.alwaysTemplate).withTintColor(.label)
+            let result = image.withRenderingMode(.alwaysTemplate).withTintColor(textColor)
         #elseif canImport(AppKit)
             image.isTemplate = true
             let result = image
@@ -80,6 +83,17 @@ public enum MathRenderer {
         return result
     }
 
+    #if canImport(AppKit) && !canImport(UIKit)
+        /// The appearance dynamic colours resolve against.
+        ///
+        /// `NSApp` is only set once something touches `NSApplication.shared`,
+        /// which a command-line tool or a test runner may never do.
+        private static var drawingAppearance: NSAppearance {
+            let app: NSApplication? = NSApp
+            return app?.effectiveAppearance ?? NSAppearance.currentDrawing()
+        }
+    #endif
+
     private static func renderCacheKey(for latex: String, fontSize: CGFloat, textColor: PlatformColor) -> String {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         #if canImport(UIKit)
@@ -87,7 +101,7 @@ public enum MathRenderer {
             resolvedColor.getRed(&r, green: &g, blue: &b, alpha: &a)
         #elseif canImport(AppKit)
             // Resolve dynamic colors in the context of the current appearance
-            NSApp.effectiveAppearance.performAsCurrentDrawingAppearance {
+            drawingAppearance.performAsCurrentDrawingAppearance {
                 let resolvedColor = textColor.usingColorSpace(.sRGB) ?? textColor
                 resolvedColor.getRed(&r, green: &g, blue: &b, alpha: &a)
             }
