@@ -45,18 +45,102 @@ enum CodeViewConfiguration {
     }
 }
 
-#if canImport(UIKit)
-    extension CodeView {
-        func configureSubviews() {
-            setupViewAppearance()
-            setupBarView()
-            setupButtons()
-            setupScrollView()
-            setupTextView()
-            setupLineNumberView()
-        }
+extension CodeView {
+    func configureSubviews() {
+        setupViewAppearance()
+        setupBarView()
+        setupButtons()
+        setupScrollView()
+        setupTextView()
+        setupLineNumberView()
+    }
 
-        private func setupViewAppearance() {
+    private func setupButtons() {
+        setupPreviewButton()
+        setupCopyButton()
+    }
+
+    func performLayout() {
+        let labelSize = languageLabel.intrinsicContentSize
+        let barHeight = max(languageLabelLineHeight, labelSize.height) + CodeViewConfiguration.barPadding * 2
+
+        layoutBarView(barHeight: barHeight, labelSize: labelSize)
+        layoutButtons()
+        layoutLineNumberView(barHeight: barHeight)
+        layoutScrollViewAndTextView(barHeight: barHeight)
+    }
+
+    /// Lays the bar's buttons out from the trailing edge: Copy, then
+    /// Preview when there is a handler, then the host's actions.
+    private func layoutButtons() {
+        let buttonSize = CGSize(width: 44, height: 44)
+        previewButton.isHidden = previewAction == nil
+        var trailing = barView.bounds.width
+        for button in [copyButton, previewButton] + actionButtons.reversed() where !button.isHidden {
+            trailing -= buttonSize.width
+            button.frame = CGRect(
+                x: trailing,
+                y: (barView.bounds.height - buttonSize.height) / 2,
+                width: buttonSize.width,
+                height: buttonSize.height
+            )
+        }
+    }
+
+    private func layoutBarView(barHeight: CGFloat, labelSize: CGSize) {
+        barView.frame = CGRect(origin: .zero, size: CGSize(width: bounds.width, height: barHeight))
+        languageLabel.frame = CGRect(
+            origin: CGPoint(x: CodeViewConfiguration.barPadding, y: CodeViewConfiguration.barPadding),
+            size: labelSize
+        )
+    }
+
+    private func layoutLineNumberView(barHeight: CGFloat) {
+        let lineNumberSize = lineNumberView.intrinsicContentSize
+        lineNumberView.frame = CGRect(
+            x: 0,
+            y: barHeight,
+            width: lineNumberSize.width,
+            height: bounds.height - barHeight
+        )
+    }
+
+    private func layoutScrollViewAndTextView(barHeight: CGFloat) {
+        let textContentSize = textView.intrinsicContentSize
+        let lineNumberWidth = lineNumberView.intrinsicContentSize.width
+
+        scrollView.frame = CGRect(
+            x: lineNumberWidth,
+            y: barHeight,
+            width: bounds.width - lineNumberWidth,
+            height: bounds.height - barHeight
+        )
+
+        #if canImport(UIKit)
+            let textOrigin = CGPoint(x: CodeViewConfiguration.codePadding, y: CodeViewConfiguration.codePadding)
+        #elseif canImport(AppKit)
+            // The scroll view's content insets hold the padding.
+            let textOrigin = CGPoint.zero
+        #endif
+        textView.frame = CGRect(
+            x: textOrigin.x,
+            y: textOrigin.y,
+            width: max(scrollView.bounds.width - CodeViewConfiguration.codePadding * 2, textContentSize.width),
+            height: textContentSize.height
+        )
+
+        #if canImport(UIKit)
+            scrollView.contentSize = CGSize(
+                width: textView.frame.width + CodeViewConfiguration.codePadding * 2,
+                height: 0
+            )
+        #endif
+    }
+}
+
+#if canImport(UIKit)
+    private extension CodeView {
+        func setupViewAppearance() {
             layer.cornerRadius = 8
             layer.cornerCurve = .continuous
             // Not clipped, so a selection's handles can reach past the code;
@@ -65,7 +149,7 @@ enum CodeViewConfiguration {
             backgroundColor = .gray.withAlphaComponent(0.05)
         }
 
-        private func setupBarView() {
+        func setupBarView() {
             barView.backgroundColor = .gray.withAlphaComponent(0.05)
             barView.layer.cornerRadius = layer.cornerRadius
             barView.layer.cornerCurve = .continuous
@@ -74,12 +158,7 @@ enum CodeViewConfiguration {
             barView.addSubview(languageLabel)
         }
 
-        private func setupButtons() {
-            setupPreviewButton()
-            setupCopyButton()
-        }
-
-        private func setupPreviewButton() {
+        func setupPreviewButton() {
             let previewImage = UIImage(
                 systemName: "eye",
                 withConfiguration: UIImage.SymbolConfiguration(scale: .small)
@@ -90,7 +169,7 @@ enum CodeViewConfiguration {
             barView.addSubview(previewButton)
         }
 
-        private func setupCopyButton() {
+        func setupCopyButton() {
             let copyImage = UIImage(
                 systemName: CodeView.copySymbol,
                 withConfiguration: UIImage.SymbolConfiguration(scale: .small)
@@ -101,7 +180,7 @@ enum CodeViewConfiguration {
             barView.addSubview(copyButton)
         }
 
-        private func setupScrollView() {
+        func setupScrollView() {
             scrollView.showsVerticalScrollIndicator = false
             scrollView.showsHorizontalScrollIndicator = false
             scrollView.alwaysBounceVertical = false
@@ -111,7 +190,7 @@ enum CodeViewConfiguration {
             addSubview(scrollView)
         }
 
-        private func setupTextView() {
+        func setupTextView() {
             textView.backgroundColor = .clear
             textView.preferredMaxLayoutWidth = .greatestFiniteMagnitude
             textView.isSelectable = true
@@ -119,113 +198,34 @@ enum CodeViewConfiguration {
             scrollView.addSubview(textView)
         }
 
-        private func setupLineNumberView() {
+        func setupLineNumberView() {
             lineNumberView.backgroundColor = .clear
             // Under the code, so a selection's handles draw over the gutter.
             insertSubview(lineNumberView, belowSubview: scrollView)
             updateLineNumberView()
         }
 
-        func performLayout() {
-            let labelSize = languageLabel.intrinsicContentSize
-            let barHeight = max(languageLabel.font?.lineHeight ?? 16, labelSize.height) + CodeViewConfiguration.barPadding * 2
-
-            layoutBarView(barHeight: barHeight, labelSize: labelSize)
-            layoutButtons()
-            layoutLineNumberView(barHeight: barHeight)
-            layoutScrollViewAndTextView(barHeight: barHeight)
-        }
-
-        /// Lays the bar's buttons out from the trailing edge: Copy, then
-        /// Preview when there is a handler, then the host's actions.
-        private func layoutButtons() {
-            let buttonSize = CGSize(width: 44, height: 44)
-            previewButton.isHidden = previewAction == nil
-            var trailing = barView.bounds.width
-            for button in [copyButton, previewButton] + actionButtons.reversed() where !button.isHidden {
-                trailing -= buttonSize.width
-                button.frame = CGRect(
-                    x: trailing,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-            }
-        }
-
-        private func layoutBarView(barHeight: CGFloat, labelSize: CGSize) {
-            barView.frame = CGRect(origin: .zero, size: CGSize(width: bounds.width, height: barHeight))
-            languageLabel.frame = CGRect(
-                origin: CGPoint(x: CodeViewConfiguration.barPadding, y: CodeViewConfiguration.barPadding),
-                size: labelSize
-            )
-        }
-
-        private func layoutLineNumberView(barHeight: CGFloat) {
-            let lineNumberSize = lineNumberView.intrinsicContentSize
-            lineNumberView.frame = CGRect(
-                x: 0,
-                y: barHeight,
-                width: lineNumberSize.width,
-                height: bounds.height - barHeight
-            )
-        }
-
-        private func layoutScrollViewAndTextView(barHeight: CGFloat) {
-            let textContentSize = textView.intrinsicContentSize
-            let lineNumberWidth = lineNumberView.intrinsicContentSize.width
-
-            scrollView.frame = CGRect(
-                x: lineNumberWidth,
-                y: barHeight,
-                width: bounds.width - lineNumberWidth,
-                height: bounds.height - barHeight
-            )
-
-            textView.frame = CGRect(
-                x: CodeViewConfiguration.codePadding,
-                y: CodeViewConfiguration.codePadding,
-                width: max(scrollView.bounds.width - CodeViewConfiguration.codePadding * 2, textContentSize.width),
-                height: textContentSize.height
-            )
-
-            scrollView.contentSize = CGSize(
-                width: textView.frame.width + CodeViewConfiguration.codePadding * 2,
-                height: 0
-            )
+        var languageLabelLineHeight: CGFloat {
+            languageLabel.font?.lineHeight ?? 16
         }
     }
 
 #elseif canImport(AppKit)
-    extension CodeView {
-        func configureSubviews() {
-            setupViewAppearance()
-            setupBarView()
-            setupButtons()
-            setupScrollView()
-            setupTextView()
-            setupLineNumberView()
-        }
-
-        private func setupViewAppearance() {
+    private extension CodeView {
+        func setupViewAppearance() {
             wantsLayer = true
             layer?.cornerRadius = 8
             layer?.backgroundColor = NSColor.gray.withAlphaComponent(0.05).cgColor
         }
 
-        private func setupBarView() {
+        func setupBarView() {
             barView.wantsLayer = true
             barView.layer?.backgroundColor = NSColor.gray.withAlphaComponent(0.05).cgColor
             addSubview(barView)
             barView.addSubview(languageLabel)
         }
 
-        private func setupButtons() {
-            setupPreviewButton()
-            setupCopyButton()
-        }
-
-        private func setupPreviewButton() {
+        func setupPreviewButton() {
             if let previewImage = NSImage(systemSymbolName: "eye", accessibilityDescription: nil) {
                 previewButton.image = previewImage
             }
@@ -237,7 +237,7 @@ enum CodeViewConfiguration {
             barView.addSubview(previewButton)
         }
 
-        private func setupCopyButton() {
+        func setupCopyButton() {
             if let copyImage = NSImage(systemSymbolName: CodeView.copySymbol, accessibilityDescription: nil) {
                 copyButton.image = copyImage
             }
@@ -249,7 +249,7 @@ enum CodeViewConfiguration {
             barView.addSubview(copyButton)
         }
 
-        private func setupScrollView() {
+        func setupScrollView() {
             scrollView.hasVerticalScroller = false
             scrollView.hasHorizontalScroller = false
             scrollView.drawsBackground = false
@@ -263,7 +263,7 @@ enum CodeViewConfiguration {
             addSubview(scrollView)
         }
 
-        private func setupTextView() {
+        func setupTextView() {
             textView.wantsLayer = true
             textView.layer?.backgroundColor = NSColor.clear.cgColor
             textView.preferredMaxLayoutWidth = .greatestFiniteMagnitude
@@ -272,77 +272,16 @@ enum CodeViewConfiguration {
             scrollView.documentView = textView
         }
 
-        private func setupLineNumberView() {
+        func setupLineNumberView() {
             lineNumberView.wantsLayer = true
             lineNumberView.layer?.backgroundColor = NSColor.clear.cgColor
             addSubview(lineNumberView)
             updateLineNumberView()
         }
 
-        func performLayout() {
-            let labelSize = languageLabel.intrinsicContentSize
+        var languageLabelLineHeight: CGFloat {
             let font = languageLabel.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-            let lineHeight = font.ascender + abs(font.descender) + font.leading
-            let barHeight = max(lineHeight, labelSize.height) + CodeViewConfiguration.barPadding * 2
-
-            layoutBarView(barHeight: barHeight, labelSize: labelSize)
-            layoutButtons()
-            layoutLineNumberView(barHeight: barHeight)
-            layoutScrollViewAndTextView(barHeight: barHeight)
-        }
-
-        /// Lays the bar's buttons out from the trailing edge: Copy, then
-        /// Preview when there is a handler, then the host's actions.
-        private func layoutButtons() {
-            let buttonSize = CGSize(width: 44, height: 44)
-            previewButton.isHidden = previewAction == nil
-            var trailing = barView.bounds.width
-            for button in [copyButton, previewButton] + actionButtons.reversed() where !button.isHidden {
-                trailing -= buttonSize.width
-                button.frame = CGRect(
-                    x: trailing,
-                    y: (barView.bounds.height - buttonSize.height) / 2,
-                    width: buttonSize.width,
-                    height: buttonSize.height
-                )
-            }
-        }
-
-        private func layoutBarView(barHeight: CGFloat, labelSize: CGSize) {
-            barView.frame = CGRect(origin: .zero, size: CGSize(width: bounds.width, height: barHeight))
-            languageLabel.frame = CGRect(
-                origin: CGPoint(x: CodeViewConfiguration.barPadding, y: CodeViewConfiguration.barPadding),
-                size: labelSize
-            )
-        }
-
-        private func layoutLineNumberView(barHeight: CGFloat) {
-            let lineNumberSize = lineNumberView.intrinsicContentSize
-            lineNumberView.frame = CGRect(
-                x: 0,
-                y: barHeight,
-                width: lineNumberSize.width,
-                height: bounds.height - barHeight
-            )
-        }
-
-        private func layoutScrollViewAndTextView(barHeight: CGFloat) {
-            let textContentSize = textView.intrinsicContentSize
-            let lineNumberWidth = lineNumberView.intrinsicContentSize.width
-
-            scrollView.frame = CGRect(
-                x: lineNumberWidth,
-                y: barHeight,
-                width: bounds.width - lineNumberWidth,
-                height: bounds.height - barHeight
-            )
-
-            textView.frame = CGRect(
-                x: 0,
-                y: 0,
-                width: max(scrollView.bounds.width - CodeViewConfiguration.codePadding * 2, textContentSize.width),
-                height: textContentSize.height
-            )
+            return font.ascender + abs(font.descender) + font.leading
         }
     }
 #endif

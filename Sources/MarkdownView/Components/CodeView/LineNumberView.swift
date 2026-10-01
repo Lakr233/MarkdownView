@@ -5,188 +5,85 @@
 
 import Litext
 
-#if canImport(UIKit)
-    import UIKit
-
-    final class LineNumberView: UIView {
-        var lineCount: Int = 1 {
-            didSet {
-                guard oldValue != lineCount else { return }
-                setNeedsDisplay()
-                invalidateIntrinsicContentSize()
-            }
+final class LineNumberView: PlatformView {
+    #if canImport(UIKit)
+        typealias EdgeInsets = UIEdgeInsets
+        private static var defaultTextColor: PlatformColor {
+            .secondaryLabel
         }
-
-        var font: UIFont = .monospacedSystemFont(ofSize: 12, weight: .regular) {
-            didSet {
-                guard oldValue != font else { return }
-                setNeedsDisplay()
-                invalidateIntrinsicContentSize()
-            }
+    #elseif canImport(AppKit)
+        typealias EdgeInsets = NSEdgeInsets
+        private static var defaultTextColor: PlatformColor {
+            .secondaryLabelColor
         }
+    #endif
 
-        var textColor: UIColor = .secondaryLabel {
-            didSet {
-                guard oldValue != textColor else { return }
-                setNeedsDisplay()
-            }
+    var lineCount: Int = 1 {
+        didSet {
+            guard oldValue != lineCount else { return }
+            markNeedsDisplay()
+            invalidateIntrinsicContentSize()
         }
+    }
 
-        var padding: UIEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8) {
-            didSet {
+    var font: PlatformFont = .monospacedSystemFont(ofSize: 12, weight: .regular) {
+        didSet {
+            guard oldValue != font else { return }
+            markNeedsDisplay()
+            invalidateIntrinsicContentSize()
+        }
+    }
+
+    var textColor: PlatformColor = defaultTextColor {
+        didSet {
+            guard oldValue != textColor else { return }
+            markNeedsDisplay()
+        }
+    }
+
+    var padding: EdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8) {
+        didSet {
+            #if canImport(UIKit)
                 guard oldValue != padding else { return }
-                setNeedsDisplay()
-                invalidateIntrinsicContentSize()
-            }
+            #elseif canImport(AppKit)
+                guard !NSEdgeInsetsEqual(oldValue, padding) else { return }
+            #endif
+            markNeedsDisplay()
+            invalidateIntrinsicContentSize()
         }
+    }
 
-        var contentHeight: CGFloat = 0 {
-            didSet {
-                guard oldValue != contentHeight else { return }
-                setNeedsDisplay()
-                invalidateIntrinsicContentSize()
-            }
+    var contentHeight: CGFloat = 0 {
+        didSet {
+            guard oldValue != contentHeight else { return }
+            markNeedsDisplay()
+            invalidateIntrinsicContentSize()
         }
+    }
 
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            setupView()
-        }
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        setupView()
+    }
 
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
+    @available(*, unavailable)
+    required init?(coder _: NSCoder) {
+        fatalError("init(coder:) has not been implemented")
+    }
 
+    #if canImport(UIKit)
         private func setupView() {
             backgroundColor = .clear
             isOpaque = false
             contentMode = .redraw
         }
 
-        override var intrinsicContentSize: CGSize {
-            let maxLineNumber = max(lineCount, 1)
-            let numberString = "\(maxLineNumber)"
-            let textSize = numberString.size(withAttributes: [.font: font])
-
-            return CGSize(
-                width: textSize.width + padding.left + padding.right,
-                height: max(contentHeight + padding.top + padding.bottom, textSize.height + padding.top + padding.bottom)
-            )
-        }
-
         override func draw(_ rect: CGRect) {
             guard let context = UIGraphicsGetCurrentContext() else { return }
             context.clear(rect)
-
-            guard lineCount > 0, contentHeight > 0 else { return }
-
-            let textAttributes: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: textColor,
-            ]
-
-            let availableHeight = contentHeight
-            let lineSpacing = availableHeight / CGFloat(lineCount)
-            let startY = padding.top
-
-            guard lineSpacing > 0 else { return }
-
-            let firstLine = max(1, Int(floor((rect.minY - padding.top) / lineSpacing)))
-            let lastLine = min(lineCount, Int(ceil((rect.maxY - padding.top) / lineSpacing)) + 1)
-            guard firstLine <= lastLine else { return }
-
-            let textHeight = "0".size(withAttributes: textAttributes).height
-            var digitCount = 0
-            var textWidth: CGFloat = 0
-
-            for lineNumber in firstLine ... lastLine {
-                let numberString = "\(lineNumber)"
-                if numberString.count != digitCount {
-                    digitCount = numberString.count
-                    textWidth = numberString.size(withAttributes: textAttributes).width
-                }
-
-                let x = bounds.width - padding.right - textWidth
-                let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textHeight) / 2
-
-                let textRect = CGRect(
-                    x: x,
-                    y: y,
-                    width: textWidth,
-                    height: textHeight
-                )
-
-                numberString.draw(in: textRect, withAttributes: textAttributes)
-            }
+            drawLineNumbers(in: rect)
         }
-
-        func configure(lineCount: Int, contentHeight: CGFloat, font: UIFont, textColor: UIColor) {
-            self.lineCount = lineCount
-            self.contentHeight = contentHeight
-            self.font = font
-            self.textColor = textColor
-        }
-
-        func updateForContent(_ content: String) {
-            let lines = content.components(separatedBy: .newlines)
-            lineCount = max(lines.count, 1)
-        }
-    }
-
-#elseif canImport(AppKit)
-    import AppKit
-
-    final class LineNumberView: NSView {
-        var lineCount: Int = 1 {
-            didSet {
-                guard oldValue != lineCount else { return }
-                needsDisplay = true
-                invalidateIntrinsicContentSize()
-            }
-        }
-
-        var font: NSFont = .monospacedSystemFont(ofSize: 12, weight: .regular) {
-            didSet {
-                guard oldValue != font else { return }
-                needsDisplay = true
-                invalidateIntrinsicContentSize()
-            }
-        }
-
-        var textColor: NSColor = .secondaryLabelColor {
-            didSet {
-                guard oldValue != textColor else { return }
-                needsDisplay = true
-            }
-        }
-
-        var padding: NSEdgeInsets = .init(top: 8, left: 8, bottom: 8, right: 8) {
-            didSet {
-                guard !NSEdgeInsetsEqual(oldValue, padding) else { return }
-                needsDisplay = true
-                invalidateIntrinsicContentSize()
-            }
-        }
-
-        var contentHeight: CGFloat = 0 {
-            didSet {
-                guard oldValue != contentHeight else { return }
-                needsDisplay = true
-                invalidateIntrinsicContentSize()
-            }
-        }
-
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            setupView()
-        }
-
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
+    #elseif canImport(AppKit)
         override var isFlipped: Bool {
             true
         }
@@ -196,73 +93,78 @@ import Litext
             layer?.backgroundColor = NSColor.clear.cgColor
         }
 
-        override var intrinsicContentSize: CGSize {
-            let maxLineNumber = max(lineCount, 1)
-            let numberString = "\(maxLineNumber)"
-            let textSize = numberString.size(withAttributes: [.font: font])
-
-            return CGSize(
-                width: textSize.width + padding.left + padding.right,
-                height: max(contentHeight + padding.top + padding.bottom, textSize.height + padding.top + padding.bottom)
-            )
-        }
-
         override func draw(_ dirtyRect: NSRect) {
             guard let context = NSGraphicsContext.current?.cgContext else { return }
             context.clear(dirtyRect)
+            drawLineNumbers(in: dirtyRect)
+        }
+    #endif
 
-            guard lineCount > 0, contentHeight > 0 else { return }
+    override var intrinsicContentSize: CGSize {
+        let maxLineNumber = max(lineCount, 1)
+        let numberString = "\(maxLineNumber)"
+        let textSize = numberString.size(withAttributes: [.font: font])
 
-            let textAttributes: [NSAttributedString.Key: Any] = [
-                .font: font,
-                .foregroundColor: textColor,
-            ]
+        return CGSize(
+            width: textSize.width + padding.left + padding.right,
+            height: max(contentHeight + padding.top + padding.bottom, textSize.height + padding.top + padding.bottom)
+        )
+    }
 
-            let availableHeight = contentHeight
-            let lineSpacing = availableHeight / CGFloat(lineCount)
-            let startY = padding.top
+    /// Draws the numbers of the lines that cross `rect`, into the context
+    /// the platform's `draw` has already cleared.
+    private func drawLineNumbers(in rect: CGRect) {
+        guard lineCount > 0, contentHeight > 0 else { return }
 
-            guard lineSpacing > 0 else { return }
+        let textAttributes: [NSAttributedString.Key: Any] = [
+            .font: font,
+            .foregroundColor: textColor,
+        ]
 
-            let firstLine = max(1, Int(floor((dirtyRect.minY - padding.top) / lineSpacing)))
-            let lastLine = min(lineCount, Int(ceil((dirtyRect.maxY - padding.top) / lineSpacing)) + 1)
-            guard firstLine <= lastLine else { return }
+        let availableHeight = contentHeight
+        let lineSpacing = availableHeight / CGFloat(lineCount)
+        let startY = padding.top
 
-            let textHeight = "0".size(withAttributes: textAttributes).height
-            var digitCount = 0
-            var textWidth: CGFloat = 0
+        guard lineSpacing > 0 else { return }
 
-            for lineNumber in firstLine ... lastLine {
-                let numberString = "\(lineNumber)"
-                if numberString.count != digitCount {
-                    digitCount = numberString.count
-                    textWidth = numberString.size(withAttributes: textAttributes).width
-                }
+        let firstLine = max(1, Int(floor((rect.minY - padding.top) / lineSpacing)))
+        let lastLine = min(lineCount, Int(ceil((rect.maxY - padding.top) / lineSpacing)) + 1)
+        guard firstLine <= lastLine else { return }
 
-                let x = bounds.width - padding.right - textWidth
-                let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textHeight) / 2
+        let textHeight = "0".size(withAttributes: textAttributes).height
+        var digitCount = 0
+        var textWidth: CGFloat = 0
 
-                let textRect = CGRect(
-                    x: x,
-                    y: y,
-                    width: textWidth,
-                    height: textHeight
-                )
-
-                numberString.draw(in: textRect, withAttributes: textAttributes)
+        for lineNumber in firstLine ... lastLine {
+            let numberString = "\(lineNumber)"
+            if numberString.count != digitCount {
+                digitCount = numberString.count
+                textWidth = numberString.size(withAttributes: textAttributes).width
             }
-        }
 
-        func configure(lineCount: Int, contentHeight: CGFloat, font: NSFont, textColor: NSColor) {
-            self.lineCount = lineCount
-            self.contentHeight = contentHeight
-            self.font = font
-            self.textColor = textColor
-        }
+            let x = bounds.width - padding.right - textWidth
+            let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textHeight) / 2
 
-        func updateForContent(_ content: String) {
-            let lines = content.components(separatedBy: .newlines)
-            lineCount = max(lines.count, 1)
+            let textRect = CGRect(
+                x: x,
+                y: y,
+                width: textWidth,
+                height: textHeight
+            )
+
+            numberString.draw(in: textRect, withAttributes: textAttributes)
         }
     }
-#endif
+
+    func configure(lineCount: Int, contentHeight: CGFloat, font: PlatformFont, textColor: PlatformColor) {
+        self.lineCount = lineCount
+        self.contentHeight = contentHeight
+        self.font = font
+        self.textColor = textColor
+    }
+
+    func updateForContent(_ content: String) {
+        let lines = content.components(separatedBy: .newlines)
+        lineCount = max(lines.count, 1)
+    }
+}

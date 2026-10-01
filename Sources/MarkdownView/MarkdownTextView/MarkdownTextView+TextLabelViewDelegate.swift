@@ -7,19 +7,38 @@
 
 import Litext
 
-#if canImport(UIKit)
-    import UIKit
+extension MarkdownTextView: TextLabelViewDelegate {
+    public func textLabelView(_ label: TextLabelView, didChangeSelection _: NSRange?) {
+        // Code and table views report their own labels here too; only the
+        // document's selection can run across them.
+        guard label === textLabelView else { return }
+        syncContextViewSelection()
+    }
 
-    extension MarkdownTextView: TextLabelViewDelegate {
-        public func textLabelView(_ label: TextLabelView, didChangeSelection _: NSRange?) {
-            // Code and table views report their own labels here too; only the
-            // document's selection can run across them.
-            guard label === textLabelView else { return }
-            syncContextViewSelection()
+    public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
+        guard let scrollView = trackedScrollView else { return }
+        autoScroll(scrollView, toFollowDragAt: location, in: label)
+    }
+
+    public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
+        if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
+            presentMathPreview(for: latexContent, theme: theme)
+            return
         }
 
-        public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
-            guard let scrollView = trackedScrollView else { return }
+        let link = highlightRegion.attributes[NSAttributedString.Key.link]
+        let range = highlightRegion.stringRange
+        if let url = link as? URL {
+            linkHandler?(.url(url), range, location)
+        } else if let string = link as? String {
+            linkHandler?(.string(string), range, location)
+        }
+    }
+}
+
+#if canImport(UIKit)
+    private extension MarkdownTextView {
+        func autoScroll(_ scrollView: UIScrollView, toFollowDragAt location: CGPoint, in label: TextLabelView) {
             guard scrollView.contentSize.height > scrollView.bounds.height else { return }
 
             let edgeDetection = CGFloat(16)
@@ -44,36 +63,11 @@ import Litext
             currentOffset.y = min(max(currentOffset.y, minOffsetY), maxOffsetY)
             scrollView.setContentOffset(currentOffset, animated: false)
         }
-
-        public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
-            if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
-                presentMathPreview(for: latexContent, theme: theme)
-                return
-            }
-
-            let link = highlightRegion.attributes[NSAttributedString.Key.link]
-            let range = highlightRegion.stringRange
-            if let url = link as? URL {
-                linkHandler?(.url(url), range, location)
-            } else if let string = link as? String {
-                linkHandler?(.string(string), range, location)
-            }
-        }
     }
 
 #elseif canImport(AppKit)
-    import AppKit
-
-    extension MarkdownTextView: TextLabelViewDelegate {
-        public func textLabelView(_ label: TextLabelView, didChangeSelection _: NSRange?) {
-            // Code and table views report their own labels here too; only the
-            // document's selection can run across them.
-            guard label === textLabelView else { return }
-            syncContextViewSelection()
-        }
-
-        public func textLabelView(_ label: TextLabelView, didDragSelectionAt location: CGPoint) {
-            guard let scrollView = trackedScrollView else { return }
+    private extension MarkdownTextView {
+        func autoScroll(_ scrollView: NSScrollView, toFollowDragAt location: CGPoint, in label: TextLabelView) {
             guard let documentView = scrollView.documentView else { return }
             guard documentView.bounds.height > scrollView.bounds.height else { return }
 
@@ -97,21 +91,6 @@ import Litext
             let proposed = CGRect(origin: newOrigin, size: clipView.bounds.size)
             clipView.scroll(to: clipView.constrainBoundsRect(proposed).origin)
             scrollView.reflectScrolledClipView(clipView)
-        }
-
-        public func textLabelView(_: TextLabelView, didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion, at location: CGPoint) {
-            if let latexContent = highlightRegion.attributes[.mathLatexContent] as? String {
-                presentMathPreview(for: latexContent, theme: theme)
-                return
-            }
-
-            let link = highlightRegion.attributes[NSAttributedString.Key.link]
-            let range = highlightRegion.stringRange
-            if let url = link as? URL {
-                linkHandler?(.url(url), range, location)
-            } else if let string = link as? String {
-                linkHandler?(.string(string), range, location)
-            }
         }
     }
 #endif

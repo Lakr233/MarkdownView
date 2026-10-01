@@ -42,19 +42,11 @@ extension CodeView {
         for button in actionButtons {
             barView.addSubview(button)
         }
-        #if canImport(UIKit)
-            setNeedsLayout()
-        #elseif canImport(AppKit)
-            needsLayout = true
-        #endif
+        markNeedsLayout()
     }
 
     @objc func handleAction(_ sender: Any?) {
-        #if canImport(UIKit)
-            guard let tag = (sender as? UIView)?.tag else { return }
-        #elseif canImport(AppKit)
-            guard let tag = (sender as? NSView)?.tag else { return }
-        #endif
+        guard let tag = (sender as? PlatformView)?.tag else { return }
         guard actions.indices.contains(tag) else { return }
         actions[tag].handler(CodeBlock(language: language.isEmpty ? nil : language, content: content))
     }
