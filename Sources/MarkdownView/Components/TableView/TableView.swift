@@ -530,7 +530,9 @@ private func fittedTableColumnWidths(
         }
 
         private func cellSupportsInteraction(_ cell: TextLabelView) -> Bool {
-            if cell.isSelectable { return true }
+            if cell.isSelectable {
+                return true
+            }
             let text = cell.attributedText
             var containsLink = false
             text.enumerateAttribute(
@@ -740,7 +742,9 @@ private extension RawTableRow {
     var carriesMath: Bool {
         cells.contains { cell in
             !cell.content.collect { node -> [Void] in
-                if case .math = node { return [()] }
+                if case .math = node {
+                    return [()]
+                }
                 return []
             }.isEmpty
         }

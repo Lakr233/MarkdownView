@@ -88,7 +88,9 @@ extension MarkdownTextView {
         autoreleasepool { updateTextExecute() }
         // The height changes with the document. Auto Layout hosts and the
         // SwiftUI representable both learn of it only through this.
-        if resizes { invalidateIntrinsicContentSize() }
+        if resizes {
+            invalidateIntrinsicContentSize()
+        }
 
         #if canImport(UIKit)
             layoutIfNeeded()

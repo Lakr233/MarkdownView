@@ -110,7 +110,9 @@ private func monoFont(size: CGFloat) -> CTFont {
     if let f = CTFontCreateWithName("Menlo-Regular" as CFString, size, nil) as CTFont? {
         // CTFontCreateWithName never returns nil in practice; verify it resolved
         let name = CTFontCopyFullName(f) as String
-        if name.localizedCaseInsensitiveContains("menlo") { return f }
+        if name.localizedCaseInsensitiveContains("menlo") {
+            return f
+        }
     }
     return CTFontCreateWithName("CourierNewPSMT" as CFString, size, nil)
 }

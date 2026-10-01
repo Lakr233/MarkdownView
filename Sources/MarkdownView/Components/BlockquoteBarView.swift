@@ -70,8 +70,8 @@ final class BlockquoteBarView: PlatformView {
             nil
         }
 
-        // AppKit resolves a dynamic color into the layer once, so the stored
-        // colour has to be re-resolved when the appearance changes.
+        /// AppKit resolves a dynamic color into the layer once, so the stored
+        /// colour has to be re-resolved when the appearance changes.
         override func viewDidChangeEffectiveAppearance() {
             super.viewDidChangeEffectiveAppearance()
             applyThemeColor()

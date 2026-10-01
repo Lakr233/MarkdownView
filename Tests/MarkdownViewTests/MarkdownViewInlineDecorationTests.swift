@@ -36,7 +36,9 @@ private func markedRangeCount(in view: MarkdownTextView) -> Int {
         ChipTextView.marker,
         in: NSRange(location: 0, length: text.length)
     ) { value, _, _ in
-        if value != nil { count += 1 }
+        if value != nil {
+            count += 1
+        }
     }
     return count
 }

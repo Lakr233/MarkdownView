@@ -45,10 +45,10 @@ struct MarkdownFontResolutionTests {
     /// the attribute and the offset instead of saying two long strings differ.
     @MainActor
     @Test("Per-block font resolution matches a whole-document sweep")
-    func matchesWholeDocumentSweep() {
+    func matchesWholeDocumentSweep() throws {
         let built = RenderProbe.show(RenderProbeDocument.everything, in: MarkdownTextView())
 
-        let swept = built.mutableCopy() as! NSMutableAttributedString
+        let swept = try #require(built.mutableCopy() as? NSMutableAttributedString)
         swept.fixAttributes(in: NSRange(location: 0, length: swept.length))
 
         let before = RenderProbe.digest(built)
@@ -71,9 +71,9 @@ struct MarkdownFontResolutionTests {
         "> 引用里的中文 quote",
         "- 列表里的中文 bullet",
     ])
-    func substituteFontsAreResolved(_ markdown: String) {
+    func substituteFontsAreResolved(_ markdown: String) throws {
         let text = RenderProbe.show(markdown, in: MarkdownTextView())
-        let swept = text.mutableCopy() as! NSMutableAttributedString
+        let swept = try #require(text.mutableCopy() as? NSMutableAttributedString)
         swept.fixAttributes(in: NSRange(location: 0, length: swept.length))
 
         #expect(
@@ -90,7 +90,7 @@ struct MarkdownFontResolutionTests {
     /// while framesetting — and the cost this removes would silently return.
     @MainActor
     @Test("A reused block keeps its resolved fonts")
-    func reusedBlocksKeepResolvedFonts() {
+    func reusedBlocksKeepResolvedFonts() throws {
         let markdown = """
         中文第一段 stays put.
 
@@ -100,7 +100,7 @@ struct MarkdownFontResolutionTests {
         RenderProbe.show(markdown + "\n\n新的一段 arrives.", in: view)
 
         let text = view.textLabelView.attributedText
-        let swept = text.mutableCopy() as! NSMutableAttributedString
+        let swept = try #require(text.mutableCopy() as? NSMutableAttributedString)
         swept.fixAttributes(in: NSRange(location: 0, length: swept.length))
         #expect(
             RenderProbe.digest(text) == RenderProbe.digest(swept),

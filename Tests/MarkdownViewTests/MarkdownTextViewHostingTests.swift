@@ -143,7 +143,9 @@ import Testing
             var queue: [NSView] = [view]
             while !queue.isEmpty {
                 let view = queue.removeFirst()
-                if let match = view as? MarkdownTextView { return match }
+                if let match = view as? MarkdownTextView {
+                    return match
+                }
                 queue.append(contentsOf: view.subviews)
             }
             return nil

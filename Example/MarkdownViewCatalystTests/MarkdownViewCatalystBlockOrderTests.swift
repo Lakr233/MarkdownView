@@ -151,7 +151,9 @@ import Testing
         var queue: [UIView] = [view]
         while !queue.isEmpty {
             let next = queue.removeFirst()
-            if let match = next as? MarkdownTextView { return match }
+            if let match = next as? MarkdownTextView {
+                return match
+            }
             queue.append(contentsOf: next.subviews)
         }
         return nil

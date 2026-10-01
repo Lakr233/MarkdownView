@@ -219,8 +219,20 @@ import Testing
             let size = view.boundingSize(for: 320)
 
             #expect(content.blocks.count >= 4)
-            #expect(content.blocks.contains { if case .table = $0 { true } else { false } })
-            #expect(content.blocks.contains { if case .codeBlock = $0 { true } else { false } })
+            #expect(content.blocks.contains {
+                if case .table = $0 {
+                    true
+                } else {
+                    false
+                }
+            })
+            #expect(content.blocks.contains {
+                if case .codeBlock = $0 {
+                    true
+                } else {
+                    false
+                }
+            })
             #expect(view.contextViews.contains { $0 is TableView })
             #expect(view.contextViews.contains { $0 is CodeView })
             #expect(size.width > 0)

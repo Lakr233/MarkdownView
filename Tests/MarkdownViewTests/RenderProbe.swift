@@ -128,9 +128,13 @@ enum RenderProbe {
     static func firstDifference(_ lhs: [String], _ rhs: [String]) -> String {
         for (index, line) in lhs.enumerated() {
             guard index < rhs.count else { return "missing: \(line)" }
-            if line != rhs[index] { return "\(line)\n  vs\n\(rhs[index])" }
+            if line != rhs[index] {
+                return "\(line)\n  vs\n\(rhs[index])"
+            }
         }
-        if rhs.count > lhs.count { return "extra: \(rhs[lhs.count])" }
+        if rhs.count > lhs.count {
+            return "extra: \(rhs[lhs.count])"
+        }
         return "identical"
     }
 

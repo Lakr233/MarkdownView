@@ -95,7 +95,7 @@ struct MarkdownInlineCacheTests {
     private func glyphs(of text: NSAttributedString) -> [CGGlyph] {
         let line = CTLineCreateWithAttributedString(text)
         var result: [CGGlyph] = []
-        for run in (CTLineGetGlyphRuns(line) as NSArray) {
+        for run in CTLineGetGlyphRuns(line) as NSArray {
             let run = run as! CTRun
             let count = CTRunGetGlyphCount(run)
             var glyphs = [CGGlyph](repeating: 0, count: count)
@@ -126,11 +126,11 @@ struct MarkdownInlineCacheTests {
     @MainActor
     @Test("Only the languages that still change the result keep their attribute")
     func shapingLanguagesKeepTheirAttribute() {
-        // The attribute triples the cost of building a framesetter, and it is
-        // paid on every rebuild, so it is dropped once the font it selected has
-        // been resolved. It stays for the two languages where dropping it was
-        // measured to change what the reader sees: Traditional Chinese draws
-        // 41% of ideographs differently, and Korean breaks lines differently.
+        /// The attribute triples the cost of building a framesetter, and it is
+        /// paid on every rebuild, so it is dropped once the font it selected has
+        /// been resolved. It stays for the two languages where dropping it was
+        /// measured to change what the reader sees: Traditional Chinese draws
+        /// 41% of ideographs differently, and Korean breaks lines differently.
         func language(_ localeIdentifier: String, _ text: String) -> String? {
             let content = RenderProbe.content("placeholder", locale: .init(identifier: localeIdentifier))
             return content.cachedBodyText(text, theme: .default)
@@ -198,7 +198,9 @@ struct MarkdownInlineCacheTests {
             in: NSRange(location: 0, length: rendered.length),
             options: []
         ) { value, _, _ in
-            if value != nil { found = true }
+            if value != nil {
+                found = true
+            }
         }
         #expect(!found)
     }
