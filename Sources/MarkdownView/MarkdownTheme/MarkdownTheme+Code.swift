@@ -14,8 +14,8 @@ import MarkdownParser
 #endif
 
 public extension MarkdownTheme {
-    /// The Highlightr theme name to use for code highlighting
-    /// Available themes: "xcode", "github", "monokai", etc.
+    /// Code is always coloured with Xcode's palette; this never changed it.
+    @available(*, deprecated, message: "Code blocks always use Xcode's colours.")
     var codeHighlightTheme: String {
         "xcode"
     }

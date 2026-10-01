@@ -13,7 +13,7 @@ A pure UIKit/AppKit framework for rendering Markdown with real-time parsing and 
 
 - 🚀 **Real-time Rendering**: designed for streaming — updates are throttled and views are reused, so calling it on every token is fine
 - 📱 **Mobile-first Layout**: complex elements are extracted from lists and laid out for readability on small screens
-- 🎨 **Syntax Highlighting**: code blocks highlighted asynchronously with Highlightr
+- 🎨 **Syntax Highlighting**: code blocks coloured in Xcode's palette by a built-in, dependency-free lexer covering about 25 language families. It is approximate by design — keywords, strings, comments, numbers and types, not a parser — chosen to read well and stay fast (tens of microseconds for a typical block)
 - 📊 **Math Rendering**: LaTeX formulas rendered with SwiftMath, with tap-to-preview
 - 🖥️ **Cross-Platform**: native iOS, macOS, Mac Catalyst, visionOS, and watchOS (via `WatchMarkdownView`)
 
