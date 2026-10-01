@@ -139,15 +139,33 @@ import Testing
         }
 
         @MainActor
+        @Test("Copy as Markdown keeps a whole selected cell's links and code")
+        func wholeCellsKeepTheirSource() throws {
+            let table = try tableView(in: RenderProbe.view("""
+            | A | B |
+            | - | - |
+            | [site](https://example.com) | `code` and more |
+            """))
+            // All of the link cell, and part of the code cell: its spacer
+            // and "co".
+            select(in: table, from: (2, 0), to: (3, 3))
+            #expect(table.selectedMarkdown() == """
+            | A | B |
+            | --- | --- |
+            | [site](https://example.com) | co |
+            """)
+        }
+
+        @MainActor
         @Test("A truncated table selects only the rows it draws")
         func truncatedTableSelectsVisibleRows() throws {
-            let rows = (1 ... 20).map { "| r\($0) | v\($0) |" }.joined(separator: "\n")
+            let rows = (1 ... 120).map { "| r\($0) | v\($0) |" }.joined(separator: "\n")
             let table = try tableView(in: RenderProbe.view("| A | B |\n| - | - |\n" + rows))
-            #expect(table.cellViews.count == 18)
+            #expect(table.cellViews.count == 42)
             table.selectionGroup.selectAll()
             let copied = try #require(table.selectionGroup.selectedPlainText())
             #expect(copied.hasPrefix("A\tB\nr1\tv1"))
-            #expect(copied.hasSuffix("r8\tv8"))
+            #expect(copied.hasSuffix("r20\tv20"))
         }
     }
 #endif

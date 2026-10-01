@@ -6,22 +6,39 @@
 //  Copyright (c) 2025 ktiays. All rights reserved.
 //
 
+/// The frame a table is drawn in: its rounded border, the title bar, the
+/// header and striped row backgrounds, and the lines between rows and
+/// columns.
+///
+/// It stays put while the columns scroll sideways beneath the cells, so the
+/// border and its rounded corners are always whole. Rows run the full width
+/// and do not move; the column lines follow `scrollOffset`. Everything inside
+/// the border is clipped to its rounded shape.
 final class GridView: PlatformView {
+    /// Column widths, in the order drawn.
     private var widths: [CGFloat] = []
+    /// Row heights, header first.
     private var heights: [CGFloat] = []
-    private var totalWidth: CGFloat = 0
-    private var totalHeight: CGFloat = 0
+    /// How far the columns are scrolled from their start.
+    private(set) var scrollOffset: CGFloat = 0
+    /// Where the first column starts when not scrolled, from the left.
+    var columnsOrigin: CGFloat = 0 {
+        didSet { if oldValue != columnsOrigin { markNeedsLayout() } }
+    }
+
+    /// Height of the title bar above the rows; zero for none.
+    var titleHeight: CGFloat = 0 {
+        didSet { if oldValue != titleHeight { markNeedsLayout() } }
+    }
 
     private lazy var shapeLayer: CAShapeLayer = .init()
     private lazy var headerBackgroundLayer: CAShapeLayer = .init()
     private lazy var backgroundLayer: CAShapeLayer = .init()
     private lazy var stripeLayer: CAShapeLayer = .init()
+    private lazy var columnLineLayer: CAShapeLayer = .init()
     var padding: CGFloat = 2
     private var theme: MarkdownTheme = .default
     private var hasHeaderRow: Bool = false
-    /// Whether the last row is one cell across every column, drawn
-    /// without the column separators.
-    private(set) var mergesLastRow = false
 
     override init(frame: CGRect) {
         super.init(frame: frame)
@@ -62,6 +79,10 @@ final class GridView: PlatformView {
             layoutLayers()
         }
 
+        override func hitTest(_: NSPoint) -> NSView? {
+            nil
+        }
+
         private func resolvedCGColor(_ color: NSColor) -> CGColor {
             var resolved = color
             effectiveAppearance.performAsCurrentDrawingAppearance {
@@ -85,209 +106,183 @@ final class GridView: PlatformView {
             wantsLayer = true
         #endif
 
-        backgroundLayer.fillColor = resolvedCGColor(theme.table.cellBackgroundColor)
         backgroundLayer.strokeColor = PlatformColor.clear.cgColor
         backgroundLayer.lineWidth = 0
-        hostLayer?.addSublayer(backgroundLayer)
-
-        stripeLayer.fillColor = resolvedCGColor(theme.table.stripeCellBackgroundColor)
-        hostLayer?.addSublayer(stripeLayer)
-
-        headerBackgroundLayer.fillColor = resolvedCGColor(theme.table.headerBackgroundColor)
-        hostLayer?.addSublayer(headerBackgroundLayer)
-
-        shapeLayer.lineWidth = theme.table.borderWidth
-        shapeLayer.strokeColor = resolvedCGColor(theme.table.borderColor)
+        stripeLayer.lineWidth = 0
+        headerBackgroundLayer.lineWidth = 0
         shapeLayer.fillColor = PlatformColor.clear.cgColor
-        hostLayer?.addSublayer(shapeLayer)
+        columnLineLayer.fillColor = PlatformColor.clear.cgColor
+        // Background, stripes, header, then the lines.
+        for layer in [backgroundLayer, stripeLayer, headerBackgroundLayer, shapeLayer, columnLineLayer] {
+            hostLayer?.addSublayer(layer)
+        }
+        updateThemeColors()
     }
 
     private func updateThemeColors() {
         backgroundLayer.fillColor = resolvedCGColor(theme.table.cellBackgroundColor)
-        backgroundLayer.strokeColor = PlatformColor.clear.cgColor
         stripeLayer.fillColor = resolvedCGColor(theme.table.stripeCellBackgroundColor)
-        shapeLayer.strokeColor = resolvedCGColor(theme.table.borderColor)
-        shapeLayer.lineWidth = theme.table.borderWidth
         headerBackgroundLayer.fillColor = resolvedCGColor(theme.table.headerBackgroundColor)
+        for layer in [shapeLayer, columnLineLayer] {
+            layer.strokeColor = resolvedCGColor(theme.table.borderColor)
+            layer.lineWidth = theme.table.borderWidth
+        }
     }
 
+    // MARK: - Geometry
+
+    private var totalWidth: CGFloat {
+        max(0, bounds.width - padding * 2)
+    }
+
+    private var totalHeight: CGFloat {
+        titleHeight + heights.reduce(0, +)
+    }
+
+    /// Where the first row starts.
+    private var rowsTop: CGFloat {
+        padding + titleHeight
+    }
+
+    /// The inside of the border, which everything but the border is clipped to.
+    private var innerPath: GridPath {
+        let lineWidth = theme.table.borderWidth
+        return GridPath.roundedRect(
+            CGRect(
+                x: padding + lineWidth,
+                y: padding + lineWidth,
+                width: totalWidth - lineWidth * 2,
+                height: totalHeight - lineWidth * 2
+            ),
+            cornerRadius: max(0, theme.table.cornerRadius - lineWidth)
+        )
+    }
+
+    /// The x of every line between two columns, scrolled by `scrollOffset`.
+    var columnLinePositions: [CGFloat] {
+        var x = columnsOrigin - scrollOffset
+        return widths.dropLast().map { width in
+            x += width
+            return x
+        }
+    }
+
+    // MARK: - Drawing
+
     private func layoutLayers() {
-        backgroundLayer.frame = bounds
-        shapeLayer.frame = bounds
-        headerBackgroundLayer.frame = bounds
-        stripeLayer.frame = bounds
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        defer { CATransaction.commit() }
+        for layer in [backgroundLayer, shapeLayer, headerBackgroundLayer, stripeLayer, columnLineLayer] {
+            layer.frame = bounds
+        }
         drawBackground()
         drawStripeRows()
         drawGrid()
         drawHeaderBackground()
+        drawColumnLines()
+    }
+
+    private func clipped(_ layer: CAShapeLayer) {
+        let mask = (layer.mask as? CAShapeLayer) ?? CAShapeLayer()
+        mask.path = innerPath.cgPath
+        layer.mask = mask
     }
 
     private func drawBackground() {
-        let cornerRadius = theme.table.cornerRadius
-        let lineWidth = theme.table.borderWidth
-
-        let backgroundRect = CGRect(
-            x: padding + lineWidth,
-            y: padding + lineWidth,
-            width: totalWidth - lineWidth * 2,
-            height: totalHeight - lineWidth * 2
-        )
-
-        let backgroundPath = GridPath.roundedRect(
-            backgroundRect, cornerRadius: max(0, cornerRadius - lineWidth)
-        )
-        backgroundLayer.path = backgroundPath.cgPath
+        backgroundLayer.path = innerPath.cgPath
     }
 
     private func drawStripeRows() {
         let path = GridPath()
-        let lineWidth = theme.table.borderWidth
-
-        var y: CGFloat = padding
-        if hasHeaderRow {
-            guard !heights.isEmpty else {
-                stripeLayer.path = nil
-                return
-            }
-            y += heights[0]
-        }
-
         let startRow = hasHeaderRow ? 1 : 0
-        for i in startRow ..< heights.count {
-            let dataRowIndex = i - startRow
-            if dataRowIndex % 2 == 1 {
-                let stripeRect = CGRect(
-                    x: padding + lineWidth,
-                    y: y,
-                    width: totalWidth - (lineWidth * 2),
-                    height: heights[i]
-                )
-                path.appendGridRect(stripeRect)
+        var y = rowsTop + heights.prefix(startRow).reduce(0, +)
+        for index in startRow ..< heights.count {
+            if (index - startRow) % 2 == 1 {
+                path.appendGridRect(CGRect(x: padding, y: y, width: totalWidth, height: heights[index]))
             }
-            y += heights[i]
+            y += heights[index]
         }
-
-        let cornerRadius = theme.table.cornerRadius
-        let backgroundRect = CGRect(
-            x: padding + lineWidth,
-            y: padding + lineWidth,
-            width: totalWidth - lineWidth * 2,
-            height: totalHeight - lineWidth * 2
-        )
-        let clipPath = GridPath.roundedRect(
-            backgroundRect, cornerRadius: max(0, cornerRadius - lineWidth)
-        )
-        let mask = CAShapeLayer()
-        mask.path = clipPath.cgPath
-        stripeLayer.mask = mask
-
         stripeLayer.path = path.cgPath
+        clipped(stripeLayer)
     }
 
-    private func drawGrid() {
+    /// The title bar and the header row, which share a colour.
+    private func drawHeaderBackground() {
         let path = GridPath()
-        let cornerRadius = theme.table.cornerRadius
+        if titleHeight > 0 {
+            path.appendGridRect(CGRect(x: padding, y: padding, width: totalWidth, height: titleHeight))
+        }
+        if hasHeaderRow, let headerHeight = heights.first {
+            path.appendGridRect(CGRect(x: padding, y: rowsTop, width: totalWidth, height: headerHeight))
+        }
+        headerBackgroundLayer.path = path.cgPath
+        clipped(headerBackgroundLayer)
+    }
+
+    /// The border, and the lines under the title bar and between rows.
+    private func drawGrid() {
         let lineWidth = theme.table.borderWidth
         let halfLineWidth = lineWidth / 2
-        let columnSeparatorBottom = mergesLastRow
-            ? padding + totalHeight - (heights.last ?? 0)
-            : totalHeight + padding - halfLineWidth
-
         let outerRect = CGRect(
             x: padding + halfLineWidth,
             y: padding + halfLineWidth,
             width: totalWidth - lineWidth,
             height: totalHeight - lineWidth
         )
+        let path = GridPath.roundedRect(outerRect, cornerRadius: theme.table.cornerRadius)
 
-        let outerPath = GridPath.roundedRect(outerRect, cornerRadius: cornerRadius)
-        path.append(outerPath)
-
-        var x: CGFloat = padding
-        for (index, width) in widths.enumerated() {
-            if index < widths.count - 1 {
-                x += width
-                path.move(to: .init(x: x, y: padding + halfLineWidth))
-                path.addGridLine(to: .init(x: x, y: columnSeparatorBottom))
-            }
+        var y = rowsTop
+        var boundaries: [CGFloat] = titleHeight > 0 && !heights.isEmpty ? [y] : []
+        for height in heights.dropLast() {
+            y += height
+            boundaries.append(y)
         }
-
-        var y: CGFloat = padding
-        for (index, height) in heights.enumerated() {
-            if index < heights.count - 1 {
-                y += height
-                path.move(to: .init(x: padding + halfLineWidth, y: y))
-                path.addGridLine(to: .init(x: totalWidth + padding - halfLineWidth, y: y))
-            }
+        for boundary in boundaries {
+            path.move(to: .init(x: padding + halfLineWidth, y: boundary))
+            path.addGridLine(to: .init(x: padding + totalWidth - halfLineWidth, y: boundary))
         }
-
         shapeLayer.path = path.cgPath
     }
 
-    private func drawHeaderBackground() {
-        guard hasHeaderRow, !heights.isEmpty else {
-            headerBackgroundLayer.path = nil
-            return
-        }
-
-        let cornerRadius = theme.table.cornerRadius
-        let lineWidth = theme.table.borderWidth
-        let headerHeight = heights[0]
-
-        let headerRect = CGRect(
-            x: padding + lineWidth,
-            y: padding + lineWidth,
-            width: totalWidth - lineWidth * 2,
-            height: headerHeight - lineWidth
-        )
-
-        let adjustedCornerRadius = max(0, cornerRadius - lineWidth)
+    /// The lines between columns, from the first row to the bottom border.
+    private func drawColumnLines() {
         let path = GridPath()
-
-        path.move(to: CGPoint(x: headerRect.minX, y: headerRect.minY + adjustedCornerRadius))
-        path.addTopLeftCornerArc(
-            center: CGPoint(
-                x: headerRect.minX + adjustedCornerRadius, y: headerRect.minY + adjustedCornerRadius
-            ),
-            radius: adjustedCornerRadius
-        )
-        path.addGridLine(to: CGPoint(x: headerRect.maxX - adjustedCornerRadius, y: headerRect.minY))
-        path.addTopRightCornerArc(
-            center: CGPoint(
-                x: headerRect.maxX - adjustedCornerRadius, y: headerRect.minY + adjustedCornerRadius
-            ),
-            radius: adjustedCornerRadius
-        )
-        path.addGridLine(to: CGPoint(x: headerRect.maxX, y: headerRect.maxY))
-        path.addGridLine(to: CGPoint(x: headerRect.minX, y: headerRect.maxY))
-        path.close()
-
-        headerBackgroundLayer.path = path.cgPath
+        let bottom = padding + totalHeight
+        for x in columnLinePositions where x > padding && x < padding + totalWidth {
+            path.move(to: .init(x: x, y: rowsTop))
+            path.addGridLine(to: .init(x: x, y: bottom))
+        }
+        columnLineLayer.path = path.cgPath
+        clipped(columnLineLayer)
     }
+
+    // MARK: - Updates
 
     func update(widths: [CGFloat], heights: [CGFloat]) {
         self.widths = widths
         self.heights = heights
-        totalWidth = widths.reduce(0, +)
-        totalHeight = heights.reduce(0, +)
         markNeedsLayout()
+    }
+
+    /// Moves the column lines with the columns; nothing else is redrawn.
+    func setScrollOffset(_ offset: CGFloat) {
+        guard scrollOffset != offset else { return }
+        scrollOffset = offset
+        CATransaction.begin()
+        CATransaction.setDisableActions(true)
+        drawColumnLines()
+        CATransaction.commit()
     }
 
     func setTheme(_ theme: MarkdownTheme) {
         self.theme = theme
         updateThemeColors()
-        shapeLayer.lineWidth = theme.table.borderWidth
         markNeedsLayout()
     }
 
     func setHeaderRow(_ hasHeader: Bool) {
         hasHeaderRow = hasHeader
-        markNeedsLayout()
-    }
-
-    func setMergesLastRow(_ merges: Bool) {
-        guard mergesLastRow != merges else { return }
-        mergesLastRow = merges
         markNeedsLayout()
     }
 }
@@ -311,13 +306,6 @@ final class GridView: PlatformView {
             addLine(to: point)
         }
 
-        func addTopLeftCornerArc(center: CGPoint, radius: CGFloat) {
-            addArc(withCenter: center, radius: radius, startAngle: .pi, endAngle: 3 * .pi / 2, clockwise: true)
-        }
-
-        func addTopRightCornerArc(center: CGPoint, radius: CGFloat) {
-            addArc(withCenter: center, radius: radius, startAngle: 3 * .pi / 2, endAngle: 0, clockwise: true)
-        }
     }
 
 #elseif canImport(AppKit)
@@ -336,13 +324,6 @@ final class GridView: PlatformView {
             line(to: point)
         }
 
-        func addTopLeftCornerArc(center: CGPoint, radius: CGFloat) {
-            appendArc(withCenter: center, radius: radius, startAngle: 180, endAngle: 270)
-        }
-
-        func addTopRightCornerArc(center: CGPoint, radius: CGFloat) {
-            appendArc(withCenter: center, radius: radius, startAngle: 270, endAngle: 0)
-        }
     }
 
     extension NSBezierPath {

@@ -39,18 +39,14 @@ struct TableSheetContent {
 
     @MainActor
     enum TableSheetPresenter {
-        /// Presents every row of `tableView` in a form sheet over the view
-        /// controller showing it.
+        /// Presents every row of `tableView` in a full-height sheet over the
+        /// view controller showing it.
         static func present(_ tableView: TableView) {
-            guard var presenter = sequence(first: tableView as UIResponder, next: \.next)
-                .first(where: { $0 is UIViewController }) as? UIViewController
-            else { return }
-            while let presented = presenter.presentedViewController, !presented.isBeingDismissed {
-                presenter = presented
-            }
+            guard let presenter = tableView.topPresentingViewController else { return }
             let controller = TableSheetViewController(content: TableSheetContent(tableView))
+            controller.title = TableTitleText.table
             let navigation = UINavigationController(rootViewController: controller)
-            navigation.modalPresentationStyle = .formSheet
+            navigation.modalPresentationStyle = .pageSheet
             presenter.present(navigation, animated: true)
         }
     }
@@ -170,7 +166,7 @@ struct TableSheetContent {
         static let margin: CGFloat = 16
         static let barHeight: CGFloat = 48
 
-        let closeButton = NSButton(title: TableSummaryText.done, target: nil, action: nil)
+        let closeButton = NSButton(title: TableSheetText.done, target: nil, action: nil)
         private let scrollView = NSScrollView()
         private let documentView = FlippedView()
         private let tableView: TableView

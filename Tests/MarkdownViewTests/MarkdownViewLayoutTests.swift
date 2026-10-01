@@ -167,8 +167,7 @@ struct MarkdownViewLayoutTests {
             layout(view: tableView)
 
             let scrollView = try #require(extractScrollView(from: tableView))
-            let gridView = try #require(extractGridView(from: scrollView))
-            #expect(abs(gridView.frame.width - tableView.bounds.width) <= 0.5)
+            #expect(abs(columnsSize(of: scrollView).width - scrollView.frame.width) <= 0.5)
         }
     }
 
@@ -181,8 +180,7 @@ struct MarkdownViewLayoutTests {
         layout(view: tableView)
 
         let scrollView = try #require(extractScrollView(from: tableView))
-        let gridView = try #require(extractGridView(from: scrollView))
-        #expect(gridView.frame.width > tableView.bounds.width)
+        #expect(columnsSize(of: scrollView).width > scrollView.frame.width)
     }
 
     @MainActor
@@ -242,13 +240,15 @@ struct MarkdownViewLayoutTests {
     }
 
     @MainActor
-    @Test("Table content normalizes HTML line breaks")
-    func tableContentNormalizesHTMLLineBreaks() {
+    @Test("Table view shows cell text exactly as rendered")
+    func tableShowsCellTextAsRendered() {
+        // A `<br>` tag already reaches the table as a line break; text that
+        // still reads `<br>` was written as code or escaped, and stays so.
         let tableView = TableView(frame: .init(x: 0, y: 0, width: 240, height: 120))
-        tableView.setContents([[makeText("Line 1<br>Line 2")]])
+        tableView.setContents([[makeText("Line 1<br>Line 2"), makeText("Line 1\nLine 2")]])
 
-        #expect(tableView.contents[0][0].string == "Line 1\nLine 2")
-        #expect(tableView.attributedStringRepresentation().string.contains("Line 1\nLine 2"))
+        #expect(tableView.contents[0][0].string == "Line 1<br>Line 2")
+        #expect(tableView.contents[0][1].string == "Line 1\nLine 2")
     }
 
     @MainActor
@@ -263,17 +263,17 @@ struct MarkdownViewLayoutTests {
         layout(view: tableView)
 
         let scrollView = try #require(extractScrollView(from: tableView))
-        let gridView = try #require(extractGridView(from: scrollView))
 
         #expect(tableView.intrinsicContentSize.width == TestContainerView.noIntrinsicMetric)
-        #expect(gridView.frame.width > tableView.bounds.width)
-        #expect(gridView.frame.height == tableView.intrinsicContentHeight)
+        #expect(columnsSize(of: scrollView).width > scrollView.frame.width)
+        #expect(columnsSize(of: scrollView).height == scrollView.frame.height)
+        #expect(scrollView.frame.maxY <= tableView.intrinsicContentHeight)
 
         tableView.frame.size.width = 96
         layout(view: tableView)
 
         #expect(tableView.bounds.width == 96)
-        #expect(gridView.frame.width > tableView.bounds.width)
+        #expect(columnsSize(of: scrollView).width > scrollView.frame.width)
         #expect(tableView.intrinsicContentSize.width == TestContainerView.noIntrinsicMetric)
     }
 
@@ -758,12 +758,13 @@ private func extractScrollView(from tableView: TableView) -> TestScrollView? {
     tableView.subviews.first { $0 is TestScrollView } as? TestScrollView
 }
 
+/// The size of the columns the scroll view scrolls.
 @MainActor
-private func extractGridView(from scrollView: TestScrollView) -> GridView? {
+private func columnsSize(of scrollView: TestScrollView) -> CGSize {
     #if canImport(UIKit)
-        scrollView.subviews.first { $0 is GridView } as? GridView
+        scrollView.contentSize
     #elseif canImport(AppKit)
-        scrollView.documentView as? GridView
+        scrollView.documentView?.frame.size ?? .zero
     #endif
 }
 

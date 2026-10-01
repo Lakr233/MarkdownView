@@ -56,7 +56,12 @@ extension TableView {
         var selected: [Int: [Int: String]] = [:]
         for segment in selectionGroup.selectedSegments {
             guard let position = cellPositions[ObjectIdentifier(segment.label)] else { continue }
-            let text = segment.label.selectedAttributedText()?.string ?? ""
+            // A whole cell is written back from its source, keeping links and
+            // code; part of one can only be the text it shows.
+            let wholeCell = segment.range.location == 0 && segment.range.length == segment.label.attributedText.length
+            let text = (wholeCell ? sourceMarkdown(atDisplayRow: position.row, column: position.column) : nil)
+                ?? segment.label.selectedAttributedText().map(TableExport.plainText)
+                ?? ""
             selected[position.row, default: [:]][position.column] = text
         }
         let columns = selected.values.flatMap(\.keys)
@@ -67,31 +72,23 @@ extension TableView {
             columnRange.map { selected[row]?[$0] ?? "" }
         }
         if selected[0] == nil, let header = display.rows.first {
-            rows.insert(columnRange.map { header[safe: $0]?.string ?? "" }, at: 0)
+            rows.insert(columnRange.map { column in
+                sourceMarkdown(atDisplayRow: 0, column: column)
+                    ?? header[safe: column].map(TableExport.plainText)
+                    ?? ""
+            }, at: 0)
         }
 
-        func line(_ cells: [String]) -> String {
-            "| " + cells.map(Self.markdownCell).joined(separator: " | ") + " |"
-        }
-        var lines = rows.map(line)
-        let delimiters = columnRange.map { column -> String in
-            switch columnAlignments[safe: column] {
-            case .left: ":---"
-            case .center: ":---:"
-            case .right: "---:"
-            case .none?, nil: "---"
-            }
-        }
-        lines.insert("| " + delimiters.joined(separator: " | ") + " |", at: 1)
-        return lines.joined(separator: "\n")
+        let alignments = columnRange.map { columnAlignments[safe: $0] ?? .none }
+        return TableExport.markdown(rows: rows, alignments: alignments)
     }
 
-    /// A cell's text as it reads inside a Markdown table row.
-    private static func markdownCell(_ text: String) -> String {
-        text
-            .replacingOccurrences(of: "|", with: "\\|")
-            .replacingOccurrences(of: "\r\n", with: "<br>")
-            .replacingOccurrences(of: "\n", with: "<br>")
+    /// The Markdown a drawn cell was parsed from, or nil for a table given
+    /// only its rendered cells.
+    func sourceMarkdown(atDisplayRow row: Int, column: Int) -> String? {
+        let sourceRow = row == 0 ? 0 : display.sourceRowIndices[safe: row - 1].map { $0 + 1 }
+        guard let sourceRow, let cell = sourceRows?[safe: sourceRow]?.cells[safe: column] else { return nil }
+        return TableExport.markdownSource(cell.content)
     }
 
     fileprivate static var copyAsMarkdownTitle: String {

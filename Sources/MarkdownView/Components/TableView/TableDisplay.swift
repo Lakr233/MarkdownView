@@ -7,8 +7,7 @@ import Foundation
 
 /// Where a table is drawn, which decides what of it is drawn.
 enum TableViewMode: Equatable {
-    /// In the document: the first rows, an expand button, and a row counting
-    /// the rest.
+    /// In the document: every row, or the first rows of a very long table.
     case inline
     /// In the full-table sheet: every row, sortable by column.
     case sheet
@@ -36,30 +35,15 @@ struct TableDisplay {
             rowLimit = TableRowLimit(rowCount: contents.count)
             rows = rowLimit.visibleRows(of: contents)
             sourceRowIndices = Array(0 ..< rowLimit.visibleRowCount)
-            headerAccessoryWidths = (0 ..< columnCount).map {
-                $0 == columnCount - 1 ? TableHeaderAccessory.width : 0
-            }
+            headerAccessoryWidths = Array(repeating: 0, count: columnCount)
         case .sheet:
-            rowLimit = TableRowLimit(rowCount: contents.count, maximumVisibleRows: .max)
+            rowLimit = TableRowLimit(rowCount: contents.count, truncationThreshold: .max)
             let body = Array(contents.dropFirst())
             let order = sort?.order(of: body.map { $0.map(\.string) }) ?? Array(body.indices)
             sourceRowIndices = order
             rows = contents.isEmpty ? [] : [contents[0]] + order.map { body[$0] }
             headerAccessoryWidths = Array(repeating: TableHeaderAccessory.width, count: columnCount)
         }
-    }
-
-    /// `naturalWidths`, with the last column widened as far as the summary
-    /// row needs to fit on one line: `requiredWidth` across all columns.
-    static func columnWidths(_ naturalWidths: [CGFloat], fitting requiredWidth: CGFloat?) -> [CGFloat] {
-        guard let requiredWidth, let last = naturalWidths.indices.last else {
-            return naturalWidths
-        }
-        let shortfall = requiredWidth - naturalWidths.reduce(0, +)
-        guard shortfall > 0 else { return naturalWidths }
-        var widths = naturalWidths
-        widths[last] += ceil(shortfall)
-        return widths
     }
 }
 
@@ -69,9 +53,6 @@ struct TableHeaderSlot: Equatable {
     let textFrame: CGRect
     /// The glyph, at the trailing edge inside the cell padding.
     let glyphFrame: CGRect
-    /// Where a tap reaches the control: from the end of the text slot to the
-    /// column's trailing edge, the full row height.
-    let hitFrame: CGRect
 
     init(columnFrame: CGRect, horizontalPadding: CGFloat, accessoryWidth: CGFloat) {
         let contentMinX = columnFrame.minX + horizontalPadding
@@ -89,12 +70,6 @@ struct TableHeaderSlot: Equatable {
             y: columnFrame.midY - glyph / 2,
             width: glyph,
             height: glyph
-        )
-        hitFrame = CGRect(
-            x: textMaxX,
-            y: columnFrame.minY,
-            width: columnFrame.maxX - textMaxX,
-            height: columnFrame.height
         )
     }
 }

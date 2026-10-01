@@ -48,20 +48,19 @@ import Testing
                 let scrollView = try #require(
                     tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
                 )
-                let gridView = try #require(
-                    scrollView.subviews.first { $0 is GridView } as? GridView
-                )
+                // The columns scroll inside the border; the frame does not.
                 #expect(tableView.intrinsicContentSize.width == UIView.noIntrinsicMetric)
+                #expect(!scrollView.showsHorizontalScrollIndicator)
                 if columnCount <= 3 {
-                    #expect(abs(gridView.frame.width - tableView.bounds.width) <= 0.5)
+                    #expect(abs(scrollView.contentSize.width - scrollView.bounds.width) <= 0.5)
                 } else {
-                    #expect(gridView.frame.width > tableView.bounds.width)
+                    #expect(scrollView.contentSize.width > scrollView.bounds.width)
 
                     tableView.frame.size.width = 160
                     tableView.layoutIfNeeded()
 
                     #expect(tableView.bounds.width == 160)
-                    #expect(gridView.frame.width > tableView.bounds.width)
+                    #expect(scrollView.contentSize.width > scrollView.bounds.width)
                 }
             }
         }
@@ -102,11 +101,8 @@ import Testing
             ])
             tableView.layoutIfNeeded()
 
-            let scrollView = try #require(
-                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
-            )
             let gridView = try #require(
-                scrollView.subviews.first { $0 is GridView } as? GridView
+                tableView.subviews.first { $0 is GridView } as? GridView
             )
             gridView.layoutIfNeeded()
 

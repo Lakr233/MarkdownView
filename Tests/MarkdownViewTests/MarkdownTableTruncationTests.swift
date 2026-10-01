@@ -9,11 +9,11 @@ import Testing
     import AppKit
 #endif
 
-/// A long table draws its first rows and a row counting the rest, and opens
-/// in full in a sheet. What it leaves out of the drawing must still be exactly
-/// what it was given: the first rows in source order, a count that adds up,
-/// every row when copied and in the sheet, and rows that move whole when the
-/// sheet sorts them.
+/// A very long table draws only its first rows, and opens in full in a sheet.
+/// What it leaves out of the drawing must still be exactly what it was given:
+/// the first rows in source order, a count that adds up, every row when
+/// copied and in the sheet, and rows that move whole when the sheet sorts
+/// them.
 struct MarkdownTableTruncationTests {
     // MARK: - Helpers
 
@@ -48,14 +48,10 @@ struct MarkdownTableTruncationTests {
         [(1 ... columns).map { "H\($0)" }] + rows.map { row in (1 ... columns).map { "r\(row)c\($0)" } }
     }
 
-    private static func integers(in text: String) -> [Int] {
-        text.split(whereSeparator: { !$0.isNumber }).compactMap { Int($0) }
-    }
-
     // MARK: - Truncation
 
     @Test("The row limit keeps the first rows and counts the rest exactly", arguments: [
-        (0, 0, 0), (1, 0, 0), (2, 1, 0), (9, 8, 0), (10, 8, 1), (13, 8, 4), (1001, 8, 992),
+        (0, 0, 0), (1, 0, 0), (2, 1, 0), (101, 100, 0), (102, 20, 81), (1001, 20, 980),
     ])
     func rowLimitCounts(rowCount: Int, visible: Int, hidden: Int) {
         let limit = TableRowLimit(rowCount: rowCount)
@@ -70,79 +66,84 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A long table draws its header and first eight rows in source order")
+    @Test("A table past the threshold draws its header and first twenty rows, and nothing more")
     func longTableDrawsFirstRows() throws {
-        let view = RenderProbe.view(Self.markdown(rows: 12))
+        let view = RenderProbe.view(Self.markdown(rows: 120))
         let table = try #require(tableView(in: view))
 
-        #expect(drawnRows(of: table, columns: 2) == Self.expectedRows(1 ... 8))
-        #expect(table.display.rowLimit.hiddenRowCount == 4)
-        #expect(table.display.sourceRowIndices == Array(0 ..< 8))
-        #expect(!table.summaryControl.isHidden)
-        #expect(Self.integers(in: table.summaryControl.attributedText?.string ?? "") == [4])
+        #expect(drawnRows(of: table, columns: 2) == Self.expectedRows(1 ... 20))
+        #expect(table.display.rowLimit.hiddenRowCount == 100)
+        #expect(table.display.sourceRowIndices == Array(0 ..< 20))
+        // No row stands in for the ones left out: the table is exactly as
+        // tall as the twenty rows it draws.
+        let twenty = try #require(tableView(in: RenderProbe.view(Self.markdown(rows: 20))))
+        #expect(table.intrinsicContentHeight == twenty.intrinsicContentHeight)
     }
 
     @MainActor
-    @Test("A table of eight rows or fewer is drawn whole, without a summary row")
+    @Test("A table of up to a hundred rows is drawn whole")
     func shortTableIsWhole() throws {
-        let view = RenderProbe.view(Self.markdown(rows: 8))
+        let view = RenderProbe.view(Self.markdown(rows: 100))
         let table = try #require(tableView(in: view))
 
-        #expect(drawnRows(of: table, columns: 2) == Self.expectedRows(1 ... 8))
+        #expect(drawnRows(of: table, columns: 2) == Self.expectedRows(1 ... 100))
         #expect(!table.display.rowLimit.isTruncated)
-        #expect(table.summaryControl.isHidden)
-        #expect(!table.expandControl.isHidden)
     }
 
     @MainActor
-    @Test("The summary row's count is exact and only View All is underlined", arguments: [1, 2, 7, 120])
-    func summaryText(hidden: Int) {
-        let text = TableSummaryText.attributedText(hiddenRowCount: hidden, theme: .default)
-        #expect(Self.integers(in: text.string) == [hidden])
-        #expect(text.string.hasSuffix(TableSummaryText.viewAll))
+    @Test("An inline table's only controls are its title bar's, and none sit over a cell")
+    func inlineTableControlsAreInTheTitleBar() throws {
+        let view = RenderProbe.view(Self.markdown(rows: 120))
+        let table = try #require(tableView(in: view))
+        RenderProbe.layout(view)
+        table.layoutSubtreeIfNeededOnBothPlatforms()
 
-        let viewAll = (text.string as NSString).range(of: TableSummaryText.viewAll, options: .backwards)
-        var underlined: [NSRange] = []
-        text.enumerateAttribute(.underlineStyle, in: NSRange(location: 0, length: text.length)) { value, range, _ in
-            if let value = value as? Int, value != 0 {
-                underlined.append(range)
+        var controls: [TableTapControl] = []
+        var queue: [PlatformView] = [table]
+        while !queue.isEmpty {
+            let view = queue.removeFirst()
+            if let control = view as? TableTapControl {
+                controls.append(control)
+            }
+            queue.append(contentsOf: view.subviews)
+        }
+        #expect(Set(controls.map(ObjectIdentifier.init)) == Set([table.copyControl, table.downloadControl, table.expandControl].map(ObjectIdentifier.init)))
+        #expect(table.sortControls.isEmpty)
+        for control in controls {
+            #expect(control.frame.maxY <= table.titleHeight + table.tableViewPadding + 0.5)
+            for cell in table.cellViews {
+                #expect(!control.frame.intersects(cell.convert(cell.bounds, to: table)))
             }
         }
-        #expect(underlined == [viewAll])
-        let paragraph = text.attribute(.paragraphStyle, at: 0, effectiveRange: nil) as? NSParagraphStyle
-        #expect(paragraph?.alignment == .natural, "the summary row is leading aligned")
     }
 
     @MainActor
-    @Test("A table growing past the cap keeps its first rows and counts every new one")
+    @Test("A table growing past the threshold keeps its first rows and counts every new one")
     func streamedTableCrossesTheCap() throws {
         let view = MarkdownTextView()
-        for rows in 6 ... 15 {
+        for rows in 98 ... 103 {
             RenderProbe.show(Self.markdown(rows: rows), in: view)
             let table = try #require(tableView(in: view))
-            #expect(drawnRows(of: table, columns: 2) == Self.expectedRows(1 ... min(8, rows)))
-            #expect(table.display.rowLimit.hiddenRowCount == max(0, rows - 8))
-            #expect(table.summaryControl.isHidden == (rows <= 8))
-            if rows > 8 {
-                #expect(Self.integers(in: table.summaryControl.attributedText?.string ?? "") == [rows - 8])
-            }
+            let drawn = rows > 100 ? 20 : rows
+            #expect(drawnRows(of: table, columns: 2) == Self.expectedRows(1 ... drawn))
+            #expect(table.display.rowLimit.hiddenRowCount == rows - drawn)
         }
     }
 
     @MainActor
     @Test("Copying the document still yields every row, drawn or not")
     func copyYieldsEveryRow() throws {
-        let markdown = "Before.\n\n" + Self.markdown(rows: 12) + "\nAfter."
+        let markdown = "Before.\n\n" + Self.markdown(rows: 120) + "\nAfter."
         let view = RenderProbe.view(markdown)
         view.textLabelView.selectAll()
         let copied = try #require(view.textLabelView.selectedPlainText())
 
-        let expected = Self.expectedRows(1 ... 12).map { $0.joined(separator: "\t") }.joined(separator: "\n")
+        let expected = Self.expectedRows(1 ... 120).map { $0.joined(separator: "\t") }.joined(separator: "\n")
         #expect(copied.contains(expected))
 
         let table = try #require(tableView(in: view))
         let representation = table.attributedStringRepresentation().string
-        for row in Self.expectedRows(1 ... 12) {
+        for row in Self.expectedRows(1 ... 120) {
             #expect(representation.contains(row.joined(separator: "\t")))
         }
     }
@@ -150,42 +151,31 @@ struct MarkdownTableTruncationTests {
     @MainActor
     @Test("Drawn cells stay selectable")
     func drawnCellsStaySelectable() throws {
-        let view = RenderProbe.view(Self.markdown(rows: 12))
+        let view = RenderProbe.view(Self.markdown(rows: 120))
         let table = try #require(tableView(in: view))
         let selectable = table.cellViews.allSatisfy { $0.isSelectable }
         #expect(selectable)
     }
 
-    // MARK: - Header accessory width
+    // MARK: - Header cells
 
     @MainActor
-    @Test("The expand button's width is counted into the last column", arguments: [480, 200])
-    func expandButtonNeverCoversHeaderText(width: CGFloat) throws {
+    @Test("An inline header cell has its column's full width")
+    func inlineHeaderHasFullWidth() throws {
         let markdown = """
         | Short | A considerably long header title |
         | - | - |
         | 1 | x |
         """
-        let view = RenderProbe.view(markdown, width: width)
+        let view = RenderProbe.view(markdown)
         let table = try #require(tableView(in: view))
         RenderProbe.layout(view)
         table.layoutSubtreeIfNeededOnBothPlatforms()
 
         let header = try #require(table.cellViews[safe: 1])
-        let control = table.expandControl
-        #expect(!control.isHidden)
-        let headerFrame = header.frame
-        let glyphFrame = control.glyphFrame.offsetBy(dx: control.frame.minX, dy: control.frame.minY)
-
-        #expect(headerFrame.maxX <= control.frame.minX + 0.5, "the header text slot reaches into the button")
-        #expect(!headerFrame.intersects(glyphFrame))
-        #expect(
-            ceil(header.intrinsicContentSize.width) <= headerFrame.width + 0.5,
-            "the header text needs \(header.intrinsicContentSize.width) but has \(headerFrame.width)"
-        )
-        // One line: the header wraps no more than a body cell does.
         let body = try #require(table.cellViews[safe: 3])
-        #expect(abs(header.intrinsicContentSize.height - body.intrinsicContentSize.height) < 1)
+        #expect(abs(header.frame.width - body.frame.width) < 0.5)
+        #expect(ceil(header.intrinsicContentSize.width) <= header.frame.width + 0.5)
     }
 
     @MainActor
@@ -197,57 +187,10 @@ struct MarkdownTableTruncationTests {
         #expect(slot.textFrame.maxX == 130 - 9 - TableHeaderAccessory.width)
         #expect(abs(slot.glyphFrame.maxX - (column.maxX - 9)) < 0.001)
         #expect(slot.glyphFrame.minX >= slot.textFrame.maxX + TableHeaderAccessory.spacing)
-        #expect(slot.hitFrame.minX == slot.textFrame.maxX)
-        #expect(slot.hitFrame.maxX == column.maxX)
         #expect(slot.glyphFrame.midY == column.midY)
     }
 
-    @Test("The summary row widens only the last column, and only as far as it needs")
-    func summaryWidensLastColumn() {
-        #expect(TableDisplay.columnWidths([88, 88], fitting: 300) == [88, 212])
-        #expect(TableDisplay.columnWidths([200, 200], fitting: 300) == [200, 200])
-        #expect(TableDisplay.columnWidths([88, 88], fitting: nil) == [88, 88])
-        #expect(TableDisplay.columnWidths([], fitting: 300) == [])
-    }
-
     // MARK: - Opening the full table
-
-    @MainActor
-    @Test("The expand button and the summary row both open the full table")
-    func controlsOpenTheFullTable() throws {
-        let view = RenderProbe.view(Self.markdown(rows: 12))
-        let table = try #require(tableView(in: view))
-        var opened: [TableView] = []
-        table.expandHandler = { opened.append($0) }
-
-        table.expandControl.performTap()
-        table.summaryControl.performTap()
-
-        #expect(opened.count == 2)
-        #expect(opened.allSatisfy { $0 === table })
-    }
-
-    @MainActor
-    @Test("Taps reach the expand button over its glyph and the header cell over its text")
-    func hitTestingSeparatesButtonAndText() throws {
-        let view = RenderProbe.view(Self.markdown(rows: 12))
-        let table = try #require(tableView(in: view))
-        RenderProbe.layout(view)
-        table.layoutSubtreeIfNeededOnBothPlatforms()
-
-        let control = table.expandControl
-        let glyph = control.glyphFrame.offsetBy(dx: control.frame.minX, dy: control.frame.minY)
-        let glyphCenter = CGPoint(x: glyph.midX, y: glyph.midY)
-        #expect(table.interactionTarget(at: glyphCenter) === control)
-
-        let header = try #require(table.cellViews[safe: 1])
-        let headerCenter = CGPoint(x: header.frame.minX + 2, y: header.frame.midY)
-        #expect(table.interactionTarget(at: headerCenter) !== control)
-
-        let summary = table.summaryControl
-        let summaryPoint = CGPoint(x: summary.frame.midX, y: summary.frame.midY)
-        #expect(table.interactionTarget(at: summaryPoint) === summary)
-    }
 
     @MainActor
     @Test("The sheet shows every row and cell exactly, links, code and alignment included")
@@ -427,7 +370,7 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A new row restyles only its own cells, and none past the cap")
+    @Test("A new row restyles only its own cells, and none past the threshold")
     func newRowRestylesItsCells() throws {
         let view = MarkdownTextView()
         RenderProbe.show(Self.markdown(rows: 3, columns: 3), in: view)
@@ -436,10 +379,10 @@ struct MarkdownTableTruncationTests {
         RenderProbe.show(Self.markdown(rows: 4, columns: 3), in: view)
         #expect(table.lastRestyledCellCount == 3)
 
-        RenderProbe.show(Self.markdown(rows: 10, columns: 3), in: view)
-        RenderProbe.show(Self.markdown(rows: 11, columns: 3), in: view)
-        #expect(table.lastRestyledCellCount == 0, "a row past the cap is counted, not drawn")
-        #expect(Self.integers(in: table.summaryControl.attributedText?.string ?? "") == [3])
+        RenderProbe.show(Self.markdown(rows: 110, columns: 3), in: view)
+        RenderProbe.show(Self.markdown(rows: 111, columns: 3), in: view)
+        #expect(table.lastRestyledCellCount == 0, "a row past the threshold is counted, not drawn")
+        #expect(table.display.rowLimit.hiddenRowCount == 91)
     }
 
     @MainActor

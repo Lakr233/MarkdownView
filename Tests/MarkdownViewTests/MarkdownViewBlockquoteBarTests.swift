@@ -77,7 +77,17 @@ struct MarkdownViewBlockquoteBarTests {
             // design and draws nothing.
             let runText = string.substring(with: run.stringRange)
             guard !runText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { continue }
-            #expect(rect.maxX <= view.bounds.width + 0.5, "quoted run [\(runText)] at \(rect) overflows width \(width)")
+            let trailingSpaces = runText.reversed().prefix { $0.isWhitespace }.count
+            let hanging = NSAttributedString(
+                attributedString: view.textLabelView.attributedText.attributedSubstring(from: NSRange(
+                    location: NSMaxRange(run.stringRange) - trailingSpaces,
+                    length: trailingSpaces
+                ))
+            ).size().width
+            #expect(
+                rect.maxX - hanging <= view.bounds.width + 0.5,
+                "quoted run [\(runText)] at \(rect) overflows width \(width)"
+            )
         }
 
         // Every quoted character is laid out: a measurement that came up one line

@@ -17,9 +17,8 @@ import Litext
 public extension MarkdownTheme {
     @MainActor static var `default`: MarkdownTheme = .init()
     static let codeScale = 0.85
-    /// Inline code is set a size smaller than the body, so a line holding
-    /// it keeps the body's height and the pill around it fits the line.
-    static let codeInlineScale = 0.9
+    /// Inline code is set at the body's size.
+    static let codeInlineScale = 1.0
 }
 
 public struct MarkdownTheme: Equatable, @unchecked Sendable {

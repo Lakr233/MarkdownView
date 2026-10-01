@@ -8,23 +8,18 @@ import Foundation
 #if canImport(UIKit)
     import UIKit
 
-    /// A tappable region of a table — the expand glyph, the hidden-rows row,
-    /// a sortable header — whose hit area can be larger than what it draws.
+    /// A tappable region of a table, such as a sortable header, whose hit area can be larger
+    /// than what it draws.
     ///
-    /// The glyph sits in `glyphFrame` and the text in `textFrame`, both in
-    /// the control's own coordinates, so the table decides where each goes.
+    /// The glyph sits in `glyphFrame`, in the control's own coordinates, so
+    /// the table decides where it goes.
     final class TableTapControl: UIControl {
         var handler: (() -> Void)?
 
         private let imageView = UIImageView()
-        private let label = UILabel()
 
         var glyphFrame: CGRect = .zero {
             didSet { imageView.frame = glyphFrame }
-        }
-
-        var textFrame: CGRect = .zero {
-            didSet { label.frame = textFrame }
         }
 
         override init(frame: CGRect) {
@@ -33,10 +28,7 @@ import Foundation
             imageView.contentMode = .center
             imageView.tintColor = .label
             imageView.isUserInteractionEnabled = false
-            label.numberOfLines = 1
-            label.isUserInteractionEnabled = false
             addSubview(imageView)
-            addSubview(label)
             isAccessibilityElement = true
             accessibilityTraits = .button
             addTarget(self, action: #selector(fire), for: .touchUpInside)
@@ -48,7 +40,7 @@ import Foundation
         }
 
         /// Draws the SF Symbol `name`, or nothing for nil.
-        func setSymbol(_ name: String?, fallback: String? = nil) {
+        func setSymbol(_ name: String?) {
             guard let name else {
                 imageView.image = nil
                 return
@@ -58,12 +50,6 @@ import Foundation
                 weight: .medium
             )
             imageView.image = UIImage(systemName: name, withConfiguration: configuration)
-                ?? fallback.flatMap { UIImage(systemName: $0, withConfiguration: configuration) }
-        }
-
-        var attributedText: NSAttributedString? {
-            get { label.attributedText }
-            set { label.attributedText = newValue }
         }
 
         var symbolImage: UIImage? {
@@ -92,34 +78,25 @@ import Foundation
 #elseif canImport(AppKit)
     import AppKit
 
-    /// A clickable region of a table — the expand glyph, the hidden-rows row,
-    /// a sortable header — whose hit area can be larger than what it draws.
+    /// A clickable region of a table, such as a sortable header, whose hit area can be larger
+    /// than what it draws.
     ///
-    /// The glyph sits in `glyphFrame` and the text in `textFrame`, both in
-    /// the control's own coordinates, so the table decides where each goes.
+    /// The glyph sits in `glyphFrame`, in the control's own coordinates, so
+    /// the table decides where it goes.
     final class TableTapControl: NSView {
         var handler: (() -> Void)?
 
         private let imageView = NSImageView()
-        private let label = NSTextField(labelWithString: "")
 
         var glyphFrame: CGRect = .zero {
             didSet { imageView.frame = glyphFrame }
-        }
-
-        var textFrame: CGRect = .zero {
-            didSet { label.frame = textFrame }
         }
 
         override init(frame: CGRect) {
             super.init(frame: frame)
             imageView.imageScaling = .scaleProportionallyDown
             imageView.contentTintColor = .labelColor
-            label.lineBreakMode = .byTruncatingTail
-            label.maximumNumberOfLines = 1
-            label.cell?.truncatesLastVisibleLine = true
             addSubview(imageView)
-            addSubview(label)
             setAccessibilityElement(true)
             setAccessibilityRole(.button)
         }
@@ -134,7 +111,7 @@ import Foundation
         }
 
         /// Draws the SF Symbol `name`, or nothing for nil.
-        func setSymbol(_ name: String?, fallback: String? = nil) {
+        func setSymbol(_ name: String?) {
             guard let name else {
                 imageView.image = nil
                 return
@@ -144,13 +121,7 @@ import Foundation
                 weight: .medium
             )
             let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
-                ?? fallback.flatMap { NSImage(systemSymbolName: $0, accessibilityDescription: nil) }
             imageView.image = image?.withSymbolConfiguration(configuration) ?? image
-        }
-
-        var attributedText: NSAttributedString? {
-            get { label.attributedStringValue }
-            set { label.attributedStringValue = newValue ?? NSAttributedString() }
         }
 
         var symbolImage: NSImage? {

@@ -85,14 +85,16 @@ struct SharedPlatformViewTests {
         let gridView = try #require(findGridView(in: tableView))
         let hostLayer: CALayer? = gridView.layer
         let shapes = (hostLayer?.sublayers ?? []).compactMap { $0 as? CAShapeLayer }
-        // Background, stripes, header, then the grid lines.
-        #expect(shapes.count == 4)
-        guard shapes.count == 4 else { return }
+        // Background, stripes, title bar and header, the border and row
+        // lines, then the column lines.
+        #expect(shapes.count == 5)
+        guard shapes.count == 5 else { return }
 
         let cells = tableView.cellViews
         let headerRow = try #require(shapes[2].path).boundingBoxOfPath
         let stripeRows = try #require(shapes[1].path).boundingBoxOfPath
         #expect(shapes[1].mask != nil)
+        #expect(shapes[4].mask != nil)
 
         // The header band ends where the first data row's cells begin.
         let firstDataCell = cells[3].convert(cells[3].bounds, to: gridView)

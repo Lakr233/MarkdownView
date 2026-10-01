@@ -33,11 +33,11 @@ final class TableView: PlatformView {
 
     // MARK: - Constants
 
-    private let tableViewPadding: CGFloat = 2
+    let tableViewPadding: CGFloat = 2
     #if canImport(UIKit)
-        private let layoutMetrics = TableLayoutMetrics.compact
+        let layoutMetrics = TableLayoutMetrics.compact
     #elseif canImport(AppKit)
-        private let layoutMetrics = TableLayoutMetrics.regular
+        let layoutMetrics = TableLayoutMetrics.regular
     #endif
 
     // MARK: - UI Components
@@ -48,14 +48,33 @@ final class TableView: PlatformView {
         private lazy var scrollView: HorizontalScrollView = {
             let sv = HorizontalScrollView()
             sv.hasVerticalScroller = false
-            sv.hasHorizontalScroller = true
-            sv.autohidesScrollers = true
+            sv.hasHorizontalScroller = false
             sv.drawsBackground = false
             return sv
         }()
+
+        /// The scroll view's document: the cells and the sort controls.
+        private lazy var columnsView: FlippedContainerView = .init()
     #endif
 
+    /// The border, title bar, row backgrounds and lines, which stay put
+    /// while the columns scroll beneath them.
     private lazy var gridView: GridView = .init()
+
+    /// The bar above the rows naming the table, with its buttons.
+    lazy var titleLabel: TableTitleLabel = .init()
+    lazy var copyControl: TableTapControl = makeTitleControl(
+        symbol: TableSymbol.copy,
+        title: TableTitleText.copy
+    ) { [weak self] in self?.copyTable() }
+    lazy var downloadControl: TableTapControl = makeTitleControl(
+        symbol: TableSymbol.download,
+        title: TableTitleText.download
+    ) { [weak self] in self?.downloadTable() }
+    lazy var expandControl: TableTapControl = makeTitleControl(
+        symbol: TableSymbol.expand,
+        title: TableTitleText.expand
+    ) { [weak self] in self?.openFullTable() }
 
     // MARK: - Properties
 
@@ -80,15 +99,8 @@ final class TableView: PlatformView {
     /// Told after a sort changed what the table draws.
     var sortHandler: ((TableView) -> Void)?
 
-    /// The header's trailing button that opens the full table.
-    private(set) lazy var expandControl: TableTapControl = makeExpandControl()
-    /// The last row of a truncated table, counting the rows left out.
-    private(set) lazy var summaryControl: TableTapControl = makeSummaryControl()
     /// One per column in the sheet, over the header cell.
     private(set) var sortControls: [TableTapControl] = []
-    /// What the summary row's text was built from, so a stream that
-    /// does not change the count does not rebuild it.
-    private var summarySource: (hiddenRowCount: Int, theme: MarkdownTheme, size: CGSize)?
     /// The cells as one selection, row by row, so a drag can run from one
     /// cell into the next.
     let selectionGroup = TextSelectionGroup()
@@ -138,49 +150,75 @@ final class TableView: PlatformView {
 
     private func configureSubviews() {
         configureSelectionGroup()
+        addSubview(gridView)
         #if canImport(UIKit)
             scrollView.showsVerticalScrollIndicator = false
             scrollView.showsHorizontalScrollIndicator = false
             scrollView.backgroundColor = .clear
+            scrollView.delegate = self
             addSubview(scrollView)
-            scrollView.addSubview(gridView)
         #elseif canImport(AppKit)
             addSubview(scrollView)
-            scrollView.documentView = gridView
+            scrollView.documentView = columnsView
+            scrollView.contentView.postsBoundsChangedNotifications = true
+            NotificationCenter.default.addObserver(
+                self,
+                selector: #selector(clipViewBoundsDidChange(_:)),
+                name: NSView.boundsDidChangeNotification,
+                object: scrollView.contentView
+            )
         #endif
+        if mode == .inline {
+            for view in [titleLabel, copyControl, downloadControl, expandControl] as [PlatformView] {
+                addSubview(view)
+            }
+        }
     }
 
-    /// The view the cells and controls are added to: the scroll view itself
-    /// on UIKit, its document view on AppKit.
+    /// The view the cells and sort controls are added to: the scroll view
+    /// itself on UIKit, its document view on AppKit.
     private var cellContainer: PlatformView {
         #if canImport(UIKit)
             scrollView
         #elseif canImport(AppKit)
-            gridView
+            columnsView
         #endif
+    }
+
+    /// How far the columns are scrolled from their start.
+    private var scrollOffset: CGFloat {
+        #if canImport(UIKit)
+            scrollView.contentOffset.x
+        #elseif canImport(AppKit)
+            scrollView.documentVisibleRect.minX
+        #endif
+    }
+
+    /// Where the columns start: inside the border.
+    private var columnsInset: CGFloat {
+        tableViewPadding + theme.table.borderWidth
+    }
+
+    /// The title bar's height; a table in the sheet has none.
+    var titleHeight: CGFloat {
+        mode == .inline ? titleLabel.barHeight : 0
+    }
+
+    private var rowsHeight: CGFloat {
+        heights.reduce(0, +)
     }
 
     func setContents(
         _ contents: [Rows],
         columnAlignments: [RawTableColumnAlignment] = []
     ) {
-        // replace <br> in each items with newline characters
-        var builder = contents
-        for x in 0 ..< contents.count {
-            for y in 0 ..< contents[x].count {
-                let content = contents[x][y]
-                let processedContent = processContent(
-                    input: content,
-                    replacing: "<br>",
-                    with: "\n"
-                )
-                builder[x][y] = processedContent
-            }
-        }
-        guard !contentsEqual(self.contents, builder)
+        // A `<br>` in a cell is already a line break here: the inline
+        // renderer turns the tag into one, and leaves `<br>` written inside
+        // code or escaped as text.
+        guard !contentsEqual(self.contents, contents)
             || self.columnAlignments != columnAlignments
         else { return }
-        self.contents = builder
+        self.contents = contents
         self.columnAlignments = columnAlignments
         configureCells()
         markNeedsLayout()
@@ -198,6 +236,7 @@ final class TableView: PlatformView {
     private func updateThemeAppearance() {
         gridView.setTheme(theme)
         cellManager.setTheme(theme)
+        titleLabel.setTheme(theme)
     }
 
     // MARK: - Layout
@@ -219,24 +258,35 @@ final class TableView: PlatformView {
     #endif
 
     private func layoutContent() {
-        scrollView.frame = bounds
+        let inset = columnsInset
+        scrollView.frame = CGRect(
+            x: inset,
+            y: tableViewPadding + titleHeight,
+            width: max(0, bounds.width - inset * 2),
+            height: rowsHeight
+        )
         let layoutWidths = fittedTableColumnWidths(
             widths,
-            to: bounds.width,
-            outerPadding: tableViewPadding
+            to: scrollView.frame.width,
+            outerPadding: 0
         )
-        let contentSize = CGSize(
-            width: layoutWidths.reduce(0, +) + tableViewPadding * 2,
-            height: intrinsicContentHeight
-        )
+        let contentSize = CGSize(width: layoutWidths.reduce(0, +), height: rowsHeight)
         #if canImport(UIKit)
             scrollView.contentSize = contentSize
+        #elseif canImport(AppKit)
+            columnsView.frame = CGRect(origin: .zero, size: contentSize)
         #endif
-        gridView.frame = CGRect(origin: .zero, size: contentSize)
+
+        gridView.frame = bounds
+        gridView.padding = tableViewPadding
+        gridView.titleHeight = titleHeight
+        gridView.columnsOrigin = inset
         gridView.update(widths: layoutWidths, heights: heights)
+        gridView.setScrollOffset(scrollOffset)
 
         layoutCells(using: layoutWidths)
         layoutControls(using: layoutWidths)
+        layoutTitleBar()
     }
 
     #if canImport(UIKit)
@@ -350,8 +400,8 @@ final class TableView: PlatformView {
                     : 0
 
                 cell.frame = .init(
-                    x: x + layoutMetrics.horizontalCellPadding + tableViewPadding,
-                    y: y + verticalOffset + tableViewPadding,
+                    x: x + layoutMetrics.horizontalCellPadding,
+                    y: y + verticalOffset,
                     width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth),
                     height: cellHeight
                 )
@@ -366,12 +416,12 @@ final class TableView: PlatformView {
     // MARK: - Content Size
 
     var intrinsicContentHeight: CGFloat {
-        ceil(heights.reduce(0, +)) + tableViewPadding * 2
+        ceil(titleHeight + rowsHeight) + tableViewPadding * 2
     }
 
     /// The width the columns need before any is stretched to fill the viewport.
     var naturalContentWidth: CGFloat {
-        widths.reduce(0, +) + tableViewPadding * 2
+        widths.reduce(0, +) + columnsInset * 2
     }
 
     override var intrinsicContentSize: CGSize {
@@ -398,23 +448,12 @@ final class TableView: PlatformView {
 
         widths = cellManager.widths
         heights = cellManager.heights
-        if display.rowLimit.isTruncated {
-            let size = summaryTextSize(hiddenRowCount: display.rowLimit.hiddenRowCount)
-            widths = TableDisplay.columnWidths(
-                widths,
-                fitting: size.width + layoutMetrics.horizontalCellPadding * 2
-            )
-            heights.append(max(
-                layoutMetrics.minimumRowHeight,
-                size.height + layoutMetrics.verticalCellPadding * 2
-            ))
-        }
 
         gridView.padding = tableViewPadding
         gridView.update(widths: widths, heights: heights)
 
         gridView.setHeaderRow(numberOfRows > 0)
-        gridView.setMergesLastRow(display.rowLimit.isTruncated)
+        titleLabel.setHiddenRowCount(display.rowLimit.hiddenRowCount)
         configureControls(in: cellContainer)
     }
 
@@ -426,23 +465,6 @@ final class TableView: PlatformView {
         configureCells()
         markNeedsLayout()
         sortHandler?(self)
-    }
-
-    private func processContent(
-        input: NSAttributedString,
-        replacing occurs: String,
-        with replaced: String
-    ) -> NSAttributedString {
-        guard input.string.contains(occurs) else { return input }
-        let mutableAttributedString = input.mutableCopy() as! NSMutableAttributedString
-        let mutableString = mutableAttributedString.mutableString
-        mutableString.replaceOccurrences(
-            of: occurs,
-            with: replaced,
-            options: [],
-            range: NSRange(location: 0, length: mutableString.length)
-        )
-        return mutableAttributedString
     }
 
     /// What produced the cells this view is currently showing.
@@ -462,6 +484,9 @@ final class TableView: PlatformView {
     }
 
     private var renderedSource: RenderedSource?
+    /// The parsed rows the cells were rendered from, which Copy writes back
+    /// as Markdown. Nil for a table given only its rendered cells.
+    private(set) var sourceRows: [RawTableRow]?
 
     /// The text standing in for this table, if it already shows `rows`.
     ///
@@ -492,6 +517,7 @@ final class TableView: PlatformView {
         content: MarkdownContent,
         representedText: NSAttributedString
     ) {
+        sourceRows = rows
         renderedSource = .init(
             rows: rows,
             columnAlignments: columnAlignments,
@@ -564,33 +590,41 @@ private extension RawTableRow {
     }
 }
 
+// MARK: - Scrolling
+
+#if canImport(UIKit)
+    extension TableView: UIScrollViewDelegate {
+        func scrollViewDidScroll(_: UIScrollView) {
+            gridView.setScrollOffset(scrollOffset)
+        }
+    }
+
+#elseif canImport(AppKit)
+    extension TableView {
+        @objc fileprivate func clipViewBoundsDidChange(_: Notification) {
+            gridView.setScrollOffset(scrollOffset)
+        }
+    }
+
+    /// A plain flipped view, so content laid out from the top stays there.
+    final class FlippedContainerView: NSView {
+        override var isFlipped: Bool {
+            true
+        }
+    }
+#endif
+
 // MARK: - Controls
 
 #if canImport(UIKit) || canImport(AppKit)
     extension TableView {
         /// The control under `point`, in the table's coordinates.
         fileprivate func control(at point: CGPoint) -> TableTapControl? {
-            let controls = [expandControl, summaryControl] + sortControls
-            return controls.first { control in
+            let titleControls = mode == .inline ? [copyControl, downloadControl, expandControl] : []
+            return (titleControls + sortControls).first { control in
                 guard !control.isHidden, control.superview != nil else { return false }
                 return control.bounds.contains(control.convert(point, from: self))
             }
-        }
-
-        fileprivate func makeExpandControl() -> TableTapControl {
-            let control = TableTapControl()
-            control.setSymbol(TableSymbol.expand, fallback: TableSymbol.expandFallback)
-            control.setAccessibleTitle(TableSummaryText.showFullTable)
-            control.isHidden = true
-            control.handler = { [weak self] in self?.openFullTable() }
-            return control
-        }
-
-        fileprivate func makeSummaryControl() -> TableTapControl {
-            let control = TableTapControl()
-            control.isHidden = true
-            control.handler = { [weak self] in self?.openFullTable() }
-            return control
         }
 
         /// The theme the cells were last styled with.
@@ -607,122 +641,58 @@ private extension RawTableRow {
             }
         }
 
-        /// The summary text's size, built again only when the count or the
-        /// theme moved.
-        fileprivate func summaryTextSize(hiddenRowCount: Int) -> CGSize {
-            if let summarySource,
-               summarySource.hiddenRowCount == hiddenRowCount,
-               summarySource.theme == theme
-            {
-                return summarySource.size
-            }
-            let text = TableSummaryText.attributedText(hiddenRowCount: hiddenRowCount, theme: theme)
-            let bounds = text.boundingRect(
-                with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading],
-                context: nil
-            )
-            let size = CGSize(width: ceil(bounds.width), height: ceil(bounds.height))
-            summaryControl.attributedText = text
-            summaryControl.setAccessibleTitle(text.string)
-            summarySource = (hiddenRowCount, theme, size)
-            return size
-        }
-
         /// Adds the controls this mode draws, sized to the current columns.
         fileprivate func configureControls(in container: PlatformView) {
-            switch mode {
-            case .inline:
-                for control in [expandControl, summaryControl] where control.superview !== container {
-                    container.addSubview(control)
+            guard mode == .sheet else { return }
+            while sortControls.count < numberOfColumns {
+                let column = sortControls.count
+                let control = TableTapControl()
+                control.handler = { [weak self] in
+                    guard let self else { return }
+                    applySort(TableSort.next(afterTapping: column, current: sort))
                 }
-                expandControl.isHidden = numberOfColumns == 0
-                summaryControl.isHidden = !display.rowLimit.isTruncated
-            case .sheet:
-                while sortControls.count < numberOfColumns {
-                    let column = sortControls.count
-                    let control = TableTapControl()
-                    control.handler = { [weak self] in
-                        guard let self else { return }
-                        applySort(TableSort.next(afterTapping: column, current: sort))
-                    }
-                    container.addSubview(control)
-                    sortControls.append(control)
+                container.addSubview(control)
+                sortControls.append(control)
+            }
+            while sortControls.count > numberOfColumns {
+                sortControls.removeLast().removeFromSuperview()
+            }
+            for (column, control) in sortControls.enumerated() {
+                let direction = sort?.column == column ? sort?.direction : nil
+                switch direction {
+                case .ascending:
+                    control.setSymbol(TableSymbol.sortAscending)
+                case .descending:
+                    control.setSymbol(TableSymbol.sortDescending)
+                case nil:
+                    control.setSymbol(nil)
                 }
-                while sortControls.count > numberOfColumns {
-                    sortControls.removeLast().removeFromSuperview()
-                }
-                for (column, control) in sortControls.enumerated() {
-                    let direction = sort?.column == column ? sort?.direction : nil
-                    switch direction {
-                    case .ascending:
-                        control.setSymbol(TableSymbol.sortAscending)
-                    case .descending:
-                        control.setSymbol(TableSymbol.sortDescending)
-                    case nil:
-                        control.setSymbol(nil)
-                    }
-                    control.setAccessibleTitle(display.rows.first?[safe: column]?.string)
-                }
+                control.setAccessibleTitle(display.rows.first?[safe: column]?.string)
             }
         }
 
         /// Places the controls over the columns as laid out at `layoutWidths`.
         fileprivate func layoutControls(using layoutWidths: [CGFloat]) {
-            guard let headerHeight = heights.first, layoutWidths.count == numberOfColumns else {
-                expandControl.isHidden = true
-                summaryControl.isHidden = true
+            guard mode == .sheet, let headerHeight = heights.first, layoutWidths.count == numberOfColumns else {
                 return
             }
-            var x = tableViewPadding
+            var x: CGFloat = 0
             let headerFrames = layoutWidths.map { width -> CGRect in
                 defer { x += width }
-                return CGRect(x: x, y: tableViewPadding, width: width, height: headerHeight)
+                return CGRect(x: x, y: 0, width: width, height: headerHeight)
             }
-
-            switch mode {
-            case .inline:
-                if let lastColumn = headerFrames.last {
-                    let slot = TableHeaderSlot(
-                        columnFrame: lastColumn,
-                        horizontalPadding: layoutMetrics.horizontalCellPadding,
-                        accessoryWidth: TableHeaderAccessory.width
-                    )
-                    expandControl.frame = slot.hitFrame
-                    expandControl.glyphFrame = slot.glyphFrame.offsetBy(
-                        dx: -slot.hitFrame.minX,
-                        dy: -slot.hitFrame.minY
-                    )
-                }
-                if display.rowLimit.isTruncated, let summaryHeight = heights.last {
-                    let frame = CGRect(
-                        x: tableViewPadding,
-                        y: tableViewPadding + heights.dropLast().reduce(0, +),
-                        width: layoutWidths.reduce(0, +),
-                        height: summaryHeight
-                    )
-                    summaryControl.frame = frame
-                    summaryControl.textFrame = CGRect(
-                        x: layoutMetrics.horizontalCellPadding,
-                        y: 0,
-                        width: max(0, frame.width - layoutMetrics.horizontalCellPadding * 2),
-                        height: frame.height
-                    )
-                }
-            case .sheet:
-                for (column, control) in sortControls.enumerated() {
-                    guard let columnFrame = headerFrames[safe: column] else { continue }
-                    let slot = TableHeaderSlot(
-                        columnFrame: columnFrame,
-                        horizontalPadding: layoutMetrics.horizontalCellPadding,
-                        accessoryWidth: TableHeaderAccessory.width
-                    )
-                    control.frame = columnFrame
-                    control.glyphFrame = slot.glyphFrame.offsetBy(
-                        dx: -columnFrame.minX,
-                        dy: -columnFrame.minY
-                    )
-                }
+            for (column, control) in sortControls.enumerated() {
+                guard let columnFrame = headerFrames[safe: column] else { continue }
+                let slot = TableHeaderSlot(
+                    columnFrame: columnFrame,
+                    horizontalPadding: layoutMetrics.horizontalCellPadding,
+                    accessoryWidth: TableHeaderAccessory.width
+                )
+                control.frame = columnFrame
+                control.glyphFrame = slot.glyphFrame.offsetBy(
+                    dx: -columnFrame.minX,
+                    dy: -columnFrame.minY
+                )
             }
         }
     }

@@ -58,6 +58,8 @@ extension CodeView {
     private func setupButtons() {
         setupPreviewButton()
         setupCopyButton()
+        setupBarButton(downloadButton, symbol: CodeView.downloadSymbol, title: TableTitleText.download, action: #selector(handleDownload(_:)))
+        setupBarButton(expandButton, symbol: CodeView.expandSymbol, title: TableTitleText.expand, action: #selector(handleExpand(_:)))
     }
 
     func performLayout() {
@@ -70,13 +72,13 @@ extension CodeView {
         layoutScrollViewAndTextView(barHeight: barHeight)
     }
 
-    /// Lays the bar's buttons out from the trailing edge: Copy, then
-    /// Preview when there is a handler, then the host's actions.
+    /// Lays the bar's buttons out from the trailing edge: Expand, Download,
+    /// Copy, then Preview when there is a handler, then the host's actions.
     private func layoutButtons() {
         let buttonSize = CGSize(width: 44, height: 44)
         previewButton.isHidden = previewAction == nil
-        var trailing = barView.bounds.width
-        for button in [copyButton, previewButton] + actionButtons.reversed() where !button.isHidden {
+        var trailing = barView.bounds.width - 4
+        for button in barButtons where !button.isHidden {
             trailing -= buttonSize.width
             button.frame = CGRect(
                 x: trailing,
@@ -170,14 +172,19 @@ extension CodeView {
         }
 
         func setupCopyButton() {
-            let copyImage = UIImage(
-                systemName: CodeView.copySymbol,
+            setupBarButton(copyButton, symbol: CodeView.copySymbol, title: TableTitleText.copy, action: #selector(handleCopy(_:)))
+        }
+
+        func setupBarButton(_ button: UIButton, symbol: String, title: String, action: Selector) {
+            let image = UIImage(
+                systemName: symbol,
                 withConfiguration: UIImage.SymbolConfiguration(scale: .small)
             )
-            copyButton.setImage(copyImage, for: .normal)
-            copyButton.tintColor = .label
-            copyButton.addTarget(self, action: #selector(handleCopy(_:)), for: .touchUpInside)
-            barView.addSubview(copyButton)
+            button.setImage(image, for: .normal)
+            button.tintColor = .label
+            button.accessibilityLabel = title
+            button.addTarget(self, action: action, for: .touchUpInside)
+            barView.addSubview(button)
         }
 
         func setupScrollView() {
@@ -238,15 +245,18 @@ extension CodeView {
         }
 
         func setupCopyButton() {
-            if let copyImage = NSImage(systemSymbolName: CodeView.copySymbol, accessibilityDescription: nil) {
-                copyButton.image = copyImage
-            }
-            copyButton.target = self
-            copyButton.action = #selector(handleCopy(_:))
-            copyButton.bezelStyle = .inline
-            copyButton.isBordered = false
-            copyButton.contentTintColor = .labelColor
-            barView.addSubview(copyButton)
+            setupBarButton(copyButton, symbol: CodeView.copySymbol, title: TableTitleText.copy, action: #selector(handleCopy(_:)))
+        }
+
+        func setupBarButton(_ button: NSButton, symbol: String, title: String, action: Selector) {
+            button.image = NSImage(systemSymbolName: symbol, accessibilityDescription: title)
+            button.target = self
+            button.action = action
+            button.bezelStyle = .inline
+            button.isBordered = false
+            button.contentTintColor = .labelColor
+            button.toolTip = title
+            barView.addSubview(button)
         }
 
         func setupScrollView() {

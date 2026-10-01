@@ -5,22 +5,18 @@
 
 import Foundation
 
-#if canImport(UIKit)
-    import UIKit
-#elseif canImport(AppKit)
-    import AppKit
-#endif
-
 /// How many of a table's rows are drawn inline.
 ///
-/// A long table in a chat answer pushes everything after it off screen, and
-/// every one of its cells costs a layout on every streamed token. The inline
-/// table keeps its header and the first rows in source order and replaces
-/// the rest with one row saying how many there are; the full table opens in
-/// a sheet.
+/// A very long table in a chat answer pushes everything after it off screen,
+/// and every one of its cells costs a layout on every streamed token. Past
+/// `truncationThreshold` content rows, the inline table keeps its header and
+/// the first rows in source order and leaves the rest out; copying the table
+/// still yields every row.
 struct TableRowLimit: Equatable {
-    /// Content rows drawn inline, not counting the header.
-    static let maximumVisibleRows = 8
+    /// Content rows a table may have and still be drawn whole.
+    static let truncationThreshold = 100
+    /// Content rows drawn inline once a table passes the threshold.
+    static let maximumVisibleRows = 20
 
     /// Content rows drawn inline: the first ones, in source order.
     let visibleRowCount: Int
@@ -28,9 +24,15 @@ struct TableRowLimit: Equatable {
     let hiddenRowCount: Int
 
     /// `rowCount` counts every row, header included.
-    init(rowCount: Int, maximumVisibleRows: Int = Self.maximumVisibleRows) {
+    init(
+        rowCount: Int,
+        truncationThreshold: Int = Self.truncationThreshold,
+        maximumVisibleRows: Int = Self.maximumVisibleRows
+    ) {
         let contentRows = max(0, rowCount - 1)
-        visibleRowCount = min(contentRows, max(0, maximumVisibleRows))
+        visibleRowCount = contentRows > truncationThreshold
+            ? min(contentRows, max(0, maximumVisibleRows))
+            : contentRows
         hiddenRowCount = contentRows - visibleRowCount
     }
 
@@ -44,33 +46,8 @@ struct TableRowLimit: Equatable {
     }
 }
 
-/// The text of the row standing in for the rows a truncated table leaves out.
-enum TableSummaryText {
-    /// "8 more rows hidden", counting exactly `hiddenRowCount`.
-    static func hiddenRows(_ hiddenRowCount: Int) -> String {
-        String(
-            localized: "\(hiddenRowCount) more rows hidden",
-            bundle: .module,
-            comment: "The last row of a long table, before the View All link."
-        )
-    }
-
-    static var viewAll: String {
-        String(
-            localized: "View All",
-            bundle: .module,
-            comment: "Opens a long table in full. Shown underlined after the hidden-row count."
-        )
-    }
-
-    static var showFullTable: String {
-        String(
-            localized: "Show Full Table",
-            bundle: .module,
-            comment: "Accessibility label of the button that opens a table in full."
-        )
-    }
-
+/// Text of the full-table sheet.
+enum TableSheetText {
     static var done: String {
         String(
             localized: "Done",
@@ -78,34 +55,15 @@ enum TableSummaryText {
             comment: "Closes the full table."
         )
     }
-
-    /// The summary row's text, with View All underlined.
-    static func attributedText(hiddenRowCount: Int, theme: MarkdownTheme) -> NSAttributedString {
-        let paragraph = NSMutableParagraphStyle()
-        paragraph.alignment = .natural
-        paragraph.lineBreakMode = .byTruncatingTail
-        let attributes: [NSAttributedString.Key: Any] = [
-            .font: theme.fonts.body,
-            .foregroundColor: theme.colors.body,
-            .paragraphStyle: paragraph,
-        ]
-        let text = NSMutableAttributedString(
-            string: hiddenRows(hiddenRowCount) + " ",
-            attributes: attributes
-        )
-        var linkAttributes = attributes
-        linkAttributes[.underlineStyle] = NSUnderlineStyle.single.rawValue
-        text.append(NSAttributedString(string: viewAll, attributes: linkAttributes))
-        return text
-    }
 }
 
 /// The SF Symbols the table's controls draw.
 enum TableSymbol {
+    static let copy = "doc.on.doc"
+    static let copied = "checkmark"
+    static let download = "arrow.down.circle"
     /// Outward arrows: open the table in full.
-    static let expand = "arrow.down.left.and.arrow.up.right"
-    /// The same meaning, for systems whose symbol set predates `expand`.
-    static let expandFallback = "arrow.up.left.and.arrow.down.right"
+    static let expand = "arrow.up.left.and.arrow.down.right"
     static let sortAscending = "chevron.up"
     static let sortDescending = "chevron.down"
 }

@@ -124,6 +124,8 @@ final class CodeView: PlatformView {
         lazy var scrollView: HorizontalClippingScrollView = .init()
         lazy var languageLabel: UILabel = .init()
         lazy var copyButton: UIButton = .init()
+        lazy var downloadButton: UIButton = .init()
+        lazy var expandButton: UIButton = .init()
         lazy var previewButton: UIButton = .init()
         var actionButtons: [UIButton] = []
     #elseif canImport(AppKit)
@@ -144,6 +146,8 @@ final class CodeView: PlatformView {
         }()
 
         lazy var copyButton: NSButton = .init(title: "", target: nil, action: nil)
+        lazy var downloadButton: NSButton = .init(title: "", target: nil, action: nil)
+        lazy var expandButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var previewButton: NSButton = .init(title: "", target: nil, action: nil)
         var actionButtons: [NSButton] = []
     #endif
@@ -186,7 +190,7 @@ final class CodeView: PlatformView {
 
     #if canImport(UIKit)
         func interactionTarget(at point: CGPoint, event: UIEvent? = nil) -> UIView? {
-            for button in [previewButton, copyButton] + actionButtons where !button.isHidden {
+            for button in barButtons where !button.isHidden {
                 let buttonPoint = button.convert(point, from: self)
                 guard button.bounds.contains(buttonPoint) else { continue }
                 return button.hitTest(buttonPoint, with: event) ?? button
@@ -220,7 +224,7 @@ final class CodeView: PlatformView {
         }
     #elseif canImport(AppKit)
         func interactionTarget(at point: CGPoint) -> NSView? {
-            for button in [previewButton, copyButton] + actionButtons where !button.isHidden {
+            for button in barButtons where !button.isHidden {
                 let buttonPoint = button.convert(point, from: self)
                 guard button.bounds.contains(buttonPoint) else { continue }
                 return button.hitTest(buttonPoint) ?? button
@@ -286,6 +290,14 @@ final class CodeView: PlatformView {
             #endif
             previewAction?(language, textView.attributedText)
         }
+
+        @objc func handleDownload(_: UIButton) {
+            downloadCode()
+        }
+
+        @objc func handleExpand(_: UIButton) {
+            CodeSheetPresenter.present(self)
+        }
     #elseif canImport(AppKit)
         @objc func handleCopy(_: Any?) {
             let pasteboard = NSPasteboard.general
@@ -296,6 +308,14 @@ final class CodeView: PlatformView {
 
         @objc func handlePreview(_: Any?) {
             previewAction?(language, textView.attributedText)
+        }
+
+        @objc func handleDownload(_: Any?) {
+            downloadCode()
+        }
+
+        @objc func handleExpand(_: Any?) {
+            CodeSheetPresenter.present(self)
         }
     #endif
 

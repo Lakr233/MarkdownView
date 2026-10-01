@@ -18,9 +18,8 @@ extension NSAttributedString.Key {
     static let inlineCodeBackground = NSAttributedString.Key("MarkdownView.inlineCodeBackground")
 }
 
-/// Inline code as a rounded pill: monospaced text a size smaller than the
-/// body, so the line keeps the body's height, on a background inset a few
-/// points past the text on either side.
+/// Inline code as a rounded pill: monospaced text at the body's size, on a
+/// background inset a few points past the text on either side.
 @MainActor
 enum InlineCode {
     /// Space between the pill's edge and the text, on each side.

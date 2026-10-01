@@ -11,12 +11,35 @@ import Foundation
     import AppKit
 #endif
 
+#if canImport(UIKit)
+    typealias PlatformButton = UIButton
+#elseif canImport(AppKit)
+    typealias PlatformButton = NSButton
+#endif
+
 extension CodeView {
     /// How long Copy shows a checkmark after it is tapped.
     static let copyFeedbackDuration: TimeInterval = 1.5
 
-    static let copySymbol = "doc.on.doc"
-    static let copiedSymbol = "checkmark"
+    static let copySymbol = TableSymbol.copy
+    static let copiedSymbol = TableSymbol.copied
+    static let downloadSymbol = TableSymbol.download
+    static let expandSymbol = TableSymbol.expand
+
+    /// The bar's buttons from the trailing edge: Expand, Download, Copy,
+    /// Preview, then the host's actions.
+    var barButtons: [PlatformButton] {
+        [expandButton, downloadButton, copyButton, previewButton] + actionButtons.reversed()
+    }
+
+    /// Saves the block as a file named for its language.
+    func downloadCode() {
+        FileExporter.export(
+            Data(content.utf8),
+            fileName: CodeFileName.fileName(forLanguage: language),
+            from: self
+        )
+    }
 
     /// Swaps Copy for a checkmark, and back after `copyFeedbackDuration`;
     /// another tap restarts the wait.
