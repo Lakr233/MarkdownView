@@ -67,7 +67,7 @@ struct MarkdownViewBenchmark {
 
     @MainActor
     private static func benchmarkCases() -> [BenchmarkCase] {
-        legacyCases() + scalingCases() + streamingCases() + shapeCases() + highlightCases()
+        legacyCases() + scalingCases() + streamingCases() + shapeCases() + localeCases() + highlightCases()
     }
 
     // MARK: - Code highlighting
@@ -363,6 +363,37 @@ struct MarkdownViewBenchmark {
         })
 
         return cases
+    }
+
+    // MARK: - The reader's locale
+
+    /// The same mixed-script document rebuilt under each reader locale.
+    ///
+    /// The locale picks the language Han text is shaped in, and a language
+    /// that still carries its attribute makes every rebuild more expensive. A
+    /// locale spelled `zh_CN` should cost what `zh-Hans` costs; Traditional
+    /// keeps its attribute on purpose and is here as the reference for that.
+    @MainActor
+    private static func localeCases() -> [BenchmarkCase] {
+        let theme = MarkdownTheme.default
+        let parsed = MarkdownParser().parse(benchmarkDocument(sections: 4))
+        let identifiers = ["en_US", "zh-Hans", "zh_CN", "zh-Hant", "zh_TW", "ja_JP"]
+        return identifiers.map { identifier in
+            let content = MarkdownContent(
+                parserResult: parsed,
+                theme: theme,
+                locale: Locale(identifier: identifier)
+            )
+            return BenchmarkCase(name: "locale/\(identifier)") { iterations in
+                let view = MarkdownTextView()
+                for _ in 0 ..< iterations {
+                    autoreleasepool {
+                        view.setContentImmediately(content)
+                        _ = view.boundingSize(for: 600)
+                    }
+                }
+            }
+        }
     }
 
     private static func format(_ value: Double) -> String {

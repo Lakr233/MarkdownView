@@ -77,7 +77,9 @@ enum MarkdownContentLocale {
     /// - Traditional Chinese picks a different glyph for 41% of them.
     /// - Korean breaks lines differently.
     ///
-    /// Simplified Chinese and Japanese change neither. Anything else — Arabic,
+    /// Simplified Chinese and Japanese change neither. The reader's locale is
+    /// spelled through ``normalizedLanguage(_:)`` first, so `zh_CN` arrives
+    /// here as `zh-Hans`. Anything else — Arabic,
     /// Hebrew, a language added later — keeps the attribute, because the cost
     /// of being wrong is a reader seeing the wrong shapes.
     static func affectsShaping(_ language: String) -> Bool {
@@ -164,18 +166,61 @@ enum MarkdownContentLocale {
         return nil
     }
 
+    /// The language Han text is written in for a reader in `locale`.
+    ///
+    /// Memoized per locale identifier: it is asked for on every text that
+    /// misses the run cache, and the answer only depends on the locale.
     private static func preferredCJKLanguageIdentifier(_ locale: Locale) -> String {
-        let identifier = locale.identifier
-        if identifier.hasPrefix("ja") {
+        let key = locale.identifier
+        if let cached = cjkLanguageByLocale[key] {
+            return cached
+        }
+        let language = normalizedLanguage(locale.language)
+        cjkLanguageByLocale[key] = language
+        return language
+    }
+
+    private static var cjkLanguageByLocale: [String: String] = [:]
+
+    /// One spelling per way of drawing Han text, read from the locale's
+    /// language, script and region rather than from its identifier string.
+    ///
+    /// The locale arrives as `zh_CN`, `zh-Hans-CN`, `zh_SG` or plain `zh`, and
+    /// every one of those draws Simplified Chinese exactly as `zh-Hans` does —
+    /// same font, same glyphs, same advances. Spelled `zh-Hans` the attribute
+    /// can be dropped once the font is resolved (see ``affectsShaping(_:)``);
+    /// spelled any other way it stayed on every run and made each rebuild
+    /// pay for it.
+    ///
+    /// Traditional Chinese keeps its region: Hong Kong and Macau are drawn
+    /// with their own fonts and differ from `zh-Hant` in hundreds of glyphs,
+    /// so collapsing them would change what those readers see. Taiwan draws
+    /// exactly as `zh-Hant` does and is spelled that way, which CoreText
+    /// shapes measurably faster than `zh-Hant-TW`.
+    ///
+    /// Any language that is not Chinese, Japanese or Korean falls back to
+    /// Simplified Chinese, as it always has.
+    static func normalizedLanguage(_ language: Locale.Language) -> String {
+        switch language.languageCode {
+        case .japanese?:
             return "ja"
-        }
-        if identifier.hasPrefix("ko") {
+        case .korean?:
             return "ko"
+        case .chinese?:
+            break
+        default:
+            return "zh-Hans"
         }
-        if identifier.hasPrefix("zh") {
-            return identifier
+
+        let script = language.script
+            ?? Locale.Language(identifier: language.maximalIdentifier).script
+        guard script == .hanTraditional else {
+            return "zh-Hans"
         }
-        return "zh-Hans"
+        guard let region = language.region, region != .taiwan else {
+            return "zh-Hant"
+        }
+        return "zh-Hant-\(region.identifier)"
     }
 
     private static func characterRanges(in string: String) -> [NSRange] {
