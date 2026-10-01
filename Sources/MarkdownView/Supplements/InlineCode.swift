@@ -25,6 +25,9 @@ extension NSAttributedString.Key {
 enum InlineCode {
     /// Space between the pill's edge and the text, on each side.
     static let horizontalInset: CGFloat = 4
+    /// Space past the text where a wrapped span breaks, and so has no spacer
+    /// on that side of the line.
+    static let wrappedEndInset: CGFloat = 2
     /// How far the pill reaches above and below the code font's glyph box.
     static let verticalInset: CGFloat = 1
     static let cornerRadius: CGFloat = 5
@@ -128,22 +131,35 @@ private final class InlineCodeLayout: TextLabel.Layout {
 
     /// Fills one pill per code span on `line`, spanning its text and the
     /// spacers beside it. A spacer the line break left on a line by itself
-    /// gets none.
+    /// gets none, and a side the span wraps on, with its spacer on another
+    /// line, reaches `wrappedEndInset` past the text instead.
     private func drawInlineCodeBackgrounds(of line: CTLine, in context: CGContext) {
-        var spans: [(background: InlineCodeBackground, minX: CGFloat, maxX: CGFloat, holdsCode: Bool)] = []
+        struct Span {
+            let background: InlineCodeBackground
+            var minX: CGFloat
+            var maxX: CGFloat
+            /// String ranges of the code text and of the spacers on this line.
+            var code: NSRange?
+            var spacers: [NSRange] = []
+        }
+        var spans: [Span] = []
         for run in CTLineGetGlyphRuns(line) as! [CTRun] {
             let attributes = CTRunGetAttributes(run) as? [NSAttributedString.Key: Any]
             guard let background = attributes?[.inlineCodeBackground] as? InlineCodeBackground else { continue }
-            let range = CTRunGetStringRange(run)
-            let start = CTLineGetOffsetForStringIndex(line, range.location, nil)
-            let end = CTLineGetOffsetForStringIndex(line, range.location + range.length, nil)
-            let holdsCode = attributes?[.litextAttachment] == nil
-            if let index = spans.firstIndex(where: { $0.background === background }) {
-                spans[index].minX = min(spans[index].minX, start, end)
-                spans[index].maxX = max(spans[index].maxX, start, end)
-                spans[index].holdsCode = spans[index].holdsCode || holdsCode
+            let cfRange = CTRunGetStringRange(run)
+            let range = NSRange(location: cfRange.location, length: cfRange.length)
+            let start = CTLineGetOffsetForStringIndex(line, cfRange.location, nil)
+            let end = CTLineGetOffsetForStringIndex(line, cfRange.location + cfRange.length, nil)
+            let index = spans.firstIndex { $0.background === background } ?? {
+                spans.append(Span(background: background, minX: min(start, end), maxX: max(start, end)))
+                return spans.count - 1
+            }()
+            spans[index].minX = min(spans[index].minX, start, end)
+            spans[index].maxX = max(spans[index].maxX, start, end)
+            if attributes?[.litextAttachment] == nil {
+                spans[index].code = spans[index].code.map { NSUnionRange($0, range) } ?? range
             } else {
-                spans.append((background, min(start, end), max(start, end), holdsCode))
+                spans[index].spacers.append(range)
             }
         }
         guard !spans.isEmpty else { return }
@@ -152,12 +168,17 @@ private final class InlineCodeLayout: TextLabel.Layout {
         let origin = context.textPosition
         context.saveGState()
         defer { context.restoreGState() }
-        for span in spans where span.holdsCode && span.minX < span.maxX {
+        for span in spans {
+            guard let code = span.code, span.minX < span.maxX else { continue }
+            let hasLeadingSpacer = span.spacers.contains { $0.location < code.location }
+            let hasTrailingSpacer = span.spacers.contains { $0.location >= NSMaxRange(code) }
+            let minX = span.minX - (hasLeadingSpacer ? 0 : InlineCode.wrappedEndInset)
+            let maxX = span.maxX + (hasTrailingSpacer ? 0 : InlineCode.wrappedEndInset)
             let background = span.background
             let rect = CGRect(
-                x: origin.x + span.minX,
+                x: origin.x + minX,
                 y: origin.y - background.descent - InlineCode.verticalInset,
-                width: span.maxX - span.minX,
+                width: maxX - minX,
                 height: background.ascent + background.descent + InlineCode.verticalInset * 2
             )
             let radius = min(InlineCode.cornerRadius, rect.height / 2, rect.width / 2)
