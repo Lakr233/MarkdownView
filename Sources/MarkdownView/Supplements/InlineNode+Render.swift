@@ -57,14 +57,10 @@ extension MarkdownInlineNode {
             return context.cachedBodyText(" ", theme: theme)
         case .lineBreak:
             return context.cachedBodyText("\n", theme: theme)
+        case let .html(string) where InlineCode.isLineBreak(string):
+            return NSMutableAttributedString(string: "\n", attributes: [.font: theme.fonts.body])
         case let .code(string), let .html(string):
-            let controlAttributes: [NSAttributedString.Key: Any] = [
-                .font: theme.fonts.codeInline,
-                .backgroundColor: theme.colors.codeBackground.withAlphaComponent(0.05),
-            ]
-            let text = NSMutableAttributedString(string: string, attributes: [.foregroundColor: theme.colors.code])
-            text.addAttributes(controlAttributes, range: .init(location: 0, length: text.length))
-            return text
+            return NSMutableAttributedString(attributedString: InlineCode.attributedString(string, theme: theme))
         case let .emphasis(children):
             let ans = NSMutableAttributedString()
             children
@@ -214,14 +210,7 @@ extension MarkdownInlineNode {
                 )
             } else {
                 // Fallback: render failed, show original LaTeX as inline code
-                return NSAttributedString(
-                    string: latexContent,
-                    attributes: [
-                        .font: theme.fonts.codeInline,
-                        .foregroundColor: theme.colors.code,
-                        .backgroundColor: theme.colors.codeBackground.withAlphaComponent(0.05),
-                    ]
-                )
+                return InlineCode.attributedString(latexContent, theme: theme)
             }
         }
     }

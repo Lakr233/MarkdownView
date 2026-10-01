@@ -74,7 +74,7 @@ import MarkdownParser
         /// - Parameter textLabelView: the label that draws the document body.
         ///   Pass a `TextLabelView` subclass to change how body text is drawn
         ///   while code blocks, tables and selection keep working as before.
-        public init(textLabelView: TextLabelView = .init(), viewProvider: ReusableViewProvider = .init()) {
+        public init(textLabelView: TextLabelView = MarkdownTextLabelView(), viewProvider: ReusableViewProvider = .init()) {
             self.textLabelView = textLabelView
             self.viewProvider = viewProvider
             super.init(frame: .zero)
@@ -283,7 +283,7 @@ import MarkdownParser
         /// - Parameter textLabelView: the label that draws the document body.
         ///   Pass a `TextLabelView` subclass to change how body text is drawn
         ///   while code blocks, tables and selection keep working as before.
-        public init(textLabelView: TextLabelView = .init(), viewProvider: ReusableViewProvider = .init()) {
+        public init(textLabelView: TextLabelView = MarkdownTextLabelView(), viewProvider: ReusableViewProvider = .init()) {
             self.textLabelView = textLabelView
             self.viewProvider = viewProvider
             super.init(frame: .zero)

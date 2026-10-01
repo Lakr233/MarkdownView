@@ -17,6 +17,9 @@ import Litext
 public extension MarkdownTheme {
     @MainActor static var `default`: MarkdownTheme = .init()
     static let codeScale = 0.85
+    /// Inline code is set a size smaller than the body, so a line holding
+    /// it keeps the body's height and the pill around it fits the line.
+    static let codeInlineScale = 0.9
 }
 
 public struct MarkdownTheme: Equatable, @unchecked Sendable {
@@ -24,7 +27,7 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
         #if canImport(UIKit)
             public var body = UIFont.preferredFont(forTextStyle: .body)
             public var codeInline = UIFont.monospacedSystemFont(
-                ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize,
+                ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize * codeInlineScale,
                 weight: .regular
             )
             public var bold = UIFont.preferredFont(forTextStyle: .body).bold
@@ -39,7 +42,7 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
         #elseif canImport(AppKit)
             public var body = NSFont.systemFont(ofSize: NSFont.systemFontSize)
             public var codeInline = NSFont.monospacedSystemFont(
-                ofSize: NSFont.systemFontSize,
+                ofSize: NSFont.systemFontSize * codeInlineScale,
                 weight: .regular
             )
             public var bold = NSFont.systemFont(ofSize: NSFont.systemFontSize).bold
@@ -199,7 +202,7 @@ public extension MarkdownTheme {
 
     mutating func align(to pointSize: CGFloat) {
         fonts.body = fonts.body.withSize(pointSize)
-        fonts.codeInline = fonts.codeInline.withSize(pointSize)
+        fonts.codeInline = fonts.codeInline.withSize(pointSize * Self.codeInlineScale)
         fonts.bold = fonts.bold.withSize(pointSize).bold
         fonts.italic = fonts.italic.withSize(pointSize)
         fonts.code = fonts.code.withSize(pointSize * Self.codeScale)

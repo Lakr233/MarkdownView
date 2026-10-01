@@ -206,9 +206,12 @@ struct MarkdownTableUpdateTests {
         #expect(fonts.contains { $0 != bodyFont })
     }
 
+    /// The cell showing `text`, ignoring the blank spacers that pad inline code.
     @MainActor
     private func cell(_ text: String, in tableView: TableView) -> TextLabelView? {
-        cells(in: tableView).first { $0.attributedText.string == text }
+        cells(in: tableView).first {
+            $0.attributedText.string.replacingOccurrences(of: TextLabel.Attachment.replacementText, with: "") == text
+        }
     }
 
     @MainActor
@@ -247,8 +250,10 @@ struct MarkdownTableUpdateTests {
             return
         }
         func font(_ text: String) -> PlatformFont? {
-            guard let cell = cell(text, in: tableView), cell.attributedText.length > 0 else { return nil }
-            return cell.attributedText.attribute(.font, at: 0, effectiveRange: nil) as? PlatformFont
+            guard let cell = cell(text, in: tableView) else { return nil }
+            let location = (cell.attributedText.string as NSString).range(of: text).location
+            guard location != NSNotFound else { return nil }
+            return cell.attributedText.attribute(.font, at: location, effectiveRange: nil) as? PlatformFont
         }
         guard let code = font("code"), let plain = font("plain") else {
             Issue.record("header cells are missing")

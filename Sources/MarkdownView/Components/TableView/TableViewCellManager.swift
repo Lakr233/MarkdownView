@@ -151,7 +151,7 @@ struct TableLayoutMetrics: Equatable {
             let cell: TextLabelView
 
             if index >= cells.count {
-                cell = TextLabelView()
+                cell = MarkdownTextLabelView()
                 #if canImport(UIKit)
                     cell.backgroundColor = .clear
                 #elseif canImport(AppKit)
