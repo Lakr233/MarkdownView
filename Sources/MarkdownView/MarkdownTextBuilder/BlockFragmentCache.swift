@@ -21,6 +21,11 @@ import MarkdownParser
 /// by position also happens to be exactly what a stream needs: positions are
 /// stable and only the tail changes.
 ///
+/// Code blocks and tables are kept together with the view each one placed, so
+/// an unchanged one hands back the very attachment and view the label already
+/// laid out. The position rule matters most here: two identical code blocks
+/// are two entries holding two views, never one view shown twice.
+///
 /// Everything that is not per-block is decided once, in ``isUsable(with:for:)``.
 /// A rebuild that cannot reuse anything — a theme change, a different document
 /// — should cost a single comparison, not one per block.
@@ -28,6 +33,14 @@ struct BlockFragmentCache {
     private struct Entry {
         let node: MarkdownBlockNode
         let fragment: NSAttributedString
+        /// The code or table view the fragment places, which is reused with it.
+        let contextView: PlatformView?
+    }
+
+    /// A block served from the cache, with the view it brings along.
+    struct Hit {
+        let fragment: NSAttributedString
+        let contextView: PlatformView?
     }
 
     /// One slot per block, in document order. `nil` marks a block that is not
@@ -73,28 +86,45 @@ struct BlockFragmentCache {
     ///
     /// Only call this after ``isUsable(with:for:)`` has said yes.
     func fragment(at index: Int, matching node: MarkdownBlockNode) -> NSAttributedString? {
+        hit(at: index, matching: node)?.fragment
+    }
+
+    /// The fragment built for this block last time, and its view.
+    ///
+    /// A code block or a table comes back with the view it was built around.
+    /// That view still belongs to the block only if nothing has handed it to
+    /// another one or changed it since; ``TextBuilder`` checks both before
+    /// using the hit, because the cache cannot see the view's provider.
+    ///
+    /// Only call this after ``isUsable(with:for:)`` has said yes.
+    func hit(at index: Int, matching node: MarkdownBlockNode) -> Hit? {
         guard entries.indices.contains(index),
               let entry = entries[index],
               entry.node == node
         else { return nil }
-        return entry.fragment
+        return Hit(fragment: entry.fragment, contextView: entry.contextView)
     }
 
-    mutating func record(_ fragment: NSAttributedString, for node: MarkdownBlockNode) {
-        entries.append(node.isFragmentCacheable ? Entry(node: node, fragment: fragment) : nil)
+    /// Records the fragment for the next build.
+    ///
+    /// A code block or a table is recorded only with the view it placed:
+    /// without it the fragment would point at a view the next build cannot
+    /// claim back.
+    mutating func record(_ fragment: NSAttributedString, contextView: PlatformView?, for node: MarkdownBlockNode) {
+        if node.placesContextView, contextView == nil {
+            entries.append(nil)
+            return
+        }
+        entries.append(Entry(node: node, fragment: fragment, contextView: contextView))
     }
 }
 
-private extension MarkdownBlockNode {
-    /// Whether this block's rendering depends on nothing but the block itself.
-    ///
-    /// Code blocks and tables take a view from ``ReusableViewProvider`` in
-    /// document order; serving one from the cache would skip its turn and hand
-    /// the next block someone else's view.
-    var isFragmentCacheable: Bool {
+extension MarkdownBlockNode {
+    /// Whether this block draws through a pooled view rather than as text.
+    var placesContextView: Bool {
         switch self {
-        case .codeBlock, .table: false
-        default: true
+        case .codeBlock, .table: true
+        default: false
         }
     }
 }

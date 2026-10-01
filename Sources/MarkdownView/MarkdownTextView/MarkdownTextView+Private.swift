@@ -22,16 +22,42 @@ extension MarkdownTextView {
                 // code block finishing in one message used to rebuild all of
                 // them. A notification that does not name the blocks it
                 // finished still means a rebuild — it could be any of them.
-                if let keys = notification.userInfo?[CodeHighlighter.highlightedKeysUserInfoKey]
-                    as? Set<Int>,
-                    renderedHighlightKeys.isDisjoint(with: keys)
-                {
+                guard let keys = notification.userInfo?[CodeHighlighter.highlightedKeysUserInfoKey]
+                    as? Set<Int>
+                else {
+                    // A highlight colours text it already laid out.
+                    use(content, resizes: false)
                     return
                 }
-                // A highlight colours text it already laid out.
-                use(content, resizes: false)
+                guard !renderedHighlightKeys.isDisjoint(with: keys) else { return }
+                applyFinishedHighlights(keys)
             }
             .store(in: &cancellables)
+    }
+
+    /// Colours the code blocks whose highlighting just finished, and nothing
+    /// else.
+    ///
+    /// Colour never changes a block's size, so the document and its layout
+    /// stay exactly as they are; only the code views showing `keys` take
+    /// their maps. A map the highlighter no longer holds falls back to a
+    /// rebuild, which asks for it again.
+    func applyFinishedHighlights(_ keys: Set<Int>) {
+        var needsRebuild = false
+        for case let codeView as CodeView in contextViews {
+            guard let key = codeView.highlightKey,
+                  keys.contains(key),
+                  codeView.highlightedKey != key
+            else { continue }
+            guard let map = CodeHighlighter.current.cachedHighlightMap(for: key) else {
+                needsRebuild = true
+                continue
+            }
+            codeView.setContent(codeView.content, highlightMap: map, highlightKey: key)
+        }
+        if needsRebuild {
+            use(content, resizes: false)
+        }
     }
 
     func setupCombine() {

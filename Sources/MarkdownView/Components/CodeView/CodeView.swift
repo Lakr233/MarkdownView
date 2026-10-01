@@ -66,18 +66,32 @@ import Litext
         private var cachedLineCount: Int = 1
         private var highlightedContent: String = ""
 
+        /// The highlight cache key of the block this view shows.
+        var highlightKey: Int?
+        /// The key whose map colours the text now, or nil while the colours
+        /// on screen are a stale prefix's or none at all.
+        private(set) var highlightedKey: Int?
+
         /// Applies content and its highlight map together. Pass `nil` while the
         /// map for `newContent` is still being computed: the previous map is kept
         /// when the new content extends the previously highlighted content
         /// (streaming append), so the colored prefix does not flash back to
         /// plain text on every chunk.
-        func setContent(_ newContent: String, highlightMap map: CodeHighlighter.HighlightMap?) {
+        func setContent(
+            _ newContent: String,
+            highlightMap map: CodeHighlighter.HighlightMap?,
+            highlightKey key: Int? = nil
+        ) {
             if let map {
                 highlightedContent = newContent
+                highlightedKey = key
                 highlightMap = map
-            } else if !newContent.hasPrefix(highlightedContent) {
-                highlightedContent = ""
-                highlightMap = .init()
+            } else {
+                highlightedKey = nil
+                if !newContent.hasPrefix(highlightedContent) {
+                    highlightedContent = ""
+                    highlightMap = .init()
+                }
             }
             content = newContent
         }
@@ -289,18 +303,32 @@ import Litext
         private var cachedLineCount: Int = 1
         private var highlightedContent: String = ""
 
+        /// The highlight cache key of the block this view shows.
+        var highlightKey: Int?
+        /// The key whose map colours the text now, or nil while the colours
+        /// on screen are a stale prefix's or none at all.
+        private(set) var highlightedKey: Int?
+
         /// Applies content and its highlight map together. Pass `nil` while the
         /// map for `newContent` is still being computed: the previous map is kept
         /// when the new content extends the previously highlighted content
         /// (streaming append), so the colored prefix does not flash back to
         /// plain text on every chunk.
-        func setContent(_ newContent: String, highlightMap map: CodeHighlighter.HighlightMap?) {
+        func setContent(
+            _ newContent: String,
+            highlightMap map: CodeHighlighter.HighlightMap?,
+            highlightKey key: Int? = nil
+        ) {
             if let map {
                 highlightedContent = newContent
+                highlightedKey = key
                 highlightMap = map
-            } else if !newContent.hasPrefix(highlightedContent) {
-                highlightedContent = ""
-                highlightMap = .init()
+            } else {
+                highlightedKey = nil
+                if !newContent.hasPrefix(highlightedContent) {
+                    highlightedContent = ""
+                    highlightMap = .init()
+                }
             }
             content = newContent
         }

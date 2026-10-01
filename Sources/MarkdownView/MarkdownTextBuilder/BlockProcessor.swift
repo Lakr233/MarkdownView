@@ -86,22 +86,28 @@ final class BlockProcessor {
     func processCodeBlock(
         language: String?,
         content: String,
-        highlightMap: CodeHighlighter.HighlightMap?
+        highlightMap: CodeHighlighter.HighlightMap?,
+        highlightKey: Int
     ) -> (NSAttributedString, CodeView) {
         let content = content.deletingSuffix(of: .whitespacesAndNewlines)
         let codeView = viewProvider.acquireCodeView()
         codeView.theme = theme
         codeView.language = language ?? ""
-        codeView.setContent(content, highlightMap: highlightMap)
+        codeView.highlightKey = highlightKey
+        codeView.setContent(content, highlightMap: highlightMap, highlightKey: highlightKey)
+        let appearance = ContextViewAttachment.Appearance.of(codeView)
         let text = buildWithParagraphSync { paragraph in
             // Reserve exactly what the view will occupy. Estimating the height from
             // the source text instead lets the two numbers drift apart, and the view
             // then paints over whatever follows it.
-            paragraph.minimumLineHeight = codeView.intrinsicContentSize.height
+            paragraph.minimumLineHeight = appearance.size.height
         } content: {
             .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
-                .litextAttachment: TextLabel.Attachment.hold(attrString: .init(string: content + "\n")),
+                .litextAttachment: ContextViewAttachment(
+                    representation: .init(string: content + "\n"),
+                    appearance: appearance
+                ),
                 .contextView: codeView,
             ])
         }
@@ -191,12 +197,16 @@ final class BlockProcessor {
             )
         }
 
+        let appearance = ContextViewAttachment.Appearance.of(tableView)
         let text = buildWithParagraphSync { paragraph in
-            paragraph.minimumLineHeight = tableView.intrinsicContentHeight
+            paragraph.minimumLineHeight = appearance.size.height
         } content: {
             .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
-                .litextAttachment: TextLabel.Attachment.hold(attrString: representedText),
+                .litextAttachment: ContextViewAttachment(
+                    representation: representedText,
+                    appearance: appearance
+                ),
                 .contextView: tableView,
             ])
         }

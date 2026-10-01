@@ -30,9 +30,14 @@ import Litext
             }
 
             viewProvider.reorderViews(matching: contextViews)
+            let ownedContextViews = contextViews
             contextViews.removeAll()
 
-            let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
+            let artifacts = TextBuilder.build(
+                view: self,
+                viewProvider: viewProvider,
+                ownedContextViews: ownedContextViews
+            )
             textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
             renderedHighlightKeys = artifacts.highlightKeys
@@ -81,9 +86,14 @@ import Litext
             }
 
             viewProvider.reorderViews(matching: contextViews)
+            let ownedContextViews = contextViews
             contextViews.removeAll()
 
-            let artifacts = TextBuilder.build(view: self, viewProvider: viewProvider)
+            let artifacts = TextBuilder.build(
+                view: self,
+                viewProvider: viewProvider,
+                ownedContextViews: ownedContextViews
+            )
             textLabelView.attributedText = artifacts.document
             contextViews = artifacts.subviews
             renderedHighlightKeys = artifacts.highlightKeys

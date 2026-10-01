@@ -52,7 +52,7 @@ private func fittedTableColumnWidths(
         private var cellManager = TableViewCellManager()
         private var widths: [CGFloat] = []
         private var heights: [CGFloat] = []
-        private var theme: MarkdownTheme = .default
+        private(set) var theme: MarkdownTheme = .default
         weak var textSelectionDelegate: TextLabelViewDelegate?
         var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
 
@@ -218,6 +218,11 @@ private func fittedTableColumnWidths(
 
         var intrinsicContentHeight: CGFloat {
             ceil(heights.reduce(0, +)) + tableViewPadding * 2
+        }
+
+        /// The width the columns need before any is stretched to fill the viewport.
+        var naturalContentWidth: CGFloat {
+            widths.reduce(0, +) + tableViewPadding * 2
         }
 
         override var intrinsicContentSize: CGSize {
@@ -402,7 +407,7 @@ private func fittedTableColumnWidths(
         private var cellManager = TableViewCellManager()
         private var widths: [CGFloat] = []
         private var heights: [CGFloat] = []
-        private var theme: MarkdownTheme = .default
+        private(set) var theme: MarkdownTheme = .default
         weak var textSelectionDelegate: TextLabelViewDelegate?
         var linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
 
@@ -585,6 +590,11 @@ private func fittedTableColumnWidths(
 
         var intrinsicContentHeight: CGFloat {
             ceil(heights.reduce(0, +)) + tableViewPadding * 2
+        }
+
+        /// The width the columns need before any is stretched to fill the viewport.
+        var naturalContentWidth: CGFloat {
+            widths.reduce(0, +) + tableViewPadding * 2
         }
 
         override var intrinsicContentSize: CGSize {

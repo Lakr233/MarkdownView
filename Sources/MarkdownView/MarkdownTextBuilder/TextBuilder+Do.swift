@@ -53,7 +53,11 @@ extension TextBuilder {
         return .init(x: lineOrigin.x, y: lineOrigin.y - descent, width: width, height: ascent + descent)
     }
 
-    static func build(view: MarkdownTextView, viewProvider: ReusableViewProvider) -> BuildResult {
+    static func build(
+        view: MarkdownTextView,
+        viewProvider: ReusableViewProvider,
+        ownedContextViews: [PlatformView] = []
+    ) -> BuildResult {
         let context: MarkdownContent = view.content
         let theme: MarkdownTheme = view.theme
 
@@ -95,6 +99,7 @@ extension TextBuilder {
             .withTheme(theme)
             .withFragmentCache(view.blockFragmentCache)
             .withHighlightRequester(ObjectIdentifier(view))
+            .withOwnedContextViews(ownedContextViews)
             .withInlineTextDecoration { [weak view] text in
                 guard let view else { return text }
                 return view.decorate(inlineText: text, theme: theme)
