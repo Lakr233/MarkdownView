@@ -178,6 +178,8 @@ struct MarkdownStreamingViewReuseTests {
                 for (position, old) in previous.enumerated() where position < current.count {
                     #expect(current[position] === old, "step \(index) replaced the view at \(position)")
                 }
+                let problems = MarkdownStreamingVisibilityTests.problems(in: view)
+                #expect(problems.isEmpty, "step \(index): \(problems)")
                 previous = current
             }
             #expect(created.count == previous.count)

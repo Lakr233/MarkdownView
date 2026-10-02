@@ -101,6 +101,13 @@ open class MarkdownTextView: PlatformView {
             super.layoutSubviews()
             textLabelView.frame = bounds
             textLabelView.preferredMaxLayoutWidth = bounds.width
+            // The placement below reads the label's layout, so the label has
+            // to be laid out first. iOS 18 can clear the label's pending
+            // layout before this runs and lay it out only afterwards, which
+            // leaves `layoutIfNeeded()` with nothing to do and the label with
+            // no lines: every code block and table would be hidden, and stay
+            // hidden until the frame next changes.
+            textLabelView.setNeedsLayout()
             textLabelView.layoutIfNeeded()
             syncContextViewLayout()
         }
