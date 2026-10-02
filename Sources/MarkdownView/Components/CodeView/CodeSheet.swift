@@ -167,10 +167,10 @@ enum CodeSheetText {
     /// A code block's text, highlighted, in a selectable text view.
     final class CodeSheetWindow: NSWindow {
         let textView = NSTextView()
-        /// The language, or "Code"; a sheet draws no window title.
-        let titleLabel = NSTextField(labelWithString: "")
+        let titleLabel: SheetTitleLabel
 
         init(content: CodeSheetContent, size: CGSize) {
+            titleLabel = SheetTitleLabel(content.title)
             super.init(
                 contentRect: CGRect(origin: .zero, size: size),
                 styleMask: [.titled, .resizable],
@@ -218,16 +218,11 @@ enum CodeSheetText {
             menuButton.autoresizingMask = [.minXMargin, .minYMargin]
             container.addSubview(menuButton)
 
-            titleLabel.stringValue = content.title
-            titleLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
-            titleLabel.textColor = .labelColor
-            titleLabel.lineBreakMode = .byTruncatingTail
-            titleLabel.sizeToFit()
-            titleLabel.frame = CGRect(
-                x: margin,
-                y: size.height - barHeight + (barHeight - titleLabel.frame.height) / 2,
-                width: max(0, menuButton.frame.minX - margin * 2),
-                height: titleLabel.frame.height,
+            titleLabel.place(
+                in: container.bounds,
+                barHeight: barHeight,
+                margin: margin,
+                trailing: menuButton.frame.minX,
             )
             titleLabel.autoresizingMask = [.width, .minYMargin]
             container.addSubview(titleLabel)

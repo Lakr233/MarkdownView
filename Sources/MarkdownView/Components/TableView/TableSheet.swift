@@ -117,11 +117,12 @@ struct TableSheetContent {
         }
     }
 
-    private final class TableSheetContentView: NSView {
+    final class TableSheetContentView: NSView {
         static let margin: CGFloat = 16
         static let barHeight: CGFloat = 48
 
         private var menuButton: SheetMenuButton?
+        let titleLabel = SheetTitleLabel(TableTitleText.table)
         private let scrollView = NSScrollView()
         private let documentView = FlippedView()
         private let tableView: TableView
@@ -135,6 +136,7 @@ struct TableSheetContent {
             scrollView.documentView = documentView
             documentView.addSubview(tableView)
             addSubview(scrollView)
+            addSubview(titleLabel)
         }
 
         func installMenu(_ actions: SheetMenuActions) {
@@ -166,6 +168,12 @@ struct TableSheetContent {
                     y: bounds.height - Self.barHeight + (Self.barHeight - menuButton.frame.height) / 2,
                 )
             }
+            titleLabel.place(
+                in: bounds,
+                barHeight: Self.barHeight,
+                margin: margin,
+                trailing: menuButton?.frame.minX ?? bounds.width,
+            )
             let width = max(0, scrollView.contentSize.width - margin * 2)
             let height = tableView.intrinsicContentHeight
             documentView.frame = CGRect(

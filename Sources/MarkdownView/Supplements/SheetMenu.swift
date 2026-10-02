@@ -59,6 +59,30 @@ enum SheetMenuSymbol {
     }
 
 #elseif canImport(AppKit)
+    /// The name at the leading end of a sheet's bar, opposite its menu; a
+    /// sheet draws no window title.
+    final class SheetTitleLabel: NSTextField {
+        convenience init(_ title: String) {
+            self.init(labelWithString: title)
+            font = .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
+            textColor = .labelColor
+            lineBreakMode = .byTruncatingTail
+            sizeToFit()
+        }
+
+        /// Places the label in a bar of `barHeight` along the top of
+        /// `bounds`, from `margin` to just short of `trailing`.
+        func place(in bounds: CGRect, barHeight: CGFloat, margin: CGFloat, trailing: CGFloat) {
+            let height = intrinsicContentSize.height
+            frame = CGRect(
+                x: margin,
+                y: bounds.height - barHeight + (barHeight - height) / 2,
+                width: max(0, trailing - margin * 2),
+                height: height,
+            )
+        }
+    }
+
     /// A borderless button that opens Copy, Download and Close below itself.
     final class SheetMenuButton: NSButton {
         private let actions: SheetMenuActions

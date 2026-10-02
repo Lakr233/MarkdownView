@@ -375,6 +375,20 @@ struct CodeBlockBarTests {
         }
 
         @Test
+        func `The table sheet's bar names it a table, short of its menu`() throws {
+            let view = RenderProbe.view("| a | b |\n|---|---|\n| 1 | 2 |")
+            let table = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
+            let sheet = TableSheetWindow(content: TableSheetContent(table))
+            let content = try #require(sheet.contentView as? TableSheetContentView)
+            content.layoutSubtreeIfNeeded()
+            let menu = try #require(content.subviews.first { $0 is SheetMenuButton })
+            #expect(content.titleLabel.stringValue == TableTitleText.table)
+            #expect(!content.titleLabel.frame.isEmpty)
+            #expect(content.titleLabel.frame.maxX <= menu.frame.minX)
+            #expect(abs(content.titleLabel.frame.midY - menu.frame.midY) < 1)
+        }
+
+        @Test
         func `A line that sets the sheet's width does not wrap in it`() throws {
             let line = "print(\"a line well under the reading width, but over the minimum\")"
             let view = RenderProbe.view("```swift\n\(line)\n```")
