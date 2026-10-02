@@ -60,78 +60,8 @@ struct TableSheetContent {
     }
 }
 
-#if canImport(UIKit)
-    import UIKit
-
-    @MainActor
-    enum TableSheetPresenter {
-        /// Presents every row of `tableView` in a full-height sheet over the
-        /// view controller showing it.
-        static func present(_ tableView: TableView) {
-            guard let presenter = tableView.topPresentingViewController else { return }
-            let controller = TableSheetViewController(content: TableSheetContent(tableView))
-            controller.title = TableTitleText.table
-            let navigation = UINavigationController(rootViewController: controller)
-            navigation.modalPresentationStyle = .pageSheet
-            presenter.present(navigation, animated: true)
-        }
-    }
-
-    /// Every row of a table, scrolling both ways, sortable by its header.
-    final class TableSheetViewController: UIViewController {
-        private static let margin: CGFloat = 16
-
-        let tableView: TableView
-        private let content: TableSheetContent
-        private let scrollView = UIScrollView()
-
-        init(content: TableSheetContent) {
-            self.content = content
-            tableView = content.makeTableView()
-            super.init(nibName: nil, bundle: nil)
-        }
-
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        override func viewDidLoad() {
-            super.viewDidLoad()
-            view.backgroundColor = .systemBackground
-            scrollView.alwaysBounceVertical = true
-            scrollView.backgroundColor = .clear
-            view.addSubview(scrollView)
-            scrollView.addSubview(tableView)
-            tableView.sortHandler = { [weak self] _ in
-                self?.view.setNeedsLayout()
-            }
-            navigationItem.rightBarButtonItem = .sheetMenu(content.menuActions(
-                from: { [weak self] in self?.view },
-                close: { [weak self] in self?.dismiss(animated: true) }
-            ))
-        }
-
-        override func viewDidLayoutSubviews() {
-            super.viewDidLayoutSubviews()
-            scrollView.frame = view.bounds
-            let insets = view.safeAreaInsets
-            let width = max(0, view.bounds.width - insets.left - insets.right - Self.margin * 2)
-            let height = tableView.intrinsicContentHeight
-            tableView.frame = CGRect(
-                x: insets.left + Self.margin,
-                y: Self.margin,
-                width: width,
-                height: height
-            )
-            scrollView.contentSize = CGSize(
-                width: scrollView.bounds.width - insets.left - insets.right,
-                height: height + Self.margin * 2
-            )
-        }
-    }
-
-#elseif canImport(AppKit)
+// UIKit shows the sheet in TableSheetViewController.
+#if canImport(AppKit) && !canImport(UIKit)
     import AppKit
 
     @MainActor

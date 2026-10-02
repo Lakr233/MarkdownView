@@ -6,7 +6,9 @@
 import Litext
 import MarkdownParser
 
-private func fittedTableColumnWidths(
+/// `naturalWidths` stretched evenly to fill `availableWidth` less
+/// `outerPadding` on each side, or as they are when they already fill it.
+func fittedTableColumnWidths(
     _ naturalWidths: [CGFloat],
     to availableWidth: CGFloat,
     outerPadding: CGFloat

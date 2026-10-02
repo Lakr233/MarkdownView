@@ -10,8 +10,9 @@ import Testing
 #endif
 
 /// A table sits in a frame that does not scroll — its border, a title bar
-/// naming it with Copy, Download and Expand, and the row backgrounds —
-/// while its columns scroll sideways inside. Copy and Download hand over
+/// naming it with Copy and Expand, and the row backgrounds —
+/// while its columns scroll sideways inside. Copy, and Download in the
+/// sheet, hand over
 /// every row, drawn or not, exactly.
 @MainActor
 struct TableTitleBarTests {
