@@ -161,7 +161,7 @@ struct MarkdownTableTruncationTests {
 
     @MainActor
     @Test
-    func `An inline header cell has its column's full width`() throws {
+    func `An inline header cell reserves no accessory space`() throws {
         let markdown = """
         | Short | A considerably long header title |
         | - | - |
@@ -174,8 +174,38 @@ struct MarkdownTableTruncationTests {
 
         let header = try #require(table.cellViews[safe: 1])
         let body = try #require(table.cellViews[safe: 3])
-        #expect(abs(header.frame.width - body.frame.width) < 0.5)
+        #expect(abs(header.frame.minX - body.frame.minX) < 0.5)
         #expect(ceil(header.intrinsicContentSize.width) <= header.frame.width + 0.5)
+    }
+
+    @MainActor
+    @Test
+    func `A resize moves cells to their column's alignment without resizing them`() throws {
+        let markdown = """
+        | Left | Centre | Right |
+        | :--- | :----: | ----: |
+        | a | b | c |
+        | longer left | longer centre | longer right |
+        """
+        let view = RenderProbe.view(markdown, width: 480)
+        let table = try #require(tableView(in: view))
+        table.layoutSubtreeIfNeededOnBothPlatforms()
+        let narrow = table.cellViews.map(\.frame)
+
+        RenderProbe.show(markdown, in: view, width: 900)
+        table.layoutSubtreeIfNeededOnBothPlatforms()
+        let wide = table.cellViews.map(\.frame)
+
+        // The columns stretched, so the cells moved, but none was resized.
+        #expect(narrow.map(\.size) == wide.map(\.size))
+        #expect(narrow != wide)
+        for frames in [narrow, wide] {
+            // The two body rows hold text of different widths in each column.
+            let (short, long) = (Array(frames[3 ..< 6]), Array(frames[6 ..< 9]))
+            #expect(abs(short[0].minX - long[0].minX) < 0.5)
+            #expect(abs(short[1].midX - long[1].midX) < 0.5)
+            #expect(abs(short[2].maxX - long[2].maxX) < 0.5)
+        }
     }
 
     @MainActor

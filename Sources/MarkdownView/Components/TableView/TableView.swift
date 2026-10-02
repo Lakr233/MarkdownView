@@ -397,10 +397,23 @@ final class TableView: PlatformView {
                     ? display.headerAccessoryWidths[safe: column] ?? 0
                     : 0
 
+                // The cell keeps the width its text was measured at and moves
+                // inside the column instead: a column stretched to fill the
+                // viewport then never re-wraps a cell away from its row's
+                // height, and a resize only moves cells rather than sizing,
+                // typesetting and redrawing each one again.
+                let textWidth = max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth)
+                let cellWidth = min(ceil(idealCellSize.width), textWidth)
+                let alignmentOffset: CGFloat = switch columnAlignments[safe: column] ?? .none {
+                case .center: (textWidth - cellWidth) / 2
+                case .right: textWidth - cellWidth
+                case .left, .none: 0
+                }
+
                 cell.applyFrame(.init(
-                    x: x + layoutMetrics.horizontalCellPadding,
+                    x: x + layoutMetrics.horizontalCellPadding + alignmentOffset,
                     y: y + verticalOffset,
-                    width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth),
+                    width: cellWidth,
                     height: cellHeight,
                 ))
 
