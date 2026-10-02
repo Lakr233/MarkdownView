@@ -128,7 +128,7 @@ final class CodeView: PlatformView {
         lazy var scrollView: HorizontalClippingScrollView = .init()
         lazy var languageLabel: UILabel = .init()
         lazy var copyButton: UIButton = .init()
-        lazy var downloadButton: UIButton = .init()
+        lazy var expandButton: UIButton = .init()
         lazy var previewButton: UIButton = .init()
         var actionButtons: [UIButton] = []
     #elseif canImport(AppKit)
@@ -149,7 +149,7 @@ final class CodeView: PlatformView {
         }()
 
         lazy var copyButton: NSButton = .init(title: "", target: nil, action: nil)
-        lazy var downloadButton: NSButton = .init(title: "", target: nil, action: nil)
+        lazy var expandButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var previewButton: NSButton = .init(title: "", target: nil, action: nil)
         var actionButtons: [NSButton] = []
     #endif
@@ -298,8 +298,8 @@ final class CodeView: PlatformView {
             previewAction?(language, textView.attributedText)
         }
 
-        @objc func handleDownload(_: UIButton) {
-            downloadCode()
+        @objc func handleExpand(_: UIButton) {
+            CodeSheetPresenter.present(self)
         }
     #elseif canImport(AppKit)
         @objc func handleCopy(_: Any?) {
@@ -313,8 +313,8 @@ final class CodeView: PlatformView {
             previewAction?(language, textView.attributedText)
         }
 
-        @objc func handleDownload(_: Any?) {
-            downloadCode()
+        @objc func handleExpand(_: Any?) {
+            CodeSheetPresenter.present(self)
         }
     #endif
 

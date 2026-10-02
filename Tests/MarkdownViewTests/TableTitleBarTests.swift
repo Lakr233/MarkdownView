@@ -72,12 +72,11 @@ struct TableTitleBarTests {
             #expect(cell.convert(cell.bounds, to: table).minY >= barBottom)
         }
         #expect(table.intrinsicContentHeight >= barBottom + scroll.frame.height)
-        for control in [table.copyControl, table.downloadControl, table.expandControl] {
+        for control in [table.copyControl, table.expandControl] {
             #expect(control.frame.maxY <= barBottom + 0.5)
             #expect(control.frame.maxX <= table.bounds.width)
         }
-        // Download, Copy, Expand from left to right.
-        #expect(table.downloadControl.frame.maxX <= table.copyControl.frame.minX + 0.5)
+        // Copy, then Expand, from left to right.
         #expect(table.copyControl.frame.maxX <= table.expandControl.frame.minX + 0.5)
     }
 
@@ -88,20 +87,14 @@ struct TableTitleBarTests {
         let (_, table) = try tableView(Self.table)
         table.frame.size.width = width
         layout(table)
-        let visible = [table.expandControl, table.copyControl, table.downloadControl].filter { !$0.isHidden }
+        let visible = [table.expandControl, table.copyControl].filter { !$0.isHidden }
         for control in visible {
             #expect(control.frame.minX >= table.tableViewPadding)
             #expect(control.frame.maxX <= width)
         }
-        // Download goes first and Expand last.
+        // Copy goes first; Expand is the last to go.
         if !visible.isEmpty {
             #expect(!table.expandControl.isHidden)
-        }
-        if !table.copyControl.isHidden {
-            #expect(!table.expandControl.isHidden)
-        }
-        if !table.downloadControl.isHidden {
-            #expect(!table.copyControl.isHidden)
         }
     }
 
@@ -122,7 +115,7 @@ struct TableTitleBarTests {
     @Test("Taps on the title bar's buttons reach them")
     func titleButtonsAreHittable() throws {
         let (_, table) = try tableView(Self.table)
-        for control in [table.copyControl, table.downloadControl, table.expandControl] {
+        for control in [table.copyControl, table.expandControl] {
             let center = CGPoint(x: control.frame.midX, y: control.frame.midY)
             #expect(table.interactionTarget(at: center) === control)
         }
@@ -135,6 +128,14 @@ struct TableTitleBarTests {
         table.expandHandler = { opened.append($0) }
         table.expandControl.performTap()
         #expect(opened.count == 1 && opened.first === table)
+    }
+
+    @Test("The sheet copies the table as Markdown and saves it as CSV")
+    func sheetCopiesAndSavesTheTable() throws {
+        let (_, table) = try tableView(Self.table)
+        let content = TableSheetContent(table)
+        #expect(content.markdown == table.markdown())
+        #expect(content.csv == TableExport.csvData(rows: table.plainTextRows))
     }
 
     @Test("The sheet's table has no title bar")
@@ -281,10 +282,11 @@ struct TableTitleBarTests {
     }
 }
 
-/// A code block's bar: Download and Copy at the trailing end.
+/// A code block's bar: Copy and Expand at the trailing end; Download is in
+/// the sheet Expand opens.
 @MainActor
 struct CodeBlockBarTests {
-    @Test("The bar holds Download then Copy, left to right, and no Expand")
+    @Test("The bar holds Copy then Expand, left to right")
     func barButtonOrder() throws {
         let view = RenderProbe.view("```swift\nlet a = 1\n```")
         let code = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
@@ -294,10 +296,10 @@ struct CodeBlockBarTests {
         #elseif canImport(AppKit)
             code.layoutSubtreeIfNeeded()
         #endif
-        let buttons = [code.downloadButton, code.copyButton]
+        let buttons = [code.copyButton, code.expandButton]
         #expect(buttons.allSatisfy { !$0.isHidden && $0.superview === code.barView })
-        #expect(code.copyButton.frame.maxX <= code.barView.bounds.width)
-        #expect(code.downloadButton.frame.maxX <= code.copyButton.frame.minX + 0.5)
+        #expect(code.expandButton.frame.maxX <= code.barView.bounds.width)
+        #expect(code.copyButton.frame.maxX <= code.expandButton.frame.minX + 0.5)
         for button in buttons {
             let point = button.convert(CGPoint(x: button.bounds.midX, y: button.bounds.midY), to: code)
             #expect(code.interactionTarget(at: point) === button)
@@ -310,5 +312,21 @@ struct CodeBlockBarTests {
     ])
     func fileNames(language: String, fileName: String) {
         #expect(CodeFileName.fileName(forLanguage: language) == fileName)
+    }
+
+    @Test("The sheet shows the highlighted code under its language, and saves it under its extension")
+    func sheetContent() throws {
+        let view = RenderProbe.view("```swift\nlet a = 1\n```\n\n```\nplain\n```")
+        let codes = view.contextViews.compactMap { $0 as? CodeView }
+        #expect(codes.count == 2)
+        let swift = CodeSheetContent(codes[0])
+        #expect(swift.title == "swift")
+        #expect(swift.code.string == "let a = 1")
+        #expect(swift.code.isEqual(to: codes[0].textView.attributedText))
+        #expect(swift.text == "let a = 1")
+        #expect(swift.fileName == "code.swift")
+        let plain = CodeSheetContent(codes[1])
+        #expect(plain.title == CodeSheetText.code)
+        #expect(plain.fileName == "code.txt")
     }
 }

@@ -157,17 +157,17 @@ extension TableView {
         return control
     }
 
-    /// The title at the leading end and Download, Copy and Expand at the
-    /// trailing end, inside the bar above the rows. A button the bar has no
-    /// room for is hidden — Download first, then Copy — rather than drawn
-    /// past the table's edge, where no tap could reach it.
+    /// The title at the leading end and Copy and Expand at the trailing end,
+    /// inside the bar above the rows. A button the bar has no room for is
+    /// hidden — Copy first — rather than drawn past the table's edge, where
+    /// no tap could reach it. Download is in the sheet Expand opens.
     func layoutTitleBar() {
         guard mode == .inline else { return }
         let height = titleHeight
         let glyph = TableHeaderAccessory.glyphSize
         let leading = tableViewPadding + layoutMetrics.horizontalCellPadding
         var trailing = bounds.width - tableViewPadding - 4
-        for control in [expandControl, copyControl, downloadControl] {
+        for control in [expandControl, copyControl] {
             control.isHidden = trailing - TableTitleBar.buttonWidth < leading
             guard !control.isHidden else { continue }
             trailing -= TableTitleBar.buttonWidth
@@ -220,9 +220,5 @@ extension TableView {
     @objc func resetTableCopyFeedback() {
         cancelScheduled(#selector(resetTableCopyFeedback))
         copyControl.setSymbol(TableSymbol.copy)
-    }
-
-    func downloadTable() {
-        FileExporter.export(TableExport.csvData(rows: plainTextRows), fileName: "table.csv", from: self)
     }
 }

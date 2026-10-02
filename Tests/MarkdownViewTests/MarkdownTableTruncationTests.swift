@@ -107,7 +107,7 @@ struct MarkdownTableTruncationTests {
             }
             queue.append(contentsOf: view.subviews)
         }
-        #expect(Set(controls.map(ObjectIdentifier.init)) == Set([table.copyControl, table.downloadControl, table.expandControl].map(ObjectIdentifier.init)))
+        #expect(Set(controls.map(ObjectIdentifier.init)) == Set([table.copyControl, table.expandControl].map(ObjectIdentifier.init)))
         #expect(table.sortControls.isEmpty)
         for control in controls {
             #expect(control.frame.maxY <= table.titleHeight + table.tableViewPadding + 0.5)

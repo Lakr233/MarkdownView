@@ -31,7 +31,7 @@ struct TableFrameUIKitTests {
         #expect(table.titleHeight > 0)
         #expect(abs(scrollView.frame.minY - (table.tableViewPadding + table.titleHeight)) < 0.001)
         #expect(!scrollView.showsHorizontalScrollIndicator)
-        for control in [table.copyControl, table.downloadControl, table.expandControl] {
+        for control in [table.copyControl, table.expandControl] {
             #expect(control.superview === table)
             #expect(control.frame.maxY <= scrollView.frame.minY + 0.5)
         }

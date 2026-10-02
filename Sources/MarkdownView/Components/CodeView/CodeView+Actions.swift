@@ -23,21 +23,13 @@ extension CodeView {
 
     static let copySymbol = TableSymbol.copy
     static let copiedSymbol = TableSymbol.copied
-    static let downloadSymbol = TableSymbol.download
+    static let expandSymbol = TableSymbol.expand
 
-    /// The bar's buttons from the trailing edge: Copy, Download, Preview,
-    /// then the host's actions — Download, Copy reading left to right.
+    /// The bar's buttons from the trailing edge: Expand, Copy, Preview, then
+    /// the host's actions — Copy, Expand reading left to right. Download is
+    /// in the sheet Expand opens.
     var barButtons: [PlatformButton] {
-        [copyButton, downloadButton, previewButton] + actionButtons.reversed()
-    }
-
-    /// Saves the block as a file named for its language.
-    func downloadCode() {
-        FileExporter.export(
-            Data(content.utf8),
-            fileName: CodeFileName.fileName(forLanguage: language),
-            from: self
-        )
+        [expandButton, copyButton, previewButton] + actionButtons.reversed()
     }
 
     /// Swaps Copy for a checkmark, and back after `copyFeedbackDuration`;

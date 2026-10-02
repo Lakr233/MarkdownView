@@ -14,6 +14,10 @@ struct TableSheetContent {
     let columnAlignments: [RawTableColumnAlignment]
     let theme: MarkdownTheme
     let linkHandler: ((LinkPayload, NSRange, CGPoint) -> Void)?
+    /// Every row as Markdown, as Copy puts it on the pasteboard.
+    let markdown: String
+    /// Every row as CSV, as Download saves it.
+    let csv: Data
 
     @MainActor
     init(_ tableView: TableView) {
@@ -21,6 +25,28 @@ struct TableSheetContent {
         columnAlignments = tableView.columnAlignments
         theme = tableView.currentTheme
         linkHandler = tableView.linkHandler
+        markdown = tableView.markdown()
+        csv = TableExport.csvData(rows: tableView.plainTextRows)
+    }
+
+    /// Copy, Download and Close for the sheet showing this table from `view`.
+    @MainActor
+    func menuActions(from view: @escaping () -> PlatformView?, close: @escaping () -> Void) -> SheetMenuActions {
+        let markdown = markdown
+        let csv = csv
+        return SheetMenuActions(
+            copy: {
+                FileExporter.copy(markdown)
+                #if canImport(UIKit) && !os(visionOS)
+                    UINotificationFeedbackGenerator().notificationOccurred(.success)
+                #endif
+            },
+            download: {
+                guard let view = view() else { return }
+                FileExporter.export(csv, fileName: "table.csv", from: view)
+            },
+            close: close
+        )
     }
 
     /// A table in sheet mode showing every row.
@@ -56,9 +82,11 @@ struct TableSheetContent {
         private static let margin: CGFloat = 16
 
         let tableView: TableView
+        private let content: TableSheetContent
         private let scrollView = UIScrollView()
 
         init(content: TableSheetContent) {
+            self.content = content
             tableView = content.makeTableView()
             super.init(nibName: nil, bundle: nil)
         }
@@ -78,11 +106,10 @@ struct TableSheetContent {
             tableView.sortHandler = { [weak self] _ in
                 self?.view.setNeedsLayout()
             }
-            navigationItem.rightBarButtonItem = UIBarButtonItem(
-                barButtonSystemItem: .done,
-                target: self,
-                action: #selector(close)
-            )
+            navigationItem.rightBarButtonItem = .sheetMenu(content.menuActions(
+                from: { [weak self] in self?.view },
+                close: { [weak self] in self?.dismiss(animated: true) }
+            ))
         }
 
         override func viewDidLayoutSubviews() {
@@ -101,10 +128,6 @@ struct TableSheetContent {
                 width: scrollView.bounds.width - insets.left - insets.right,
                 height: height + Self.margin * 2
             )
-        }
-
-        @objc private func close() {
-            dismiss(animated: true)
         }
     }
 
@@ -141,9 +164,11 @@ struct TableSheetContent {
             isReleasedWhenClosed = false
             minSize = CGSize(width: 320, height: 200)
             let contentView = TableSheetContentView(tableView: tableView)
-            contentView.closeButton.target = self
-            contentView.closeButton.action = #selector(close(_:))
             self.contentView = contentView
+            contentView.installMenu(content.menuActions(
+                from: { [weak contentView] in contentView },
+                close: { [weak self] in self?.close(nil) }
+            ))
             tableView.sortHandler = { [weak contentView] _ in
                 contentView?.needsLayout = true
             }
@@ -166,7 +191,7 @@ struct TableSheetContent {
         static let margin: CGFloat = 16
         static let barHeight: CGFloat = 48
 
-        let closeButton = NSButton(title: TableSheetText.done, target: nil, action: nil)
+        private var menuButton: SheetMenuButton?
         private let scrollView = NSScrollView()
         private let documentView = FlippedView()
         private let tableView: TableView
@@ -180,9 +205,14 @@ struct TableSheetContent {
             scrollView.documentView = documentView
             documentView.addSubview(tableView)
             addSubview(scrollView)
-            closeButton.bezelStyle = .rounded
-            closeButton.keyEquivalent = "\r"
-            addSubview(closeButton)
+        }
+
+        func installMenu(_ actions: SheetMenuActions) {
+            menuButton?.removeFromSuperview()
+            let button = SheetMenuButton(actions: actions)
+            addSubview(button)
+            menuButton = button
+            needsLayout = true
         }
 
         @available(*, unavailable)
@@ -193,17 +223,19 @@ struct TableSheetContent {
         override func layout() {
             super.layout()
             let margin = Self.margin
+            // Not flipped: the bar holding the menu is the top band.
             scrollView.frame = CGRect(
                 x: 0,
-                y: Self.barHeight,
+                y: 0,
                 width: bounds.width,
                 height: max(0, bounds.height - Self.barHeight)
             )
-            closeButton.sizeToFit()
-            closeButton.frame.origin = CGPoint(
-                x: bounds.width - margin - closeButton.frame.width,
-                y: (Self.barHeight - closeButton.frame.height) / 2
-            )
+            if let menuButton {
+                menuButton.frame.origin = CGPoint(
+                    x: bounds.width - margin - menuButton.frame.width,
+                    y: bounds.height - Self.barHeight + (Self.barHeight - menuButton.frame.height) / 2
+                )
+            }
             let width = max(0, scrollView.contentSize.width - margin * 2)
             let height = tableView.intrinsicContentHeight
             documentView.frame = CGRect(

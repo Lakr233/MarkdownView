@@ -144,12 +144,16 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
     public init() {}
 }
 
-/// Opaque, so a code block looks the same on whatever it sits on. In light
-/// appearance the body is white darkened by 5% black and the bar darkens it
-/// by 5% again; in dark appearance black is lightened by 10% white, twice.
+/// Translucent, so a code block shades whatever it sits on rather than
+/// laying a fixed grey over a tinted page: 5% black in light appearance,
+/// 10% white in dark. The bar sits on the body and lays the same layer
+/// again, so it is one step further from the page.
 enum CodeBlockDefaults {
-    static let background = PlatformColor(light: 0xF2F2F2, dark: 0x1A1A1A)
-    static let barBackground = PlatformColor(light: 0xE6E6E6, dark: 0x313131)
+    static let background = PlatformColor(
+        light: PlatformColor.black.withAlphaComponent(0.05),
+        dark: PlatformColor.white.withAlphaComponent(0.1)
+    )
+    static let barBackground = background
 }
 
 public extension MarkdownTheme {

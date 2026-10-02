@@ -67,10 +67,6 @@ final class TableView: PlatformView {
         symbol: TableSymbol.copy,
         title: TableTitleText.copy
     ) { [weak self] in self?.copyTable() }
-    lazy var downloadControl: TableTapControl = makeTitleControl(
-        symbol: TableSymbol.download,
-        title: TableTitleText.download
-    ) { [weak self] in self?.downloadTable() }
     lazy var expandControl: TableTapControl = makeTitleControl(
         symbol: TableSymbol.expand,
         title: TableTitleText.expand
@@ -169,7 +165,7 @@ final class TableView: PlatformView {
             )
         #endif
         if mode == .inline {
-            for view in [titleLabel, copyControl, downloadControl, expandControl] as [PlatformView] {
+            for view in [titleLabel, copyControl, expandControl] as [PlatformView] {
                 addSubview(view)
             }
         }
@@ -620,7 +616,7 @@ private extension RawTableRow {
     extension TableView {
         /// The control under `point`, in the table's coordinates.
         fileprivate func control(at point: CGPoint) -> TableTapControl? {
-            let titleControls = mode == .inline ? [copyControl, downloadControl, expandControl] : []
+            let titleControls = mode == .inline ? [copyControl, expandControl] : []
             return (titleControls + sortControls).first { control in
                 guard !control.isHidden, control.superview != nil else { return false }
                 return control.bounds.contains(control.convert(point, from: self))

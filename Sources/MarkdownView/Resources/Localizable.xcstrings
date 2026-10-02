@@ -1,6 +1,28 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
+    "Close" : {
+      "comment" : "Menu item that closes a code or table sheet.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "收起"
+          }
+        }
+      }
+    },
+    "Code" : {
+      "comment" : "Title of a code block's sheet when it names no language.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "代码"
+          }
+        }
+      }
+    },
     "Copy" : {
       "comment" : "Button that copies a table or a code block.",
       "localizations" : {
@@ -23,17 +45,6 @@
         }
       }
     },
-    "Done" : {
-      "comment" : "Closes the full table.",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "完成"
-          }
-        }
-      }
-    },
     "Download" : {
       "comment" : "Button that saves a table or a code block as a file.",
       "localizations" : {
@@ -52,6 +63,17 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "展开"
+          }
+        }
+      }
+    },
+    "More" : {
+      "comment" : "Button that opens a sheet's menu of actions.",
+      "localizations" : {
+        "zh-Hans" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "更多"
           }
         }
       }

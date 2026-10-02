@@ -59,7 +59,7 @@ extension CodeView {
     private func setupButtons() {
         setupPreviewButton()
         setupCopyButton()
-        setupBarButton(downloadButton, symbol: CodeView.downloadSymbol, title: TableTitleText.download, action: #selector(handleDownload(_:)))
+        setupBarButton(expandButton, symbol: CodeView.expandSymbol, title: TableTitleText.expand, action: #selector(handleExpand(_:)))
     }
 
     func performLayout() {
@@ -72,8 +72,8 @@ extension CodeView {
         layoutScrollViewAndTextView(barHeight: barHeight)
     }
 
-    /// Lays the bar's buttons out from the trailing edge: Copy, Download,
-    /// then Preview when there is a handler, then the host's actions.
+    /// Lays the bar's buttons out from the trailing edge: Expand, Copy, then
+    /// Preview when there is a handler, then the host's actions.
     private func layoutButtons() {
         let buttonSize = CGSize(width: TableTitleBar.buttonWidth, height: 44)
         previewButton.isHidden = previewAction == nil

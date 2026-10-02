@@ -46,17 +46,6 @@ struct TableRowLimit: Equatable {
     }
 }
 
-/// Text of the full-table sheet.
-enum TableSheetText {
-    static var done: String {
-        String(
-            localized: "Done",
-            bundle: .module,
-            comment: "Closes the full table."
-        )
-    }
-}
-
 /// The SF Symbols the table's controls draw.
 enum TableSymbol {
     static let copy = "doc.on.doc"
