@@ -274,11 +274,7 @@ struct TableTitleBarTests {
     }
 
     private func titleText(of table: TableView) -> String {
-        #if canImport(UIKit)
-            table.titleLabel.text ?? ""
-        #elseif canImport(AppKit)
-            table.titleLabel.stringValue
-        #endif
+        table.titleLabel.text
     }
 }
 

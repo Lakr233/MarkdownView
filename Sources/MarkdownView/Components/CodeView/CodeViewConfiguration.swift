@@ -64,7 +64,7 @@ extension CodeView {
 
     func performLayout() {
         let labelSize = languageLabel.intrinsicContentSize
-        let barHeight = max(languageLabelLineHeight, labelSize.height) + CodeViewConfiguration.barPadding * 2
+        let barHeight = max(languageLabel.lineHeight, labelSize.height) + CodeViewConfiguration.barPadding * 2
 
         layoutBarView(barHeight: barHeight, labelSize: labelSize)
         layoutButtons()
@@ -209,10 +209,6 @@ extension CodeView {
             insertSubview(lineNumberView, belowSubview: scrollView)
             updateLineNumberView()
         }
-
-        var languageLabelLineHeight: CGFloat {
-            languageLabel.font?.lineHeight ?? 16
-        }
     }
 
 #elseif canImport(AppKit)
@@ -283,11 +279,6 @@ extension CodeView {
             lineNumberView.layer?.backgroundColor = NSColor.clear.cgColor
             addSubview(lineNumberView)
             updateLineNumberView()
-        }
-
-        var languageLabelLineHeight: CGFloat {
-            let font = languageLabel.font ?? NSFont.systemFont(ofSize: NSFont.systemFontSize)
-            return font.ascender + abs(font.descender) + font.leading
         }
     }
 #endif

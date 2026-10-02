@@ -47,90 +47,35 @@ enum TableTitleText {
     }
 }
 
-#if canImport(UIKit)
-    /// The name at the leading end of a table's title bar.
-    final class TableTitleLabel: UILabel {
-        private var theme: MarkdownTheme = .default
+/// The name at the leading end of a table's title bar.
+final class TableTitleLabel: BarTextLabel {
+    private var theme: MarkdownTheme = .default
 
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            numberOfLines = 1
-            lineBreakMode = .byTruncatingTail
+    override init(frame: CGRect) {
+        super.init(frame: frame)
+        #if canImport(UIKit)
             textColor = .secondaryLabel
-            setTheme(.default)
-            text = TableTitleText.table
-        }
-
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        func setTheme(_ theme: MarkdownTheme) {
-            self.theme = theme
-            font = theme.fonts.footnote
-        }
-
-        /// The bar's height: one line of the title and the bar's padding.
-        var barHeight: CGFloat {
-            ceil(theme.fonts.footnote.lineHeight) + TableTitleBar.verticalPadding * 2
-        }
-
-        func setHiddenRowCount(_ count: Int) {
-            let title = count > 0 ? TableTitleText.table(hiddenRowCount: count) : TableTitleText.table
-            if text != title {
-                text = title
-            }
-        }
-    }
-
-#elseif canImport(AppKit)
-    /// The name at the leading end of a table's title bar.
-    final class TableTitleLabel: NSTextField {
-        private var theme: MarkdownTheme = .default
-
-        override init(frame: CGRect) {
-            super.init(frame: frame)
-            isEditable = false
-            isSelectable = false
-            isBordered = false
-            drawsBackground = false
-            lineBreakMode = .byTruncatingTail
-            maximumNumberOfLines = 1
-            cell?.truncatesLastVisibleLine = true
+        #elseif canImport(AppKit)
             textColor = .secondaryLabelColor
-            setTheme(.default)
-            stringValue = TableTitleText.table
-        }
-
-        @available(*, unavailable)
-        required init?(coder _: NSCoder) {
-            fatalError("init(coder:) has not been implemented")
-        }
-
-        func setTheme(_ theme: MarkdownTheme) {
-            self.theme = theme
-            font = theme.fonts.footnote
-        }
-
-        /// The bar's height: one line of the title and the bar's padding.
-        var barHeight: CGFloat {
-            let font = theme.fonts.footnote
-            return ceil(font.ascender + abs(font.descender) + font.leading) + TableTitleBar.verticalPadding * 2
-        }
-
-        func setHiddenRowCount(_ count: Int) {
-            let title = count > 0 ? TableTitleText.table(hiddenRowCount: count) : TableTitleText.table
-            if stringValue != title {
-                stringValue = title
-            }
-        }
-
-        override func hitTest(_: NSPoint) -> NSView? {
-            nil
-        }
+        #endif
+        setTheme(.default)
+        text = TableTitleText.table
     }
-#endif
+
+    func setTheme(_ theme: MarkdownTheme) {
+        self.theme = theme
+        font = theme.fonts.footnote
+    }
+
+    /// The bar's height: one line of the title and the bar's padding.
+    var barHeight: CGFloat {
+        lineHeight + TableTitleBar.verticalPadding * 2
+    }
+
+    func setHiddenRowCount(_ count: Int) {
+        text = count > 0 ? TableTitleText.table(hiddenRowCount: count) : TableTitleText.table
+    }
+}
 
 enum TableTitleBar {
     static let verticalPadding: CGFloat = 8

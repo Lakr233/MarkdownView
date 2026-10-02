@@ -27,11 +27,7 @@ final class CodeView: PlatformView {
 
     var language: String = "" {
         didSet {
-            #if canImport(UIKit)
-                languageLabel.text = language.isEmpty ? "</>" : language
-            #elseif canImport(AppKit)
-                languageLabel.stringValue = language.isEmpty ? "</>" : language
-            #endif
+            languageLabel.text = language.isEmpty ? "</>" : language
             // The label is sized in layout.
             if oldValue != language {
                 resetCopyFeedback()
@@ -126,7 +122,6 @@ final class CodeView: PlatformView {
     lazy var barView: PlatformView = .init()
     #if canImport(UIKit)
         lazy var scrollView: HorizontalClippingScrollView = .init()
-        lazy var languageLabel: UILabel = .init()
         lazy var copyButton: UIButton = .init()
         lazy var expandButton: UIButton = .init()
         lazy var previewButton: UIButton = .init()
@@ -140,20 +135,13 @@ final class CodeView: PlatformView {
             return sv
         }()
 
-        lazy var languageLabel: NSTextField = {
-            let label = NSTextField(labelWithString: "")
-            label.isEditable = false
-            label.isBordered = false
-            label.backgroundColor = .clear
-            return label
-        }()
-
         lazy var copyButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var expandButton: NSButton = .init(title: "", target: nil, action: nil)
         lazy var previewButton: NSButton = .init(title: "", target: nil, action: nil)
         var actionButtons: [NSButton] = []
     #endif
 
+    lazy var languageLabel: BarTextLabel = .init()
     lazy var textView: TextLabelView = .init()
     lazy var lineNumberView: LineNumberView = .init()
 

@@ -79,10 +79,6 @@ struct CodeViewLayoutTests {
             Issue.record("no code view was built")
             return
         }
-        #if canImport(UIKit)
-            #expect(codeView.languageLabel.text == "</>")
-        #elseif canImport(AppKit)
-            #expect(codeView.languageLabel.stringValue == "</>")
-        #endif
+        #expect(codeView.languageLabel.text == "</>")
     }
 }

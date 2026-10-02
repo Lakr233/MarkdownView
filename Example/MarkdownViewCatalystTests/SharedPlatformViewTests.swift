@@ -163,11 +163,7 @@ struct SharedPlatformViewTests {
     }
 
     private func languageLabelText(of codeView: CodeView) -> String? {
-        #if canImport(UIKit)
-            codeView.languageLabel.text
-        #elseif canImport(AppKit)
-            codeView.languageLabel.stringValue
-        #endif
+        codeView.languageLabel.text
     }
 
     private func findGridView(in view: PlatformView) -> GridView? {
