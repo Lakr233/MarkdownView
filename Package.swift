@@ -18,6 +18,7 @@ let package = Package(
         .library(name: "MarkdownParser", targets: ["MarkdownParser"]),
         .library(name: "WatchMarkdownView", targets: ["WatchMarkdownView"]),
         .executable(name: "MarkdownViewBenchmark", targets: ["MarkdownViewBenchmark"]),
+        .executable(name: "MarkdownViewCatalog", targets: ["MarkdownViewCatalog"]),
     ],
     dependencies: [
         .package(url: "https://github.com/Lakr233/Litext", from: "3.2.0"),
@@ -52,6 +53,12 @@ let package = Package(
             dependencies: [
                 "MarkdownView",
                 "MarkdownParser",
+            ]
+        ),
+        .executableTarget(
+            name: "MarkdownViewCatalog",
+            dependencies: [
+                "MarkdownView",
             ]
         ),
         .target(name: "MarkdownParser", dependencies: [

@@ -1,0 +1,33 @@
+{
+  "fill" : {
+    "automatic-gradient" : "srgb:0.36000,0.30000,0.94000,1.00000"
+  },
+  "groups" : [
+    {
+      "layers" : [
+        {
+          "glass" : true,
+          "image-name" : "specimens.svg",
+          "name" : "specimens"
+        },
+        {
+          "glass" : true,
+          "image-name" : "page.svg",
+          "name" : "page"
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "specular" : true,
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : "shared"
+  }
+}
