@@ -104,12 +104,13 @@ struct TableLayoutMetrics: Equatable {
         ///
         /// `headerAccessoryWidths[column]` is space the header cell of
         /// `column` leaves free at its trailing edge, counted into the
-        /// column's width.
+        /// column's width. Each cell is added to its column's view in
+        /// `columnViews`.
         func configureCells(
             for contents: [[NSAttributedString]],
             columnAlignments: [RawTableColumnAlignment] = [],
             headerAccessoryWidths: [CGFloat] = [],
-            in containerView: PlatformView,
+            in columnViews: [PlatformView],
             metrics: TableLayoutMetrics,
         ) {
             metrics.validate()
@@ -118,6 +119,11 @@ struct TableLayoutMetrics: Equatable {
             let numberOfColumns = contents.first?.count ?? 0
             guard contents.allSatisfy({ $0.count == numberOfColumns }) else {
                 assertionFailure("Markdown table rows must have a consistent column count.")
+                resetLayout()
+                return
+            }
+            guard columnViews.count >= numberOfColumns else {
+                assertionFailure("Every Markdown table column needs a view for its cells.")
                 resetLayout()
                 return
             }
@@ -158,7 +164,7 @@ struct TableLayoutMetrics: Equatable {
                         alignment: columnAlignments[safe: column] ?? .none,
                         accessoryWidth: accessoryWidth,
                         metrics: metrics,
-                        in: containerView,
+                        in: columnViews[column],
                     )
                     cellSizes[index] = cellSize
                     rowHeight = max(rowHeight, cellSize.height)
@@ -212,11 +218,14 @@ struct TableLayoutMetrics: Equatable {
                 cell.selectionBackgroundColor = theme.colors.selectionBackground
                 cell.delegate = delegate
                 cell.isSelectable = true
-                containerView.addSubview(cell)
                 cells.append(cell)
                 records.append(nil)
             } else {
                 cell = cells[index]
+            }
+            // A new column count moves a kept cell into another column.
+            if cell.superview !== containerView {
+                containerView.addSubview(cell)
             }
 
             // The header cell gives up its accessory's width, and the column

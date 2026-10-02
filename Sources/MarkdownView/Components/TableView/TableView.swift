@@ -87,6 +87,10 @@ final class TableView: PlatformView {
     private(set) var sort: TableSort?
 
     private var cellManager = TableViewCellManager()
+    /// One view per column, holding that column's cells. A resize moves
+    /// these rather than every cell: a cell keeps its place in its column's
+    /// view however wide the column grows.
+    private var columnViews: [PlatformView] = []
     private var widths: [CGFloat] = []
     private var heights: [CGFloat] = []
     private(set) var theme: MarkdownTheme = .default
@@ -372,55 +376,93 @@ final class TableView: PlatformView {
         }
     #endif
 
+    /// Keeps one view per column in the cell container, below the sort
+    /// controls.
+    private func configureColumnViews(count: Int) {
+        while columnViews.count < count {
+            let view = TableColumnView()
+            if let control = sortControls.first {
+                #if canImport(UIKit)
+                    cellContainer.insertSubview(view, belowSubview: control)
+                #elseif canImport(AppKit)
+                    cellContainer.addSubview(view, positioned: .below, relativeTo: control)
+                #endif
+            } else {
+                cellContainer.addSubview(view)
+            }
+            columnViews.append(view)
+        }
+        while columnViews.count > count {
+            columnViews.removeLast().removeFromSuperview()
+        }
+    }
+
     private func layoutCells(using layoutWidths: [CGFloat]) {
         guard !cellManager.cellSizes.isEmpty, !cellManager.cells.isEmpty else {
             return
         }
-        guard layoutWidths.count == numberOfColumns else {
+        guard layoutWidths.count == numberOfColumns, columnViews.count == numberOfColumns else {
             assertionFailure("Table layout width count must match its column count.")
             return
         }
 
-        var x: CGFloat = 0
+        var rowOffsets: [CGFloat] = []
         var y: CGFloat = 0
+        for height in heights {
+            rowOffsets.append(y)
+            y += height
+        }
 
-        for row in 0 ..< numberOfRows {
-            for column in 0 ..< numberOfColumns {
-                let index = row * numberOfColumns + column
-                let cell = cellManager.cells[index]
-                let idealCellSize = cell.intrinsicContentSize
-                let columnWidth = layoutWidths[column]
-                let cellHeight = ceil(idealCellSize.height)
-                let verticalOffset = max(0, (heights[row] - cellHeight) / 2)
+        var x: CGFloat = 0
+        for column in 0 ..< numberOfColumns {
+            let columnWidth = layoutWidths[column]
+            let alignment = columnAlignments[safe: column] ?? .none
+            let textWidth = max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2)
 
+            // A cell keeps the width its text was measured at rather than
+            // the column's: a column stretched to fill the viewport then
+            // never re-wraps a cell away from its row's height.
+            let cells = (0 ..< numberOfRows).map { row in
+                let cell = cellManager.cells[row * numberOfColumns + column]
                 let accessoryWidth = row == 0
                     ? display.headerAccessoryWidths[safe: column] ?? 0
                     : 0
-
-                // The cell keeps the width its text was measured at and moves
-                // inside the column instead: a column stretched to fill the
-                // viewport then never re-wraps a cell away from its row's
-                // height, and a resize only moves cells rather than sizing,
-                // typesetting and redrawing each one again.
-                let textWidth = max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth)
-                let cellWidth = min(ceil(idealCellSize.width), textWidth)
-                let alignmentOffset: CGFloat = switch columnAlignments[safe: column] ?? .none {
-                case .center: (textWidth - cellWidth) / 2
-                case .right: textWidth - cellWidth
-                case .left, .none: 0
-                }
-
-                cell.applyFrame(.init(
-                    x: x + layoutMetrics.horizontalCellPadding + alignmentOffset,
-                    y: y + verticalOffset,
-                    width: cellWidth,
-                    height: cellHeight,
-                ))
-
-                x += columnWidth
+                let size = cell.intrinsicContentSize
+                let width = min(ceil(size.width), max(0, textWidth - accessoryWidth))
+                return (cell: cell, size: CGSize(width: width, height: ceil(size.height)), accessoryWidth: accessoryWidth)
             }
-            x = 0
-            y += heights[row]
+
+            // The column's view is as wide as its widest cell and takes the
+            // column's alignment; each cell takes it again inside the view.
+            // A resize then moves one view per column and none of the cells,
+            // which AppKit would otherwise resize, re-constrain and redraw.
+            let contentWidth = cells.map { $0.size.width + $0.accessoryWidth }.max() ?? 0
+            columnViews[column].applyFrame(CGRect(
+                x: x + layoutMetrics.horizontalCellPadding + Self.offset(of: alignment, in: textWidth - contentWidth),
+                y: 0,
+                width: contentWidth,
+                height: y,
+            ))
+            for (row, placement) in cells.enumerated() {
+                let space = contentWidth - placement.accessoryWidth - placement.size.width
+                placement.cell.applyFrame(CGRect(
+                    origin: CGPoint(
+                        x: Self.offset(of: alignment, in: space),
+                        y: rowOffsets[row] + max(0, (heights[row] - placement.size.height) / 2),
+                    ),
+                    size: placement.size,
+                ))
+            }
+            x += columnWidth
+        }
+    }
+
+    /// Where content aligned to `alignment` starts in `space` left over.
+    private static func offset(of alignment: RawTableColumnAlignment, in space: CGFloat) -> CGFloat {
+        switch alignment {
+        case .center: space / 2
+        case .right: space
+        case .left, .none: 0
         }
     }
 
@@ -448,11 +490,12 @@ final class TableView: PlatformView {
         display = TableDisplay(contents: contents, mode: mode, sort: sort)
         cellManager.setTheme(theme)
         cellManager.setDelegate(self)
+        configureColumnViews(count: display.rows.first?.count ?? 0)
         cellManager.configureCells(
             for: display.rows,
             columnAlignments: columnAlignments,
             headerAccessoryWidths: display.headerAccessoryWidths,
-            in: cellContainer,
+            in: columnViews,
             metrics: layoutMetrics,
         )
         updateSelectionGroup()
@@ -604,6 +647,8 @@ private extension RawTableRow {
 // MARK: - Scrolling
 
 #if canImport(UIKit)
+    typealias TableColumnView = UIView
+
     extension TableView: UIScrollViewDelegate {
         func scrollViewDidScroll(_: UIScrollView) {
             gridView.setScrollOffset(scrollOffset)
@@ -623,6 +668,8 @@ private extension RawTableRow {
             true
         }
     }
+
+    typealias TableColumnView = FlippedContainerView
 #endif
 
 // MARK: - Controls

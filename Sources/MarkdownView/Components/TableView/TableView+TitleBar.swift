@@ -124,12 +124,14 @@ extension TableView {
                 height: glyph,
             )
         }
-        let labelHeight = titleLabel.intrinsicContentSize.height
+        // As wide as the title and no wider, so a resize that leaves room
+        // for it keeps its width and does not set the text again.
+        let labelSize = titleLabel.intrinsicContentSize
         titleLabel.applyFrame(CGRect(
             x: leading,
-            y: tableViewPadding + (height - labelHeight) / 2,
-            width: max(0, trailing - leading),
-            height: labelHeight,
+            y: tableViewPadding + (height - labelSize.height) / 2,
+            width: min(labelSize.width, max(0, trailing - leading)),
+            height: labelSize.height,
         ))
     }
 

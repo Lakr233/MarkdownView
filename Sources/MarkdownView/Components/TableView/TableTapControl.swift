@@ -19,7 +19,11 @@ import Foundation
         private let imageView = UIImageView()
 
         var glyphFrame: CGRect = .zero {
-            didSet { imageView.frame = glyphFrame }
+            // Set on every layout pass, so an unchanged one is left alone.
+            didSet {
+                guard oldValue != glyphFrame else { return }
+                imageView.frame = glyphFrame
+            }
         }
 
         override init(frame: CGRect) {
@@ -89,7 +93,11 @@ import Foundation
         private let imageView = NSImageView()
 
         var glyphFrame: CGRect = .zero {
-            didSet { imageView.frame = glyphFrame }
+            // Set on every layout pass, so an unchanged one is left alone.
+            didSet {
+                guard oldValue != glyphFrame else { return }
+                imageView.frame = glyphFrame
+            }
         }
 
         override init(frame: CGRect) {

@@ -29,14 +29,13 @@ struct MarkdownTableUpdateTests {
         guard let scrollView = tableView.subviews.first(where: { $0 is ProbeScrollView })
             as? ProbeScrollView
         else { return [] }
+        // The cells sit inside their columns' views.
         #if canImport(UIKit)
-            return scrollView.subviews
-                .flatMap { [$0] + $0.subviews }
-                .compactMap { $0 as? TextLabelView }
+            let columns = scrollView.subviews
         #elseif canImport(AppKit)
-            guard let documentView = scrollView.documentView else { return [] }
-            return documentView.subviews.compactMap { $0 as? TextLabelView }
+            let columns = scrollView.documentView?.subviews ?? []
         #endif
+        return rowByRow(columns.map { $0.subviews.compactMap { $0 as? TextLabelView } })
     }
 
     @MainActor

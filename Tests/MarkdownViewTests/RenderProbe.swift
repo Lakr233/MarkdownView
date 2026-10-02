@@ -252,3 +252,11 @@ enum RenderProbeDocument {
     最后一段 trailing paragraph.
     """
 }
+
+/// A table's cells row by row, from each column's cells top to bottom.
+func rowByRow<Cell>(_ columns: [[Cell]]) -> [Cell] {
+    let rowCount = columns.map(\.count).max() ?? 0
+    return (0 ..< rowCount).flatMap { row in
+        columns.compactMap { $0[safe: row] }
+    }
+}

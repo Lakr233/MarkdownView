@@ -174,7 +174,9 @@ struct MarkdownTableTruncationTests {
 
         let header = try #require(table.cellViews[safe: 1])
         let body = try #require(table.cellViews[safe: 3])
-        #expect(abs(header.frame.minX - body.frame.minX) < 0.5)
+        let headerFrame = header.convert(header.bounds, to: table)
+        let bodyFrame = body.convert(body.bounds, to: table)
+        #expect(abs(headerFrame.minX - bodyFrame.minX) < 0.5)
         #expect(ceil(header.intrinsicContentSize.width) <= header.frame.width + 0.5)
     }
 
@@ -190,13 +192,17 @@ struct MarkdownTableTruncationTests {
         let view = RenderProbe.view(markdown, width: 480)
         let table = try #require(tableView(in: view))
         table.layoutSubtreeIfNeededOnBothPlatforms()
-        let narrow = table.cellViews.map(\.frame)
+        let narrowCells = table.cellViews.map(\.frame)
+        let narrow = table.cellViews.map { $0.convert($0.bounds, to: table) }
 
         RenderProbe.show(markdown, in: view, width: 900)
         table.layoutSubtreeIfNeededOnBothPlatforms()
-        let wide = table.cellViews.map(\.frame)
+        let wideCells = table.cellViews.map(\.frame)
+        let wide = table.cellViews.map { $0.convert($0.bounds, to: table) }
 
-        // The columns stretched, so the cells moved, but none was resized.
+        // The columns stretched, so the cells moved in the table, but with
+        // their columns: none was resized or moved within its column.
+        #expect(narrowCells == wideCells)
         #expect(narrow.map(\.size) == wide.map(\.size))
         #expect(narrow != wide)
         for frames in [narrow, wide] {

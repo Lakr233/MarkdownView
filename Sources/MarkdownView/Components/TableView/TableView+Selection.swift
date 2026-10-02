@@ -157,8 +157,9 @@ private let dragEdgeWidth: CGFloat = 16
     private extension TableView {
         /// Scrolls the columns sideways while a drag runs past either edge.
         func scrollHorizontally(toFollowDragAt location: CGPoint, in label: TextLabelView) {
-            guard let scrollView = label.superview as? UIScrollView,
-                  scrollView.contentSize.width > scrollView.bounds.width
+            guard let scrollView = sequence(first: label, next: \.superview)
+                .lazy.compactMap({ $0 as? UIScrollView }).first,
+                scrollView.contentSize.width > scrollView.bounds.width
             else { return }
             let point = label.convert(location, to: scrollView)
             let visible = scrollView.bounds.insetBy(dx: dragEdgeWidth, dy: 0)

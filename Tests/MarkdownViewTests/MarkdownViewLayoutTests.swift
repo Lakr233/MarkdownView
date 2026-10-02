@@ -27,7 +27,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("A"), makeText("B")],
                 [makeText("C"), makeText("D")],
             ],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 180),
         )
 
@@ -38,7 +38,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("AA"), makeText("BB")],
                 [makeText("CC"), makeText("DD")],
             ],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 180),
         )
 
@@ -57,13 +57,13 @@ struct MarkdownViewLayoutTests {
                 [makeText("A"), makeText("B")],
                 [makeText("C"), makeText("D")],
             ],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 180),
         )
 
         manager.configureCells(
             for: [[makeText("Only one")]],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 180),
         )
 
@@ -79,7 +79,7 @@ struct MarkdownViewLayoutTests {
 
         manager.configureCells(
             for: [[makeText("Wrapped content that needs width")]],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 220),
         )
 
@@ -88,7 +88,7 @@ struct MarkdownViewLayoutTests {
 
         manager.configureCells(
             for: [[makeText("Wrapped content that needs width")]],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 120),
         )
 
@@ -108,7 +108,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("Short"), makeText("A much longer value")],
                 [makeText("This cell is tallest\nbecause it wraps"), makeText("Mid")],
             ],
-            in: container,
+            in: [container, container],
             metrics: testTableMetrics(maximumTextWidth: 140),
         )
 
@@ -138,7 +138,7 @@ struct MarkdownViewLayoutTests {
                 [makeText("A"), makeText(longToken)],
                 [makeText(""), makeText("Value")],
             ],
-            in: container,
+            in: [container, container],
             metrics: .compact,
         )
 
@@ -768,13 +768,16 @@ private func columnsSize(of scrollView: TestScrollView) -> CGSize {
     #endif
 }
 
+/// The cells in the scrolling content, row by row, taken from inside their
+/// columns' views.
 @MainActor
 private func extractTableCells(from scrollView: TestScrollView) -> [TextLabelView] {
     #if canImport(UIKit)
-        scrollView.subviews.compactMap { $0 as? TextLabelView }
+        let columns = scrollView.subviews
     #elseif canImport(AppKit)
-        scrollView.documentView?.subviews.compactMap { $0 as? TextLabelView } ?? []
+        let columns = scrollView.documentView?.subviews ?? []
     #endif
+    return rowByRow(columns.map { $0.subviews.compactMap { $0 as? TextLabelView } })
 }
 
 @MainActor

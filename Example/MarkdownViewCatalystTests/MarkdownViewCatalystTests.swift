@@ -17,7 +17,7 @@ import Testing
                     [makeText("A"), makeText("B")],
                     [makeText("C"), makeText("D")],
                 ],
-                in: container,
+                in: [container, container],
                 metrics: testTableMetrics(maximumTextWidth: 180),
             )
 
@@ -28,7 +28,7 @@ import Testing
                     [makeText("AA"), makeText("BB")],
                     [makeText("CC"), makeText("DD")],
                 ],
-                in: container,
+                in: [container, container],
                 metrics: testTableMetrics(maximumTextWidth: 180),
             )
 
@@ -80,7 +80,8 @@ import Testing
             let scrollView = try #require(
                 tableView.subviews.first { $0 is UIScrollView } as? UIScrollView,
             )
-            let cells = scrollView.subviews.compactMap { $0 as? TextLabelView }
+            let cells = tableView.cellViews
+            #expect(cells.allSatisfy { $0.isDescendant(of: scrollView) })
 
             #expect(tableView.columnAlignments == [.left, .center, .right])
             #expect(cells.count == 6)
@@ -146,7 +147,8 @@ import Testing
             let scrollView = try #require(
                 tableView.subviews.first { $0 is UIScrollView } as? UIScrollView,
             )
-            let cells = scrollView.subviews.compactMap { $0 as? TextLabelView }
+            let cells = tableView.cellViews
+            #expect(cells.allSatisfy { $0.isDescendant(of: scrollView) })
 
             #expect(cells.count == 2)
             #expect(abs(cells[0].frame.midY - cells[1].frame.midY) <= 0.5)

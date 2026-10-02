@@ -81,6 +81,23 @@ struct TableTitleBarTests {
         #expect(table.copyControl.frame.maxX <= table.expandControl.frame.minX + 0.5)
     }
 
+    @Test
+    func `The title keeps its width while the table has room for it, and is cut short when not`() throws {
+        let (_, table) = try tableView(Self.table, width: 480)
+        let titleWidth = table.titleLabel.frame.width
+        #expect(abs(titleWidth - table.titleLabel.intrinsicContentSize.width) < 0.5)
+
+        table.frame.size.width = 900
+        layout(table)
+        #expect(table.titleLabel.frame.width == titleWidth)
+        #expect(titleText(of: table) == TableTitleText.table)
+
+        table.frame.size.width = 80
+        layout(table)
+        #expect(table.titleLabel.frame.width < titleWidth)
+        #expect(table.titleLabel.frame.maxX <= table.bounds.width)
+    }
+
     @Test(arguments: [
         40 as CGFloat, 80, 120, 200,
     ])
