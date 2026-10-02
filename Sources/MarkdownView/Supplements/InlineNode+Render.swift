@@ -191,10 +191,10 @@ extension MarkdownInlineNode {
                     context.restoreGState()
                 }
                 let attachment = TextLabel.Attachment.hold(attrString: .init(string: latexContent))
-                // Litext's attachment run delegate reports ascent = 0.9 * size.height and
-                // descent = 0.1 * size.height, so pad the height to keep the full image
-                // above the baseline while the reserved width matches the drawn width.
-                attachment.size = CGSize(width: imageSize.width, height: imageSize.height / 0.9)
+                // The image is drawn standing on the baseline, so it reserves its
+                // height above the baseline and nothing below it.
+                attachment.size = imageSize
+                attachment.descent = 0
 
                 let attributes: [NSAttributedString.Key: Any] = [
                     .litextAttachment: attachment,
