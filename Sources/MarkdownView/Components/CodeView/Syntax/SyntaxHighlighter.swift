@@ -402,7 +402,7 @@ private struct SyntaxScanner {
     private mutating func mark(_ start: Int, _ end: Int, _ token: SyntaxToken) {
         index = max(index, end)
         guard end > start else { return }
-        map[NSRange(location: start, length: end - start)] = token.color
+        map[NSRange(location: start, length: end - start)] = token
     }
 
     private func matches(_ pattern: [UInt16], at start: Int) -> Bool {

@@ -27,7 +27,8 @@ struct CodeHighlightRequest {
 
 @MainActor
 public final class CodeHighlighter {
-    public typealias HighlightMap = [NSRange: PlatformColor]
+    /// What each highlighted range is; the theme colours it when drawn.
+    public typealias HighlightMap = [NSRange: SyntaxToken]
 
     public private(set) var renderCache = LRUCache<Int, HighlightMap>(countLimit: 256)
 
@@ -44,7 +45,8 @@ public final class CodeHighlighter {
     private var pendingRequests: OrderedDictionary<Int, CodeHighlightRequest> = [:]
     private var inflightKey: Int?
 
-    private init() {}
+    /// Views share ``current``; a separate instance keeps its own queue.
+    init() {}
 
     public static let current = CodeHighlighter()
 }
@@ -158,8 +160,9 @@ public extension CodeHighlighter.HighlightMap {
         )
 
         let length = attributedContent.length
-        for (range, color) in self {
+        for (range, token) in self {
             guard range.location >= 0, range.upperBound <= length else { continue }
+            let color = theme.syntax.color(for: token)
             guard color != plainTextColor else { continue }
             attributedContent.addAttributes([.foregroundColor: color], range: range)
         }

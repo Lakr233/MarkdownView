@@ -9,9 +9,8 @@ struct SyntaxHighlighterTests {
     private func tokens(_ code: String, _ language: String?) -> [(text: String, token: SyntaxToken)] {
         let map = SyntaxHighlighter.highlight(code, language: language)
         let text = code as NSString
-        let kinds: [SyntaxToken] = [.comment, .keyword, .string, .number, .type, .attribute, .meta, .variable]
         return map.keys.sorted { $0.location < $1.location }.compactMap { range in
-            guard let color = map[range], let kind = kinds.first(where: { $0.color == color }) else { return nil }
+            guard let kind = map[range] else { return nil }
             return (text.substring(with: range), kind)
         }
     }

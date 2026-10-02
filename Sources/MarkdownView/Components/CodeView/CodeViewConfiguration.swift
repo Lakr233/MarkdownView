@@ -53,6 +53,7 @@ extension CodeView {
         setupScrollView()
         setupTextView()
         setupLineNumberView()
+        applyBackgroundColors()
     }
 
     private func setupButtons() {
@@ -148,11 +149,9 @@ extension CodeView {
             // Not clipped, so a selection's handles can reach past the code;
             // the bar rounds its own corners instead.
             clipsToBounds = false
-            backgroundColor = .gray.withAlphaComponent(0.05)
         }
 
         func setupBarView() {
-            barView.backgroundColor = .gray.withAlphaComponent(0.05)
             barView.layer.cornerRadius = layer.cornerRadius
             barView.layer.cornerCurve = .continuous
             barView.layer.maskedCorners = [.layerMinXMinYCorner, .layerMaxXMinYCorner]
@@ -222,12 +221,10 @@ extension CodeView {
         func setupViewAppearance() {
             wantsLayer = true
             layer?.cornerRadius = 8
-            layer?.backgroundColor = NSColor.gray.withAlphaComponent(0.05).cgColor
         }
 
         func setupBarView() {
             barView.wantsLayer = true
-            barView.layer?.backgroundColor = NSColor.gray.withAlphaComponent(0.05).cgColor
             addSubview(barView)
             barView.addSubview(languageLabel)
         }
@@ -295,3 +292,19 @@ extension CodeView {
         }
     }
 #endif
+
+extension CodeView {
+    /// Paints the body and the bar in the theme's code block colours.
+    func applyBackgroundColors() {
+        #if canImport(UIKit)
+            backgroundColor = theme.colors.codeBlockBackground
+            barView.backgroundColor = theme.colors.codeBlockBarBackground
+        #elseif canImport(AppKit)
+            // A layer takes a fixed colour, so resolve it for this appearance.
+            effectiveAppearance.performAsCurrentDrawingAppearance {
+                layer?.backgroundColor = theme.colors.codeBlockBackground.cgColor
+                barView.layer?.backgroundColor = theme.colors.codeBlockBarBackground.cgColor
+            }
+        #endif
+    }
+}

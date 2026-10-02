@@ -4,25 +4,33 @@ import Testing
 
 /// Every view on screen shares one highlighter, so a view asking for its code
 /// to be highlighted must not cost another view the request it already made.
+@MainActor
 struct CodeHighlighterSchedulingTests {
     /// Stands in for a view: only its identity names the requester.
     private final class Requester {}
 
-    @MainActor
+    /// Its own highlighter, so requests other tests make while these run
+    /// cannot queue ahead of these and starve them.
+    private let highlighter = CodeHighlighter()
+
     private func request(_ content: String, language: String = "swift") -> CodeHighlightRequest {
         .init(
-            key: CodeHighlighter.current.key(for: content, language: language),
+            key: highlighter.key(for: content, language: language),
             content: content,
             language: language
         )
     }
 
     @MainActor
-    private func waitUntilCached(_ keys: [Int], timeout: Duration = .seconds(10)) async -> Bool {
-        let clock = ContinuousClock()
-        let deadline = clock.now.advanced(by: timeout)
-        while clock.now < deadline {
-            if keys.allSatisfy({ CodeHighlighter.current.cachedHighlightMap(for: $0) != nil }) {
+    /// Polls until every key is cached, giving up after `attempts` polls.
+    ///
+    /// Counted in polls, not wall time: a result reaches the cache on the main
+    /// actor, and other suites running alongside can hold it for seconds. A
+    /// poll only runs when this test has the main actor, so the budget is
+    /// spent only on time the highlighter could have used.
+    private func waitUntilCached(_ keys: [Int], attempts: Int = 500) async -> Bool {
+        for _ in 0 ..< attempts {
+            if keys.allSatisfy({ highlighter.cachedHighlightMap(for: $0) != nil }) {
                 return true
             }
             try? await Task.sleep(for: .milliseconds(20))
@@ -30,7 +38,6 @@ struct CodeHighlighterSchedulingTests {
         return false
     }
 
-    @MainActor
     @Test("A request from one view survives another view scheduling its own")
     func requestsFromAnotherViewAreNotDropped() async {
         let tag = UUID().uuidString
@@ -42,15 +49,14 @@ struct CodeHighlighterSchedulingTests {
 
         let viewA = Requester()
         let viewB = Requester()
-        CodeHighlighter.current.scheduleHighlight(requests: [first, queued], requester: ObjectIdentifier(viewA))
-        CodeHighlighter.current.scheduleHighlight(requests: [other], requester: ObjectIdentifier(viewB))
+        highlighter.scheduleHighlight(requests: [first, queued], requester: ObjectIdentifier(viewA))
+        highlighter.scheduleHighlight(requests: [other], requester: ObjectIdentifier(viewB))
 
         let finished = await waitUntilCached([first.key, queued.key, other.key])
         withExtendedLifetime((viewA, viewB)) {}
         #expect(finished, "a queued request from another view was dropped")
     }
 
-    @MainActor
     @Test("A view asking again replaces what it asked for before")
     func streamedPrefixIsSuperseded() async {
         let tag = UUID().uuidString
@@ -59,15 +65,15 @@ struct CodeHighlighterSchedulingTests {
         let longer = request("let streamed = \"\(tag)\"\nprint(streamed)")
 
         let view = Requester()
-        CodeHighlighter.current.scheduleHighlight(requests: [blocker, shorter], requester: ObjectIdentifier(view))
+        highlighter.scheduleHighlight(requests: [blocker, shorter], requester: ObjectIdentifier(view))
         // Rebuilding asks again for every block not yet highlighted.
-        CodeHighlighter.current.scheduleHighlight(requests: [blocker, longer], requester: ObjectIdentifier(view))
+        highlighter.scheduleHighlight(requests: [blocker, longer], requester: ObjectIdentifier(view))
 
         let finished = await waitUntilCached([blocker.key, longer.key])
         withExtendedLifetime(view) {}
         #expect(finished)
         // Given time, a superseded prefix would have been highlighted by now.
         try? await Task.sleep(for: .milliseconds(300))
-        #expect(CodeHighlighter.current.cachedHighlightMap(for: shorter.key) == nil)
+        #expect(highlighter.cachedHighlightMap(for: shorter.key) == nil)
     }
 }

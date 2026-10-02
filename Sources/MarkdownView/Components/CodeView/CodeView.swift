@@ -13,9 +13,13 @@ final class CodeView: PlatformView {
     var theme: MarkdownTheme = .default {
         didSet {
             languageLabel.font = theme.fonts.code
+            applyBackgroundColors()
             textView.selectionBackgroundColor = theme.colors.selectionBackground
             updateLineNumberView()
-            if oldValue.fonts.code != theme.fonts.code || oldValue.colors.code != theme.colors.code {
+            if oldValue.fonts.code != theme.fonts.code
+                || oldValue.colors.code != theme.colors.code
+                || oldValue.syntax != theme.syntax
+            {
                 needsTextRebuild = true
             }
         }
@@ -179,6 +183,11 @@ final class CodeView: PlatformView {
     #elseif canImport(AppKit)
         override var isFlipped: Bool {
             true
+        }
+
+        override func viewDidChangeEffectiveAppearance() {
+            super.viewDidChangeEffectiveAppearance()
+            applyBackgroundColors()
         }
 
         override func layout() {

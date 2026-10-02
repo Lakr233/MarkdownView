@@ -70,7 +70,9 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
                     ?? UIColor(named: "accentColor")
                     ?? .systemOrange
             public var code = UIColor.label
-            public var codeBackground = UIColor.gray.withAlphaComponent(0.25)
+            public var codeBackground = CodeBlockDefaults.background
+            public var codeBlockBackground = CodeBlockDefaults.background
+            public var codeBlockBarBackground = CodeBlockDefaults.barBackground
             public var selectionBackground: UIColor? =
                 (UIColor(named: "AccentColor")
                         ?? UIColor(named: "accentColor")
@@ -86,7 +88,9 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
                     ?? NSColor(named: "accentColor")
                     ?? .systemOrange
             public var code = NSColor.labelColor
-            public var codeBackground = NSColor.gray.withAlphaComponent(0.25)
+            public var codeBackground = CodeBlockDefaults.background
+            public var codeBlockBackground = CodeBlockDefaults.background
+            public var codeBlockBarBackground = CodeBlockDefaults.barBackground
             public var selectionBackground: NSColor? =
                 (NSColor(named: "AccentColor")
                         ?? NSColor(named: "accentColor")
@@ -135,7 +139,17 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
 
     public var table: Table = .init()
 
+    public var syntax: Syntax = .init()
+
     public init() {}
+}
+
+/// Opaque, so a code block looks the same on whatever it sits on. In light
+/// appearance the body is white darkened by 5% black and the bar darkens it
+/// by 5% again; in dark appearance black is lightened by 10% white, twice.
+enum CodeBlockDefaults {
+    static let background = PlatformColor(light: 0xF2F2F2, dark: 0x1A1A1A)
+    static let barBackground = PlatformColor(light: 0xE6E6E6, dark: 0x313131)
 }
 
 public extension MarkdownTheme {
