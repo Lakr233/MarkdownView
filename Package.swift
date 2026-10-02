@@ -21,7 +21,7 @@ let package = Package(
         .executable(name: "MarkdownViewCatalog", targets: ["MarkdownViewCatalog"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/Lakr233/Litext", from: "3.2.0"),
+        .package(url: "https://github.com/Lakr233/Litext", from: "3.2.1"),
         .package(url: "https://github.com/mgriebling/SwiftMath", from: "1.7.3"),
         .package(url: "https://github.com/apple/swift-collections", from: "1.7.1"),
         .package(url: "https://github.com/swiftlang/swift-cmark", from: "0.9.0"),
