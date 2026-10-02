@@ -50,10 +50,10 @@ struct MarkdownTableTruncationTests {
 
     // MARK: - Truncation
 
-    @Test("The row limit keeps the first rows and counts the rest exactly", arguments: [
+    @Test(arguments: [
         (0, 0, 0), (1, 0, 0), (2, 1, 0), (101, 100, 0), (102, 20, 81), (1001, 20, 980),
     ])
-    func rowLimitCounts(rowCount: Int, visible: Int, hidden: Int) {
+    func `The row limit keeps the first rows and counts the rest exactly`(rowCount: Int, visible: Int, hidden: Int) {
         let limit = TableRowLimit(rowCount: rowCount)
         #expect(limit.visibleRowCount == visible)
         #expect(limit.hiddenRowCount == hidden)
@@ -66,8 +66,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A table past the threshold draws its header and first twenty rows, and nothing more")
-    func longTableDrawsFirstRows() throws {
+    @Test
+    func `A table past the threshold draws its header and first twenty rows, and nothing more`() throws {
         let view = RenderProbe.view(Self.markdown(rows: 120))
         let table = try #require(tableView(in: view))
 
@@ -81,8 +81,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A table of up to a hundred rows is drawn whole")
-    func shortTableIsWhole() throws {
+    @Test
+    func `A table of up to a hundred rows is drawn whole`() throws {
         let view = RenderProbe.view(Self.markdown(rows: 100))
         let table = try #require(tableView(in: view))
 
@@ -91,8 +91,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("An inline table's only controls are its title bar's, and none sit over a cell")
-    func inlineTableControlsAreInTheTitleBar() throws {
+    @Test
+    func `An inline table's only controls are its title bar's, and none sit over a cell`() throws {
         let view = RenderProbe.view(Self.markdown(rows: 120))
         let table = try #require(tableView(in: view))
         RenderProbe.layout(view)
@@ -118,8 +118,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A table growing past the threshold keeps its first rows and counts every new one")
-    func streamedTableCrossesTheCap() throws {
+    @Test
+    func `A table growing past the threshold keeps its first rows and counts every new one`() throws {
         let view = MarkdownTextView()
         for rows in 98 ... 103 {
             RenderProbe.show(Self.markdown(rows: rows), in: view)
@@ -131,8 +131,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Copying the document still yields every row, drawn or not")
-    func copyYieldsEveryRow() throws {
+    @Test
+    func `Copying the document still yields every row, drawn or not`() throws {
         let markdown = "Before.\n\n" + Self.markdown(rows: 120) + "\nAfter."
         let view = RenderProbe.view(markdown)
         view.textLabelView.selectAll()
@@ -149,19 +149,19 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Drawn cells stay selectable")
-    func drawnCellsStaySelectable() throws {
+    @Test
+    func `Drawn cells stay selectable`() throws {
         let view = RenderProbe.view(Self.markdown(rows: 120))
         let table = try #require(tableView(in: view))
-        let selectable = table.cellViews.allSatisfy { $0.isSelectable }
+        let selectable = table.cellViews.allSatisfy(\.isSelectable)
         #expect(selectable)
     }
 
     // MARK: - Header cells
 
     @MainActor
-    @Test("An inline header cell has its column's full width")
-    func inlineHeaderHasFullWidth() throws {
+    @Test
+    func `An inline header cell has its column's full width`() throws {
         let markdown = """
         | Short | A considerably long header title |
         | - | - |
@@ -179,8 +179,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A header slot keeps text and glyph apart inside the cell padding")
-    func headerSlotGeometry() {
+    @Test
+    func `A header slot keeps text and glyph apart inside the cell padding`() {
         let column = CGRect(x: 10, y: 2, width: 120, height: 38)
         let slot = TableHeaderSlot(columnFrame: column, horizontalPadding: 9, accessoryWidth: TableHeaderAccessory.width)
         #expect(slot.textFrame.minX == 19)
@@ -193,8 +193,8 @@ struct MarkdownTableTruncationTests {
     // MARK: - Opening the full table
 
     @MainActor
-    @Test("The sheet shows every row and cell exactly, links, code and alignment included")
-    func sheetShowsEveryRow() throws {
+    @Test
+    func `The sheet shows every row and cell exactly, links, code and alignment included`() throws {
         var markdown = """
         | Name | Link | Code | Amount |
         | :-- | :-: | -- | --: |
@@ -241,8 +241,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Numbers sort by value, grouping, signs and units included")
-    func numbersSortByValue() {
+    @Test
+    func `Numbers sort by value, grouping, signs and units included`() {
         let cells = ["10", "9", "1,000", "-3", "2.5", "$4", "50%", "−7"]
         let ascending = order(cells, .ascending).map { cells[$0] }
         #expect(ascending == ["−7", "-3", "2.5", "$4", "9", "10", "50%", "1,000"])
@@ -251,16 +251,16 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Text sorts the way Finder sorts names, after numbers")
-    func textSortsNaturally() {
+    @Test
+    func `Text sorts the way Finder sorts names, after numbers`() {
         let cells = ["item 10", "item 2", "Banana", "apple", "3", "NaN"]
         let ascending = order(cells, .ascending).map { cells[$0] }
         #expect(ascending == ["3", "apple", "Banana", "item 2", "item 10", "NaN"])
     }
 
     @MainActor
-    @Test("Empty cells stay last in either direction")
-    func emptyCellsStayLast() {
+    @Test
+    func `Empty cells stay last in either direction`() {
         let cells = ["", "2", " ", "1", "b", "a"]
         let ascending = order(cells, .ascending)
         let descending = order(cells, .descending)
@@ -269,8 +269,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Equal cells keep their source order in either direction")
-    func sortIsStable() {
+    @Test
+    func `Equal cells keep their source order in either direction`() {
         let rows = [["1", "first"], ["2", "x"], ["1", "second"], ["2", "y"], ["1", "third"]]
         let ascending = TableSort(column: 0, direction: .ascending).order(of: rows)
         let descending = TableSort(column: 0, direction: .descending).order(of: rows)
@@ -278,8 +278,8 @@ struct MarkdownTableTruncationTests {
         #expect(descending == [1, 3, 0, 2, 4])
     }
 
-    @Test("Tapping a header cycles ascending, descending, source order")
-    func tapCycle() {
+    @Test
+    func `Tapping a header cycles ascending, descending, source order`() {
         let first = TableSort.next(afterTapping: 1, current: nil)
         #expect(first == TableSort(column: 1, direction: .ascending))
         let second = TableSort.next(afterTapping: 1, current: first)
@@ -289,8 +289,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Sorting the sheet moves rows whole and can be undone")
-    func sheetSortMovesRowsWhole() throws {
+    @Test
+    func `Sorting the sheet moves rows whole and can be undone`() throws {
         var markdown = "| Name | Score | Note |\n| - | - | - |\n"
         let scores = [30, 4, 100, 4, 57, 12, 99, 4, 0, 21, 8, 75]
         for (index, score) in scores.enumerated() {
@@ -334,10 +334,10 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("The sorted column shows a chevron for its direction; the others none")
-    func sortIndicators() throws {
+    @Test
+    func `The sorted column shows a chevron for its direction; the others none`() throws {
         let view = RenderProbe.view(Self.markdown(rows: 3, columns: 3))
-        let sheet = TableSheetContent(try #require(tableView(in: view))).makeTableView()
+        let sheet = try TableSheetContent(#require(tableView(in: view))).makeTableView()
         #expect(sheet.sortControls.count == 3)
         #expect(sheet.sortControls.allSatisfy { $0.symbolImage == nil })
 
@@ -350,8 +350,8 @@ struct MarkdownTableTruncationTests {
     // MARK: - Only changed cells are restyled
 
     @MainActor
-    @Test("A streamed token restyles only the cell it changed")
-    func onlyChangedCellsRestyle() throws {
+    @Test
+    func `A streamed token restyles only the cell it changed`() throws {
         let view = MarkdownTextView()
         let base = Self.markdown(rows: 5, columns: 4)
         RenderProbe.show(base + "| a | b | c | d", in: view)
@@ -370,8 +370,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A new row restyles only its own cells, and none past the threshold")
-    func newRowRestylesItsCells() throws {
+    @Test
+    func `A new row restyles only its own cells, and none past the threshold`() throws {
         let view = MarkdownTextView()
         RenderProbe.show(Self.markdown(rows: 3, columns: 3), in: view)
         let table = try #require(tableView(in: view))
@@ -386,8 +386,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("A theme change restyles every cell")
-    func themeChangeRestylesEveryCell() throws {
+    @Test
+    func `A theme change restyles every cell`() throws {
         let markdown = Self.markdown(rows: 3, columns: 2)
         let view = RenderProbe.view(markdown)
         let table = try #require(tableView(in: view))
@@ -402,8 +402,8 @@ struct MarkdownTableTruncationTests {
     }
 
     @MainActor
-    @Test("Diffed cells match a table built from scratch")
-    func diffedCellsMatchAFreshBuild() throws {
+    @Test
+    func `Diffed cells match a table built from scratch`() throws {
         let final = Self.markdown(rows: 11, columns: 3, alignment: "| :-- | :-: | --: |")
         let streamed = MarkdownTextView()
         let characters = Array(final)

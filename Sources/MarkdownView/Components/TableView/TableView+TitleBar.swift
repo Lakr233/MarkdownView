@@ -22,7 +22,7 @@ enum TableTitleText {
         String(
             localized: "Table (\(hiddenRowCount) more rows not shown)",
             bundle: .module,
-            comment: "Title of a long table's bar, counting the rows it does not draw."
+            comment: "Title of a long table's bar, counting the rows it does not draw.",
         )
     }
 
@@ -34,7 +34,7 @@ enum TableTitleText {
         String(
             localized: "Download",
             bundle: .module,
-            comment: "Button that saves a table or a code block as a file."
+            comment: "Button that saves a table or a code block as a file.",
         )
     }
 
@@ -42,7 +42,7 @@ enum TableTitleText {
         String(
             localized: "Expand",
             bundle: .module,
-            comment: "Button that opens a table or a code block in a sheet."
+            comment: "Button that opens a table or a code block in a sheet.",
         )
     }
 }
@@ -79,8 +79,8 @@ final class TableTitleLabel: BarTextLabel {
 
 enum TableTitleBar {
     static let verticalPadding: CGFloat = 8
-    /// Each button's width, shared by tables and code blocks. Narrow enough
-    /// that the glyphs read as one group; the button stays full height.
+    // Each button's width, shared by tables and code blocks. Narrow enough
+    // that the glyphs read as one group; the button stays full height.
     #if canImport(UIKit)
         static let buttonWidth: CGFloat = 32
     #elseif canImport(AppKit)
@@ -121,7 +121,7 @@ extension TableView {
                 x: (TableTitleBar.buttonWidth - glyph) / 2,
                 y: (height - glyph) / 2,
                 width: glyph,
-                height: glyph
+                height: glyph,
             )
         }
         let labelHeight = titleLabel.intrinsicContentSize.height
@@ -129,7 +129,7 @@ extension TableView {
             x: leading,
             y: tableViewPadding + (height - labelHeight) / 2,
             width: max(0, trailing - leading),
-            height: labelHeight
+            height: labelHeight,
         ))
     }
 

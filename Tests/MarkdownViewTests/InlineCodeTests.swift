@@ -6,16 +6,16 @@ import Testing
 
     struct InlineCodeTests {
         @MainActor
-        @Test("A line holding inline code is as tall as one without")
-        func lineHeightIsUnchanged() {
+        @Test
+        func `A line holding inline code is as tall as one without`() {
             let plain = RenderProbe.view("plain words here", width: 480)
             let code = RenderProbe.view("plain `code` here", width: 480)
             #expect(abs(plain.boundingSize(for: 480).height - code.boundingSize(for: 480).height) < 0.5)
         }
 
         @MainActor
-        @Test("Copying inline code gives back the code alone")
-        func copiesWithoutSpacers() {
+        @Test
+        func `Copying inline code gives back the code alone`() {
             let view = RenderProbe.view("run `swift test` now", width: 480)
             let label = view.textLabelView
             label.selectionRange = NSRange(location: 0, length: label.attributedText.length)
@@ -23,8 +23,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A pill reaches past the text on the side a wrapped span breaks")
-        func wrappedEndsReachPastText() throws {
+        @Test
+        func `A pill reaches past the text on the side a wrapped span breaks`() throws {
             // At this width the span's leading spacer stays on the line above,
             // so the first code line starts and ends mid-span.
             var theme = MarkdownTheme.default
@@ -33,7 +33,7 @@ import Testing
             let view = RenderProbe.view(
                 "narrow layouts: `supercalifragilisticexpialidocious_and_more_n_1145141919810` end",
                 width: 220,
-                theme: theme
+                theme: theme,
             )
             let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
             view.cacheDisplay(in: view.bounds, to: rep)
@@ -43,7 +43,7 @@ import Testing
                 return color.alphaComponent > 0.9 && color.redComponent > 0.8
                     && color.greenComponent < 0.3 && color.blueComponent < 0.3
             }
-            /// Black code text over the red pill.
+            // Black code text over the red pill.
             func isInk(_ x: Int, _ y: Int) -> Bool {
                 guard let color = rep.colorAt(x: x, y: y) else { return false }
                 return color.alphaComponent > 0.9 && color.redComponent < 0.5
@@ -58,7 +58,7 @@ import Testing
             let middle = band[band.startIndex + band.count / 2]
             let pill = (0 ..< rep.pixelsWide).filter { isPill($0, middle) }
             // Ink inside the pill's horizontal extent: the code glyphs.
-            let inkColumns = (pill.first! ... pill.last!).filter { x in band.contains { isInk(x, $0) } }
+            let inkColumns = try (#require(pill.first) ... pill.last!).filter { x in band.contains { isInk(x, $0) } }
             let pillMax = try #require(pill.last)
             let inkMax = try #require(inkColumns.last)
 
@@ -67,8 +67,8 @@ import Testing
             #expect(CGFloat(pillMax - inkMax) / scale >= InlineCode.wrappedEndInset + 1)
         }
 
-        @Test("Only <br> reads as a line break")
-        func lineBreakTags() {
+        @Test
+        func `Only <br> reads as a line break`() {
             #expect(InlineCode.isLineBreak("<br>"))
             #expect(InlineCode.isLineBreak("<BR />"))
             #expect(!InlineCode.isLineBreak("<b>"))

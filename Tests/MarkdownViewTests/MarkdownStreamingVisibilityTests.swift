@@ -34,10 +34,18 @@ struct MarkdownStreamingVisibilityTests {
         let placed = Set(runs.compactMap { ($0.attributes[.contextView] as? PlatformView).map(ObjectIdentifier.init) })
         for (index, shown) in view.contextViews.enumerated() {
             let name = "\(type(of: shown)) #\(index)"
-            if shown.superview !== view { problems.append("\(name) is detached") }
-            if shown.isHidden { problems.append("\(name) is hidden") }
-            if !placed.contains(ObjectIdentifier(shown)) { problems.append("\(name) has no line in the layout") }
-            if shown.frame.height <= 0 || shown.frame.width <= 0 { problems.append("\(name) has no size: \(shown.frame)") }
+            if shown.superview !== view {
+                problems.append("\(name) is detached")
+            }
+            if shown.isHidden {
+                problems.append("\(name) is hidden")
+            }
+            if !placed.contains(ObjectIdentifier(shown)) {
+                problems.append("\(name) has no line in the layout")
+            }
+            if shown.frame.height <= 0 || shown.frame.width <= 0 {
+                problems.append("\(name) has no size: \(shown.frame)")
+            }
             if shown.frame.maxY > view.bounds.maxY + 0.5 {
                 problems.append("\(name) sits past the bottom: \(shown.frame) in \(view.bounds)")
             }
@@ -65,22 +73,24 @@ struct MarkdownStreamingVisibilityTests {
         return problems
     }
 
-    @Test("Streaming the example document ends with every block on screen", arguments: [3, 8])
-    func streamingEndsWithEveryBlockShown(step: Int) throws {
+    @Test(arguments: [3, 8])
+    func `Streaming the example document ends with every block on screen`(step: Int) throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         for prefix in Self.prefixes(of: document, step: step) {
             RenderProbe.show(prefix, in: view)
             let problems = Self.problems(in: view)
             #expect(problems.isEmpty, "after \(prefix.count) characters: \(problems)")
-            if !problems.isEmpty { return }
+            if !problems.isEmpty {
+                return
+            }
         }
         #expect(view.contextViews.compactMap { $0 as? TableView }.count == 3)
         #expect(view.contextViews.compactMap { $0 as? CodeView }.count == 3)
     }
 
-    @Test("Streaming again into the same view ends with every block on screen", arguments: [5])
-    func restreamEndsWithEveryBlockShown(step: Int) throws {
+    @Test(arguments: [5])
+    func `Streaming again into the same view ends with every block on screen`(step: Int) throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         for round in 0 ..< 2 {
@@ -89,15 +99,17 @@ struct MarkdownStreamingVisibilityTests {
                 RenderProbe.show(prefix, in: view)
                 let problems = Self.problems(in: view)
                 #expect(problems.isEmpty, "round \(round), after \(prefix.count) characters: \(problems)")
-                if !problems.isEmpty { return }
+                if !problems.isEmpty {
+                    return
+                }
             }
         }
     }
 
     /// A host resizes the view a pass after its content changes, so every
     /// update is first laid out in the old frame.
-    @Test("Content laid out in a stale frame shows every block once resized", arguments: [7])
-    func staleFrameThenResize(step: Int) throws {
+    @Test(arguments: [7])
+    func `Content laid out in a stale frame shows every block once resized`(step: Int) throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 700, height: 10)
@@ -108,12 +120,14 @@ struct MarkdownStreamingVisibilityTests {
             RenderProbe.layout(view)
             let problems = Self.problems(in: view)
             #expect(problems.isEmpty, "after \(prefix.count) characters: \(problems)")
-            if !problems.isEmpty { return }
+            if !problems.isEmpty {
+                return
+            }
         }
     }
 
-    @Test("Rotating after a stream keeps every block on screen")
-    func widthChangesKeepBlocks() throws {
+    @Test
+    func `Rotating after a stream keeps every block on screen`() throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         for prefix in Self.prefixes(of: document, step: 9) {
@@ -133,8 +147,8 @@ struct MarkdownStreamingVisibilityTests {
 
     /// What a host does: hands content over through the throttle and lets the
     /// run loop deliver it, then sizes the view to what it reports.
-    @Test("Streaming through the throttle ends with every block on screen")
-    func throttledStreamEndsWithEveryBlockShown() async throws {
+    @Test
+    func `Streaming through the throttle ends with every block on screen`() async throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         view.frame = .init(x: 0, y: 0, width: 640, height: 10)
@@ -151,8 +165,8 @@ struct MarkdownStreamingVisibilityTests {
         #expect(view.contextViews.count == 6)
     }
 
-    @Test("Highlighting that finishes after a stream keeps every block on screen")
-    func lateHighlightKeepsBlocks() async throws {
+    @Test
+    func `Highlighting that finishes after a stream keeps every block on screen`() async throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         for prefix in Self.prefixes(of: document, step: 11) {
@@ -169,8 +183,8 @@ struct MarkdownStreamingVisibilityTests {
         #expect(zip(view.contextViews, before).allSatisfy { $0 === $1 })
     }
 
-    @Test("A theme change after a stream keeps every block on screen")
-    func themeChangeKeepsBlocksShown() throws {
+    @Test
+    func `A theme change after a stream keeps every block on screen`() throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         for prefix in Self.prefixes(of: document, step: 13) {
@@ -210,8 +224,8 @@ struct MarkdownStreamingVisibilityTests {
     End.
     """
 
-    @Test("Removing blocks detaches them and keeps the rest on screen")
-    func removingBlocksKeepsTheRest() throws {
+    @Test
+    func `Removing blocks detaches them and keeps the rest on screen`() {
         let view = MarkdownTextView()
         RenderProbe.show(Self.mixed, in: view)
         let tables = view.contextViews.compactMap { $0 as? TableView }
@@ -230,8 +244,8 @@ struct MarkdownStreamingVisibilityTests {
         #expect(view.contextViews.count == 4)
     }
 
-    @Test("Swapping the order of blocks keeps every block on screen")
-    func reorderingBlocksKeepsThemShown() throws {
+    @Test
+    func `Swapping the order of blocks keeps every block on screen`() {
         let view = MarkdownTextView()
         RenderProbe.show(Self.mixed, in: view)
         let parts = Self.mixed.components(separatedBy: "Middle.")
@@ -243,8 +257,8 @@ struct MarkdownStreamingVisibilityTests {
         #expect(view.contextViews.count == 4)
     }
 
-    @Test("Clearing mid-block and streaming again keeps every block on screen")
-    func clearingMidStream() throws {
+    @Test
+    func `Clearing mid-block and streaming again keeps every block on screen`() throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         let prefixes = Self.prefixes(of: document, step: 17)
@@ -263,8 +277,8 @@ struct MarkdownStreamingVisibilityTests {
         #expect(view.contextViews.count == 6)
     }
 
-    @Test("Two views sharing one provider never take each other's blocks")
-    func sharedProviderKeepsViewsApart() throws {
+    @Test
+    func `Two views sharing one provider never take each other's blocks`() throws {
         let provider = ReusableViewProvider()
         let first = MarkdownTextView(viewProvider: provider)
         let second = MarkdownTextView(viewProvider: provider)
@@ -289,8 +303,8 @@ struct MarkdownStreamingVisibilityTests {
         #expect(first.contextViews.count == 6)
     }
 
-    @Test("A table that crosses the truncation threshold while streaming stays on screen")
-    func tableCrossingTruncationStaysShown() throws {
+    @Test
+    func `A table that crosses the truncation threshold while streaming stays on screen`() {
         var rows = ["| N | Name |", "| - | - |"]
         for index in 0 ..< 130 {
             rows.append("| \(index) | row \(index) |")
@@ -302,9 +316,13 @@ struct MarkdownStreamingVisibilityTests {
             RenderProbe.show(prefix, in: view)
             let problems = Self.problems(in: view)
             #expect(problems.isEmpty, "after \(prefix.count) characters: \(problems)")
-            if !problems.isEmpty { return }
+            if !problems.isEmpty {
+                return
+            }
             if let shown = view.contextViews.compactMap({ $0 as? TableView }).first {
-                if let table { #expect(shown === table) }
+                if let table {
+                    #expect(shown === table)
+                }
                 table = shown
             }
         }

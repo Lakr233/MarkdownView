@@ -25,8 +25,8 @@ struct CodeViewLayoutTests {
     }
 
     @MainActor
-    @Test("A longer line on the same line count widens the scrollable text")
-    func longerLineWidensText() {
+    @Test
+    func `A longer line on the same line count widens the scrollable text`() {
         let view = RenderProbe.view(markdown("let a = 1\nlet b = 2"), width: 320)
         guard let before = codeView(in: view) else {
             Issue.record("no code view was built")
@@ -50,8 +50,8 @@ struct CodeViewLayoutTests {
     }
 
     @MainActor
-    @Test("A changed language relayouts its label")
-    func changedLanguageRelayoutsLabel() {
+    @Test
+    func `A changed language relayouts its label`() {
         let view = RenderProbe.view(markdown("let a = 1"), width: 320)
         guard let before = codeView(in: view) else {
             Issue.record("no code view was built")
@@ -72,8 +72,8 @@ struct CodeViewLayoutTests {
     }
 
     @MainActor
-    @Test("A code block without a language is labelled as code")
-    func unlabelledBlockShowsCodeGlyph() {
+    @Test
+    func `A code block without a language is labelled as code`() {
         let view = RenderProbe.view("```\nlet a = 1\n```", width: 320)
         guard let codeView = codeView(in: view) else {
             Issue.record("no code view was built")

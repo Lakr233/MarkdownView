@@ -11,7 +11,7 @@ import MarkdownParser
 func fittedTableColumnWidths(
     _ naturalWidths: [CGFloat],
     to availableWidth: CGFloat,
-    outerPadding: CGFloat
+    outerPadding: CGFloat,
 ) -> [CGFloat] {
     guard !naturalWidths.isEmpty, availableWidth.isFinite, availableWidth > 0 else {
         return naturalWidths
@@ -67,11 +67,11 @@ final class TableView: PlatformView {
     lazy var titleLabel: TableTitleLabel = .init()
     lazy var copyControl: TableTapControl = makeTitleControl(
         symbol: TableSymbol.copy,
-        title: TableTitleText.copy
+        title: TableTitleText.copy,
     ) { [weak self] in self?.copyTable() }
     lazy var expandControl: TableTapControl = makeTitleControl(
         symbol: TableSymbol.expand,
-        title: TableTitleText.expand
+        title: TableTitleText.expand,
     ) { [weak self] in self?.openFullTable() }
 
     // MARK: - Properties
@@ -163,7 +163,7 @@ final class TableView: PlatformView {
                 self,
                 selector: #selector(clipViewBoundsDidChange(_:)),
                 name: NSView.boundsDidChangeNotification,
-                object: scrollView.contentView
+                object: scrollView.contentView,
             )
         #endif
         if mode == .inline {
@@ -208,7 +208,7 @@ final class TableView: PlatformView {
 
     func setContents(
         _ contents: [Rows],
-        columnAlignments: [RawTableColumnAlignment] = []
+        columnAlignments: [RawTableColumnAlignment] = [],
     ) {
         // A `<br>` in a cell is already a line break here: the inline
         // renderer turns the tag into one, and leaves `<br>` written inside
@@ -261,12 +261,12 @@ final class TableView: PlatformView {
             x: inset,
             y: tableViewPadding + titleHeight,
             width: max(0, bounds.width - inset * 2),
-            height: rowsHeight
+            height: rowsHeight,
         )
         let layoutWidths = fittedTableColumnWidths(
             widths,
             to: scrollView.frame.width,
-            outerPadding: 0
+            outerPadding: 0,
         )
         let contentSize = CGSize(width: layoutWidths.reduce(0, +), height: rowsHeight)
         #if canImport(UIKit)
@@ -362,7 +362,7 @@ final class TableView: PlatformView {
             var containsLink = false
             text.enumerateAttribute(
                 .link,
-                in: NSRange(location: 0, length: text.length)
+                in: NSRange(location: 0, length: text.length),
             ) { value, _, stop in
                 guard value != nil else { return }
                 containsLink = true
@@ -401,7 +401,7 @@ final class TableView: PlatformView {
                     x: x + layoutMetrics.horizontalCellPadding,
                     y: y + verticalOffset,
                     width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth),
-                    height: cellHeight
+                    height: cellHeight,
                 ))
 
                 x += columnWidth
@@ -425,7 +425,7 @@ final class TableView: PlatformView {
     override var intrinsicContentSize: CGSize {
         .init(
             width: Self.noIntrinsicMetric,
-            height: intrinsicContentHeight
+            height: intrinsicContentHeight,
         )
     }
 
@@ -440,7 +440,7 @@ final class TableView: PlatformView {
             columnAlignments: columnAlignments,
             headerAccessoryWidths: display.headerAccessoryWidths,
             in: cellContainer,
-            metrics: layoutMetrics
+            metrics: layoutMetrics,
         )
         updateSelectionGroup()
 
@@ -496,7 +496,7 @@ final class TableView: PlatformView {
         reusingRows rows: [RawTableRow],
         columnAlignments: [RawTableColumnAlignment],
         theme: MarkdownTheme,
-        content: MarkdownContent
+        content: MarkdownContent,
     ) -> NSAttributedString? {
         guard let renderedSource,
               !renderedSource.carriesMath,
@@ -513,7 +513,7 @@ final class TableView: PlatformView {
         columnAlignments: [RawTableColumnAlignment],
         theme: MarkdownTheme,
         content: MarkdownContent,
-        representedText: NSAttributedString
+        representedText: NSAttributedString,
     ) {
         sourceRows = rows
         renderedSource = .init(
@@ -522,7 +522,7 @@ final class TableView: PlatformView {
             theme: theme,
             localeIdentifier: content.locale.identifier,
             carriesMath: rows.contains { $0.carriesMath },
-            representedText: representedText
+            representedText: representedText,
         )
     }
 
@@ -598,8 +598,8 @@ private extension RawTableRow {
     }
 
 #elseif canImport(AppKit)
-    extension TableView {
-        @objc fileprivate func clipViewBoundsDidChange(_: Notification) {
+    fileprivate extension TableView {
+        @objc func clipViewBoundsDidChange(_: Notification) {
             gridView.setScrollOffset(scrollOffset)
         }
     }
@@ -684,12 +684,12 @@ private extension RawTableRow {
                 let slot = TableHeaderSlot(
                     columnFrame: columnFrame,
                     horizontalPadding: layoutMetrics.horizontalCellPadding,
-                    accessoryWidth: TableHeaderAccessory.width
+                    accessoryWidth: TableHeaderAccessory.width,
                 )
                 control.applyFrame(columnFrame)
                 control.glyphFrame = slot.glyphFrame.offsetBy(
                     dx: -columnFrame.minX,
-                    dy: -columnFrame.minY
+                    dy: -columnFrame.minY,
                 )
             }
         }

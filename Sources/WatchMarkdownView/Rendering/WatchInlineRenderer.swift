@@ -57,7 +57,7 @@ extension MarkdownInlineNode {
             ans.addAttribute(
                 kCTUnderlineStyleAttributeName as NSAttributedString.Key,
                 value: CTUnderlineStyle.single.rawValue,
-                range: NSRange(location: 0, length: ans.length)
+                range: NSRange(location: 0, length: ans.length),
             )
             return ans
 
@@ -69,7 +69,7 @@ extension MarkdownInlineNode {
             ans.addAttribute(
                 kCTForegroundColorAttributeName as NSAttributedString.Key,
                 value: theme.linkColor,
-                range: range
+                range: range,
             )
             return ans
 

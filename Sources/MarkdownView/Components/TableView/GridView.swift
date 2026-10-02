@@ -23,12 +23,20 @@ final class GridView: PlatformView {
     private(set) var scrollOffset: CGFloat = 0
     /// Where the first column starts when not scrolled, from the left.
     var columnsOrigin: CGFloat = 0 {
-        didSet { if oldValue != columnsOrigin { markNeedsLayout() } }
+        didSet {
+            if oldValue != columnsOrigin {
+                markNeedsLayout()
+            }
+        }
     }
 
     /// Height of the title bar above the rows; zero for none.
     var titleHeight: CGFloat = 0 {
-        didSet { if oldValue != titleHeight { markNeedsLayout() } }
+        didSet {
+            if oldValue != titleHeight {
+                markNeedsLayout()
+            }
+        }
     }
 
     private lazy var shapeLayer: CAShapeLayer = .init()
@@ -152,9 +160,9 @@ final class GridView: PlatformView {
                 x: padding + lineWidth,
                 y: padding + lineWidth,
                 width: totalWidth - lineWidth * 2,
-                height: totalHeight - lineWidth * 2
+                height: totalHeight - lineWidth * 2,
             ),
-            cornerRadius: max(0, theme.table.cornerRadius - lineWidth)
+            cornerRadius: max(0, theme.table.cornerRadius - lineWidth),
         )
     }
 
@@ -228,7 +236,7 @@ final class GridView: PlatformView {
             x: padding + halfLineWidth,
             y: padding + halfLineWidth,
             width: totalWidth - lineWidth,
-            height: totalHeight - lineWidth
+            height: totalHeight - lineWidth,
         )
         let path = GridPath.roundedRect(outerRect, cornerRadius: theme.table.cornerRadius)
 
@@ -305,7 +313,6 @@ final class GridView: PlatformView {
         func addGridLine(to point: CGPoint) {
             addLine(to: point)
         }
-
     }
 
 #elseif canImport(AppKit)
@@ -323,7 +330,6 @@ final class GridView: PlatformView {
         func addGridLine(to point: CGPoint) {
             line(to: point)
         }
-
     }
 
     extension NSBezierPath {

@@ -20,8 +20,8 @@ import Testing
 
     struct CodeBlockActionTests {
         @MainActor
-        @Test("Copy shows a checkmark, and a reused view starts without it")
-        func copyFeedbackResetsOnReuse() {
+        @Test
+        func `Copy shows a checkmark, and a reused view starts without it`() {
             let view = CodeView()
             view.setContent("let a = 1", highlightMap: nil)
             let idle = view.copyButton.image
@@ -35,8 +35,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Copy goes back by itself")
-        func copyFeedbackExpires() {
+        @Test
+        func `Copy goes back by itself`() {
             let view = CodeView()
             let idle = view.copyButton.image?.tiffRepresentation
             // Not handleCopy, which would overwrite the clipboard of whoever runs the tests.
@@ -46,8 +46,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A provider's buttons follow the language and get the content at tap time")
-        func providerActions() throws {
+        @Test
+        func `A provider's buttons follow the language and get the content at tap time`() throws {
             let provider = Provider()
             let view = CodeView()
             view.language = "html"
@@ -69,8 +69,8 @@ import Testing
         }
 
         @MainActor
-        @Test("MarkdownTextView hands its provider to code blocks")
-        func markdownTextViewForwardsProvider() throws {
+        @Test
+        func `MarkdownTextView hands its provider to code blocks`() throws {
             let provider = Provider()
             let view = RenderProbe.view("```html\n<b>x</b>\n```")
             view.codeBlockActionProvider = provider

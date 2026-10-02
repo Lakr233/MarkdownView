@@ -17,7 +17,7 @@ enum TableExport {
         var replacements: [(NSRange, String)] = []
         result.enumerateAttribute(
             .litextAttachment,
-            in: NSRange(location: 0, length: result.length)
+            in: NSRange(location: 0, length: result.length),
         ) { value, range, _ in
             guard let attachment = value as? TextLabel.Attachment else { return }
             replacements.append((range, attachment.attributedStringRepresentation().string))
@@ -98,7 +98,9 @@ enum TableExport {
                 depth += 1
             } else if character == ")" {
                 depth -= 1
-                if depth < 0 { balanced = false }
+                if depth < 0 {
+                    balanced = false
+                }
             }
         }
         let needsBrackets = !balanced || depth != 0 || destination.isEmpty

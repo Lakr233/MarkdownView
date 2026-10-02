@@ -37,13 +37,13 @@ enum ListMarkerLayout {
     static func column(lineOrigin: CGPoint, font: PlatformFont) -> CGRect {
         let center = CGPoint(
             x: lineOrigin.x - spacing - size / 2,
-            y: lineOrigin.y + font.capHeight / 2
+            y: lineOrigin.y + font.capHeight / 2,
         )
         return .init(
             x: center.x - size / 2,
             y: center.y - size / 2,
             width: size,
-            height: size
+            height: size,
         )
     }
 
@@ -69,7 +69,7 @@ enum ListMarkerLayout {
             x: column.midX - fitted.width / 2,
             y: column.midY - fitted.height / 2,
             width: fitted.width,
-            height: fitted.height
+            height: fitted.height,
         )
     }
 }

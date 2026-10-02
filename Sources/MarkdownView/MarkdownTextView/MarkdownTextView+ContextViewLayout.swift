@@ -73,7 +73,7 @@ extension MarkdownTextView {
         codeView.actionProvider = codeBlockActionProvider
         placeContextView(
             codeView,
-            at: contextViewFrame(for: run, height: codeView.intrinsicContentSize.height)
+            at: contextViewFrame(for: run, height: codeView.intrinsicContentSize.height),
         )
     }
 
@@ -82,7 +82,7 @@ extension MarkdownTextView {
         tableView.textSelectionDelegate = self
         placeContextView(
             tableView,
-            at: contextViewFrame(for: run, height: tableView.intrinsicContentSize.height)
+            at: contextViewFrame(for: run, height: tableView.intrinsicContentSize.height),
         )
     }
 
@@ -103,7 +103,7 @@ extension MarkdownTextView {
             x: textLabelView.frame.minX + run.lineRect.minX + leftIndent,
             y: textLabelView.frame.minY + textLabelView.bounds.height - run.lineRect.maxY,
             width: max(0, textLabelView.bounds.width - leftIndent),
-            height: height
+            height: height,
         )
     }
 

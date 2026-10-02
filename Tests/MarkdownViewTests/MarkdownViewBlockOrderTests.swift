@@ -111,15 +111,15 @@ Alignment and wrapping:
 
 struct MarkdownViewBlockOrderTests {
     @MainActor
-    @Test("Narrow layout keeps every block below the previous block", arguments: [
+    @Test(arguments: [
         180.0 as CGFloat, 220, 260, 320, 420,
     ])
-    func narrowLayoutKeepsBlocksOrdered(width: CGFloat) {
+    func `Narrow layout keeps every block below the previous block`(width: CGFloat) {
         let view = MarkdownTextView()
         let size = view.boundingSize(for: width)
         view.setContentImmediately(MarkdownContent(
             parserResult: MarkdownParser().parse(demoDocument),
-            theme: .default
+            theme: .default,
         ))
         let measured = view.boundingSize(for: width)
         view.frame = .init(x: 0, y: 0, width: width, height: max(size.height, measured.height))
@@ -131,25 +131,25 @@ struct MarkdownViewBlockOrderTests {
             let current = boxes[index]
             #expect(
                 current.frame.minY >= previous.frame.maxY - 0.5,
-                "\(current.label) overlaps \(previous.label) at width \(width)"
+                "\(current.label) overlaps \(previous.label) at width \(width)",
             )
         }
     }
 
     @MainActor
-    @Test("Shrinking the width keeps every block below the previous block")
-    func shrinkingWidthKeepsBlocksOrdered() {
+    @Test
+    func `Shrinking the width keeps every block below the previous block`() {
         let view = MarkdownTextView()
         let coordinator = MarkdownViewCoordinator()
         view.setContentImmediately(MarkdownContent(
             parserResult: MarkdownParser().parse(demoDocument),
-            theme: .default
+            theme: .default,
         ))
 
         for width in stride(from: 700.0 as CGFloat, through: 180, by: -40) {
             let size = coordinator.sizeThatFits(
                 ProposedViewSize(width: width, height: nil),
-                for: view
+                for: view,
             ) ?? .init(width: width, height: view.bounds.height)
             view.frame = .init(origin: .zero, size: size)
             layout(view: view)
@@ -160,19 +160,19 @@ struct MarkdownViewBlockOrderTests {
                 let current = boxes[index]
                 #expect(
                     current.frame.minY >= previous.frame.maxY - 0.5,
-                    "\(current.label) overlaps \(previous.label) at width \(width)"
+                    "\(current.label) overlaps \(previous.label) at width \(width)",
                 )
             }
         }
     }
 
     @MainActor
-    @Test("A stale height never leaves context views behind the text")
-    func staleHeightKeepsBlocksOrdered() {
+    @Test
+    func `A stale height never leaves context views behind the text`() {
         let view = MarkdownTextView()
         view.setContentImmediately(MarkdownContent(
             parserResult: MarkdownParser().parse(demoDocument),
-            theme: .default
+            theme: .default,
         ))
 
         let wide = view.boundingSize(for: 700)
@@ -190,20 +190,20 @@ struct MarkdownViewBlockOrderTests {
             let current = boxes[index]
             #expect(
                 current.frame.minY >= previous.frame.maxY - 0.5,
-                "\(current.label) overlaps \(previous.label)"
+                "\(current.label) overlaps \(previous.label)",
             )
         }
     }
 
     #if canImport(AppKit) && !targetEnvironment(macCatalyst)
         @MainActor
-        @Test("Hosted markdown keeps blocks ordered while the window narrows")
-        func hostedWindowKeepsBlocksOrdered() throws {
+        @Test
+        func `Hosted markdown keeps blocks ordered while the window narrows`() throws {
             let window = NSWindow(
                 contentRect: .init(x: 0, y: 0, width: 800, height: 600),
                 styleMask: [.titled, .resizable],
                 backing: .buffered,
-                defer: true
+                defer: true,
             )
             let host = NSHostingView(rootView: ScrollView { MarkdownView(demoDocument).padding() })
             window.contentView = host
@@ -237,7 +237,7 @@ struct MarkdownViewBlockOrderTests {
 private func expectOrderedBlocks(
     in view: MarkdownTextView,
     context: String,
-    sourceLocation: SourceLocation = #_sourceLocation
+    sourceLocation: SourceLocation = #_sourceLocation,
 ) {
     let boxes = view.verticalLayoutBoxes()
     for index in boxes.indices.dropFirst() {
@@ -246,7 +246,7 @@ private func expectOrderedBlocks(
         #expect(
             current.frame.minY >= previous.frame.maxY - 0.5,
             "\(current.label) overlaps \(previous.label) — \(context)",
-            sourceLocation: sourceLocation
+            sourceLocation: sourceLocation,
         )
     }
 }

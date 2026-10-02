@@ -7,8 +7,8 @@ import Testing
 
     struct MarkdownViewCatalystTests {
         @MainActor
-        @Test("Table cells are reused across reconfiguration")
-        func tableCellsAreReusedAcrossReconfiguration() {
+        @Test
+        func `Table cells are reused across reconfiguration`() {
             let manager = TableViewCellManager()
             let container = UIView(frame: .init(x: 0, y: 0, width: 400, height: 400))
 
@@ -18,7 +18,7 @@ import Testing
                     [makeText("C"), makeText("D")],
                 ],
                 in: container,
-                metrics: testTableMetrics(maximumTextWidth: 180)
+                metrics: testTableMetrics(maximumTextWidth: 180),
             )
 
             let originalIdentifiers = manager.cells.map(ObjectIdentifier.init)
@@ -29,7 +29,7 @@ import Testing
                     [makeText("CC"), makeText("DD")],
                 ],
                 in: container,
-                metrics: testTableMetrics(maximumTextWidth: 180)
+                metrics: testTableMetrics(maximumTextWidth: 180),
             )
 
             #expect(manager.cells.count == 4)
@@ -37,8 +37,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Native table widths fill short tables and scroll wide tables")
-        func nativeTableWidthsFillAndScroll() throws {
+        @Test
+        func `Native table widths fill short tables and scroll wide tables`() throws {
             for columnCount in [1, 2, 3, 5] {
                 let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 120))
                 let row = (0 ..< columnCount).map { makeText("C\($0)") }
@@ -46,7 +46,7 @@ import Testing
                 tableView.layoutIfNeeded()
 
                 let scrollView = try #require(
-                    tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+                    tableView.subviews.first { $0 is UIScrollView } as? UIScrollView,
                 )
                 // The columns scroll inside the border; the frame does not.
                 #expect(tableView.intrinsicContentSize.width == UIView.noIntrinsicMetric)
@@ -66,8 +66,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Markdown table alignment reaches UIKit cells")
-        func markdownTableAlignmentReachesUIKitCells() throws {
+        @Test
+        func `Markdown table alignment reaches UIKit cells`() throws {
             let view = MarkdownTextView()
             view.frame = .init(x: 0, y: 0, width: 390, height: 240)
             view.setContentImmediately(preprocessedContent(for: """
@@ -78,7 +78,7 @@ import Testing
 
             let tableView = try #require(view.contextViews.first as? TableView)
             let scrollView = try #require(
-                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView,
             )
             let cells = scrollView.subviews.compactMap { $0 as? TextLabelView }
 
@@ -90,8 +90,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Default table appearance reaches rendered UIKit layers")
-        func defaultTableAppearanceReachesRenderedLayers() throws {
+        @Test
+        func `Default table appearance reaches rendered UIKit layers`() throws {
             let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 180))
             tableView.setTheme(.default)
             tableView.setContents([
@@ -102,7 +102,7 @@ import Testing
             tableView.layoutIfNeeded()
 
             let gridView = try #require(
-                tableView.subviews.first { $0 is GridView } as? GridView
+                tableView.subviews.first { $0 is GridView } as? GridView,
             )
             gridView.layoutIfNeeded()
 
@@ -121,12 +121,12 @@ import Testing
             #expect(colorsMatch(
                 rendered: stripeColor,
                 expected: MarkdownTheme.default.table.stripeCellBackgroundColor,
-                traitCollection: gridView.traitCollection
+                traitCollection: gridView.traitCollection,
             ))
             #expect(colorsMatch(
                 rendered: headerColor,
                 expected: MarkdownTheme.default.table.headerBackgroundColor,
-                traitCollection: gridView.traitCollection
+                traitCollection: gridView.traitCollection,
             ))
             #expect(!stripePath.isEmpty)
             #expect(borderPath.boundingBox.width > 0)
@@ -135,8 +135,8 @@ import Testing
         }
 
         @MainActor
-        @Test("UIKit table cells are vertically centered within each row")
-        func tableCellsAreVerticallyCentered() throws {
+        @Test
+        func `UIKit table cells are vertically centered within each row`() throws {
             let tableView = TableView(frame: .init(x: 0, y: 0, width: 320, height: 120))
             tableView.setContents([
                 [makeText("Short"), makeText("First line\nSecond line")],
@@ -144,7 +144,7 @@ import Testing
             tableView.layoutIfNeeded()
 
             let scrollView = try #require(
-                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView
+                tableView.subviews.first { $0 is UIScrollView } as? UIScrollView,
             )
             let cells = scrollView.subviews.compactMap { $0 as? TextLabelView }
 
@@ -154,8 +154,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Code toolbar remains interactive")
-        func codeToolbarRemainsInteractive() {
+        @Test
+        func `Code toolbar remains interactive`() {
             let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
             codeView.theme = .default
             codeView.content = "let value = 1"
@@ -165,13 +165,13 @@ import Testing
         }
 
         @MainActor
-        @Test("Mixed CJK and RTL text gets stable CoreText language attributes")
-        func mixedCJKAndRTLTextGetsStableCoreTextLanguageAttributes() {
+        @Test
+        func `Mixed CJK and RTL text gets stable CoreText language attributes`() {
             let context = MarkdownContent(
                 blocks: [],
                 rendered: [:],
                 highlightMaps: [:],
-                locale: Locale(identifier: "zh-Hans")
+                locale: Locale(identifier: "zh-Hans"),
             )
             let rendered = MarkdownInlineNode
                 .text("中文段落 日本語かな العربية")
@@ -185,8 +185,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Multilingual markdown preprocesses and renders")
-        func multilingualMarkdownPreprocessesAndRenders() {
+        @Test
+        func `Multilingual markdown preprocesses and renders`() {
             let markdown = """
             # 多语言 Layout
 
@@ -207,7 +207,7 @@ import Testing
             let content = MarkdownContent(
                 parserResult: parserResult,
                 theme: .default,
-                locale: Locale(identifier: "zh-Hans")
+                locale: Locale(identifier: "zh-Hans"),
             )
             let view = MarkdownTextView()
 
@@ -236,8 +236,8 @@ import Testing
         }
 
         @MainActor
-        @Test("MarkdownTextView reuses table and code context views")
-        func markdownTextViewReusesContextViews() throws {
+        @Test
+        func `MarkdownTextView reuses table and code context views`() throws {
             let view = MarkdownTextView()
 
             view.setContentImmediately(preprocessedContent(for: """
@@ -269,8 +269,8 @@ import Testing
         }
 
         @MainActor
-        @Test("MarkdownTextView keeps root text hittable through plain table and code")
-        func markdownTextViewKeepsRootTextHittable() throws {
+        @Test
+        func `MarkdownTextView keeps root text hittable through plain table and code`() throws {
             let view = MarkdownTextView()
             view.frame = .init(x: 0, y: 0, width: 320, height: 480)
             view.setContentImmediately(preprocessedContent(for: """
@@ -311,7 +311,7 @@ import Testing
             string: string,
             attributes: [
                 .font: MarkdownTheme.default.fonts.body,
-            ]
+            ],
         )
     }
 
@@ -321,7 +321,7 @@ import Testing
             maximumColumnWidth: maximumTextWidth + 20,
             horizontalCellPadding: 10,
             verticalCellPadding: 10,
-            minimumRowHeight: 0
+            minimumRowHeight: 0,
         )
     }
 
@@ -331,7 +331,7 @@ import Testing
         return (cell.attributedText.attribute(
             .paragraphStyle,
             at: 0,
-            effectiveRange: nil
+            effectiveRange: nil,
         ) as? NSParagraphStyle)?.alignment
     }
 
@@ -351,7 +351,7 @@ import Testing
     private func colorsMatch(
         rendered: CGColor,
         expected: UIColor,
-        traitCollection: UITraitCollection
+        traitCollection: UITraitCollection,
     ) -> Bool {
         let renderedColor = UIColor(cgColor: rendered)
         let resolvedExpected = expected.resolvedColor(with: traitCollection)
@@ -367,12 +367,12 @@ import Testing
             &renderedRed,
             green: &renderedGreen,
             blue: &renderedBlue,
-            alpha: &renderedAlpha
+            alpha: &renderedAlpha,
         ), resolvedExpected.getRed(
             &expectedRed,
             green: &expectedGreen,
             blue: &expectedBlue,
-            alpha: &expectedAlpha
+            alpha: &expectedAlpha,
         ) else { return false }
 
         return abs(renderedRed - expectedRed) <= 0.001
@@ -385,7 +385,7 @@ import Testing
     private func preprocessedContent(for markdown: String) -> MarkdownContent {
         MarkdownContent(
             parserResult: MarkdownParser().parse(markdown),
-            theme: .default
+            theme: .default,
         )
     }
 

@@ -10,10 +10,10 @@ import Testing
 
 struct MarkdownViewBlockquoteBarTests {
     @MainActor
-    @Test("Each blockquote gets one bar spanning all of its lines", arguments: [
+    @Test(arguments: [
         160.0 as CGFloat, 240, 360, 640,
     ])
-    func blockquoteBarSpansEveryLine(width: CGFloat) {
+    func `Each blockquote gets one bar spanning all of its lines`(width: CGFloat) {
         let view = makeView("""
         Intro paragraph.
 
@@ -53,10 +53,10 @@ struct MarkdownViewBlockquoteBarTests {
     }
 
     @MainActor
-    @Test("Quoted text is indented past its bar and never laid out over it", arguments: [
+    @Test(arguments: [
         160.0 as CGFloat, 240, 360, 640,
     ])
-    func quotedTextStaysClearOfTheBar(width: CGFloat) throws {
+    func `Quoted text is indented past its bar and never laid out over it`(width: CGFloat) throws {
         let view = makeView(Self.quotesDocument, width: width)
         let bars = view.blockquoteBars.filter { !$0.isHidden }
         #expect(bars.count == 2)
@@ -81,12 +81,12 @@ struct MarkdownViewBlockquoteBarTests {
             let hanging = NSAttributedString(
                 attributedString: view.textLabelView.attributedText.attributedSubstring(from: NSRange(
                     location: NSMaxRange(run.stringRange) - trailingSpaces,
-                    length: trailingSpaces
-                ))
+                    length: trailingSpaces,
+                )),
             ).size().width
             #expect(
                 rect.maxX - hanging <= view.bounds.width + 0.5,
-                "quoted run [\(runText)] at \(rect) overflows width \(width)"
+                "quoted run [\(runText)] at \(rect) overflows width \(width)",
             )
         }
 
@@ -97,17 +97,19 @@ struct MarkdownViewBlockquoteBarTests {
         text.enumerateAttribute(
             .blockquoteGroup,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, range, _ in
-            if value != nil { quotedLength += range.length }
+            if value != nil {
+                quotedLength += range.length
+            }
         }
         let laidOutLength = runs.reduce(0) { $0 + $1.stringRange.length }
         #expect(laidOutLength == quotedLength)
     }
 
     @MainActor
-    @Test("Quotes keep their text, indent and copy output byte for byte")
-    func quotesKeepTheirText() throws {
+    @Test
+    func `Quotes keep their text, indent and copy output byte for byte`() throws {
         let view = makeView(Self.quotesDocument, width: 360)
         let text = view.textLabelView.attributedText
 
@@ -116,7 +118,7 @@ struct MarkdownViewBlockquoteBarTests {
         let placeholder = "\u{FFFC}"
         let rendered = Self.quotesCopiedText.replacingOccurrences(
             of: " code ",
-            with: " \(placeholder)code\(placeholder) "
+            with: " \(placeholder)code\(placeholder) ",
         )
         #expect(text.string == rendered)
 
@@ -136,8 +138,8 @@ struct MarkdownViewBlockquoteBarTests {
     }
 
     @MainActor
-    @Test("No paragraph in a rendered document narrows its lines with a negative tail indent")
-    func noNegativeTailIndent() {
+    @Test
+    func `No paragraph in a rendered document narrows its lines with a negative tail indent`() {
         // A negative tail indent sends the text layout down its two-pass
         // measurement for the whole document, on every streamed update.
         for markdown in [Self.quotesDocument, RenderProbeDocument.everything] {
@@ -145,7 +147,7 @@ struct MarkdownViewBlockquoteBarTests {
             text.enumerateAttribute(
                 .paragraphStyle,
                 in: NSRange(location: 0, length: text.length),
-                options: []
+                options: [],
             ) { value, range, _ in
                 guard let style = value as? NSParagraphStyle else { return }
                 #expect(style.tailIndent >= 0, "negative tail indent at \(range)")
@@ -180,22 +182,22 @@ struct MarkdownViewBlockquoteBarTests {
     """
 
     @MainActor
-    @Test("A document without quotes keeps no bars")
-    func documentWithoutQuotesKeepsNoBars() {
+    @Test
+    func `A document without quotes keeps no bars`() {
         let view = makeView("Just a paragraph.", width: 320)
 
         #expect(view.blockquoteBars.isEmpty)
     }
 
     @MainActor
-    @Test("Bars are released when the quotes go away")
-    func barsAreReleasedWhenQuotesGoAway() {
+    @Test
+    func `Bars are released when the quotes go away`() {
         let view = makeView("> Quoted.", width: 320)
         #expect(view.blockquoteBars.count == 1)
 
         view.setContentImmediately(.init(
             parserResult: MarkdownParser().parse("Plain text now."),
-            theme: .default
+            theme: .default,
         ))
         layout(view: view, width: 320)
 
@@ -208,7 +210,7 @@ private func makeView(_ markdown: String, width: CGFloat) -> MarkdownTextView {
     let view = MarkdownTextView()
     view.setContentImmediately(.init(
         parserResult: MarkdownParser().parse(markdown),
-        theme: .default
+        theme: .default,
     ))
     layout(view: view, width: width)
     return view

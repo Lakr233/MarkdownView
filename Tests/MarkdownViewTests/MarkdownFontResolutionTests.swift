@@ -23,8 +23,8 @@ struct MarkdownFontResolutionTests {
     /// matching fixing the document, and the failure would otherwise show up
     /// as a subtly wrong paragraph style somewhere far away.
     @MainActor
-    @Test("Every block ends with a newline")
-    func blocksEndWithNewline() {
+    @Test
+    func `Every block ends with a newline`() {
         let view = RenderProbe.view(RenderProbeDocument.everything)
         let cache = view.blockFragmentCache
         var checked = 0
@@ -33,7 +33,7 @@ struct MarkdownFontResolutionTests {
             checked += 1
             #expect(
                 fragment.string.hasSuffix("\n"),
-                "block \(index) ends with \(fragment.string.suffix(8).debugDescription)"
+                "block \(index) ends with \(fragment.string.suffix(8).debugDescription)",
             )
         }
         #expect(checked > 0)
@@ -44,8 +44,8 @@ struct MarkdownFontResolutionTests {
     /// Compared through the digest rather than `isEqual`, so a failure names
     /// the attribute and the offset instead of saying two long strings differ.
     @MainActor
-    @Test("Per-block font resolution matches a whole-document sweep")
-    func matchesWholeDocumentSweep() throws {
+    @Test
+    func `Per-block font resolution matches a whole-document sweep`() throws {
         let built = RenderProbe.show(RenderProbeDocument.everything, in: MarkdownTextView())
 
         let swept = try #require(built.mutableCopy() as? NSMutableAttributedString)
@@ -62,7 +62,7 @@ struct MarkdownFontResolutionTests {
     /// where a missed resolution would show — as a fallback chosen by CoreText
     /// during framesetting instead of one recorded in the document.
     @MainActor
-    @Test("Scripts needing a substitute font resolve to a real font", arguments: [
+    @Test(arguments: [
         "中文段落 with English mixed in.",
         "日本語の段落です。",
         "한국어 문단입니다.",
@@ -71,14 +71,14 @@ struct MarkdownFontResolutionTests {
         "> 引用里的中文 quote",
         "- 列表里的中文 bullet",
     ])
-    func substituteFontsAreResolved(_ markdown: String) throws {
+    func `Scripts needing a substitute font resolve to a real font`(_ markdown: String) throws {
         let text = RenderProbe.show(markdown, in: MarkdownTextView())
         let swept = try #require(text.mutableCopy() as? NSMutableAttributedString)
         swept.fixAttributes(in: NSRange(location: 0, length: swept.length))
 
         #expect(
             RenderProbe.digest(text) == RenderProbe.digest(swept),
-            "\(RenderProbe.firstDifference(RenderProbe.digest(text), RenderProbe.digest(swept)))"
+            "\(RenderProbe.firstDifference(RenderProbe.digest(text), RenderProbe.digest(swept)))",
         )
     }
 
@@ -89,8 +89,8 @@ struct MarkdownFontResolutionTests {
     /// document would still render correctly — CoreText would resolve it again
     /// while framesetting — and the cost this removes would silently return.
     @MainActor
-    @Test("A reused block keeps its resolved fonts")
-    func reusedBlocksKeepResolvedFonts() throws {
+    @Test
+    func `A reused block keeps its resolved fonts`() throws {
         let markdown = """
         中文第一段 stays put.
 
@@ -104,7 +104,7 @@ struct MarkdownFontResolutionTests {
         swept.fixAttributes(in: NSRange(location: 0, length: swept.length))
         #expect(
             RenderProbe.digest(text) == RenderProbe.digest(swept),
-            "\(RenderProbe.firstDifference(RenderProbe.digest(text), RenderProbe.digest(swept)))"
+            "\(RenderProbe.firstDifference(RenderProbe.digest(text), RenderProbe.digest(swept)))",
         )
     }
 }

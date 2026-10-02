@@ -11,8 +11,8 @@ struct ListMarkerLayoutTests {
     private let font = PlatformFont.systemFont(ofSize: 17)
     private let lineOrigin = CGPoint(x: 24, y: 100)
 
-    @Test("The marker column and its gap fill exactly one level of indent")
-    func columnFillsOneIndentLevel() {
+    @Test
+    func `The marker column and its gap fill exactly one level of indent`() {
         #expect(ListMarkerLayout.size + ListMarkerLayout.spacing == ListMarkerLayout.indent)
 
         let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: font)
@@ -21,8 +21,8 @@ struct ListMarkerLayoutTests {
         #expect(column.minX == lineOrigin.x - ListMarkerLayout.indent)
     }
 
-    @Test("Markers of different kinds share one center")
-    func markerKindsShareOneCenter() {
+    @Test
+    func `Markers of different kinds share one center`() {
         // A bullet, a circled number and a checkbox are drawn by three separate
         // callbacks; all three place themselves through this column, so a list that
         // mixes them lines its markers up instead of stepping left and right.
@@ -46,8 +46,8 @@ struct ListMarkerLayoutTests {
         }
     }
 
-    @Test("A marker sits on the cap height of the text, not on the line's bounds")
-    func markerSitsOnCapHeight() {
+    @Test
+    func `A marker sits on the cap height of the text, not on the line's bounds`() {
         let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: font)
         #expect(abs(column.midY - (lineOrigin.y + font.capHeight / 2)) < 0.001)
 
@@ -55,24 +55,24 @@ struct ListMarkerLayoutTests {
         // typographic bounds but must leave the marker where its neighbors are.
         let taller = ListMarkerLayout.column(
             lineOrigin: lineOrigin,
-            font: PlatformFont.systemFont(ofSize: 17)
+            font: PlatformFont.systemFont(ofSize: 17),
         )
         #expect(taller.midY == column.midY)
     }
 
-    @Test("A larger marker font carries the column up with the text")
-    func columnFollowsTheFont() {
+    @Test
+    func `A larger marker font carries the column up with the text`() {
         let large = ListMarkerLayout.column(
             lineOrigin: lineOrigin,
-            font: PlatformFont.systemFont(ofSize: 34)
+            font: PlatformFont.systemFont(ofSize: 34),
         )
         let small = ListMarkerLayout.column(lineOrigin: lineOrigin, font: font)
         #expect(large.midY > small.midY)
         #expect(large.midX == small.midX)
     }
 
-    @Test("A symbol with an empty box falls back to the column")
-    func emptySymbolFallsBackToColumn() {
+    @Test
+    func `A symbol with an empty box falls back to the column`() {
         let column = ListMarkerLayout.column(lineOrigin: lineOrigin, font: font)
         let rect = ListMarkerLayout.fit(imageSize: .zero, in: column)
         #expect(rect == column)

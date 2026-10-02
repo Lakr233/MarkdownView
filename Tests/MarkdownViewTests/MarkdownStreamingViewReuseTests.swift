@@ -55,8 +55,8 @@ struct MarkdownStreamingViewReuseTests {
         var everSeen: Set<ObjectIdentifier> = []
     }
 
-    @Test("Streaming keeps every code and table view once it appears", arguments: [1, 3, 7])
-    func streamingKeepsContextViews(step: Int) throws {
+    @Test(arguments: [1, 3, 7])
+    func `Streaming keeps every code and table view once it appears`(step: Int) {
         let view = MarkdownTextView()
         var previous: [PlatformView] = []
         var created: Set<ObjectIdentifier> = []
@@ -69,12 +69,12 @@ struct MarkdownStreamingViewReuseTests {
             // Each view shown before is shown again, in the same place.
             #expect(
                 current.count >= previous.count,
-                "step \(index) dropped a context view: \(previous.count) → \(current.count)"
+                "step \(index) dropped a context view: \(previous.count) → \(current.count)",
             )
             for (position, old) in previous.enumerated() where position < current.count {
                 #expect(
                     current[position] === old,
-                    "step \(index) replaced the view at \(position) (\(type(of: old)))"
+                    "step \(index) replaced the view at \(position) (\(type(of: old)))",
                 )
             }
             // Every view shown sits in this view, and nothing else of its
@@ -93,8 +93,8 @@ struct MarkdownStreamingViewReuseTests {
         #expect(previous.compactMap { $0 as? TableView }.count == 2)
     }
 
-    @Test("Streaming keeps each table's cells, adding only the new ones")
-    func streamingKeepsTableCells() throws {
+    @Test
+    func `Streaming keeps each table's cells, adding only the new ones`() {
         let view = MarkdownTextView()
         var cellsByTable: [ObjectIdentifier: [ObjectIdentifier]] = [:]
 
@@ -117,8 +117,8 @@ struct MarkdownStreamingViewReuseTests {
         #expect(cellsByTable.count == 2)
     }
 
-    @Test("Streaming a code block keeps its view and ends with its full source")
-    func streamingKeepsCodeViewContent() throws {
+    @Test
+    func `Streaming a code block keeps its view and ends with its full source`() {
         let view = MarkdownTextView()
         var codeView: CodeView?
         for prefix in Self.prefixes(step: 1) {
@@ -132,8 +132,8 @@ struct MarkdownStreamingViewReuseTests {
         #expect(codeView?.content == "let first = 1\nprint(first)")
     }
 
-    @Test("A theme change mid-stream keeps the views")
-    func themeChangeKeepsViews() throws {
+    @Test
+    func `A theme change mid-stream keeps the views`() {
         let view = MarkdownTextView()
         RenderProbe.show(Self.document, in: view)
         let before = view.contextViews
@@ -148,13 +148,13 @@ struct MarkdownStreamingViewReuseTests {
     }
 
     #if canImport(AppKit) && !targetEnvironment(macCatalyst)
-        @Test("Streaming through SwiftUI keeps every code and table view once it appears")
-        func swiftUIStreamingKeepsContextViews() throws {
+        @Test
+        func `Streaming through SwiftUI keeps every code and table view once it appears`() throws {
             let window = NSWindow(
                 contentRect: .init(x: 0, y: 0, width: 480, height: 1200),
                 styleMask: [.titled, .resizable],
                 backing: .buffered,
-                defer: true
+                defer: true,
             )
             let prefixes = Self.prefixes(step: 5)
             let host = NSHostingView(rootView: MarkdownView(RenderProbe.content(prefixes[0])))

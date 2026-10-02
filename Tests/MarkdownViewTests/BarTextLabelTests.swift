@@ -11,22 +11,22 @@ struct BarTextLabelTests {
         CGFloat(string.count)
     }
 
-    @Test("Text that fits is shown whole")
-    func fittingTextIsWhole() {
+    @Test
+    func `Text that fits is shown whole`() {
         #expect(BarTextLabel.truncated("Table", toFit: 5, measure: measure) == "Table")
         #expect(BarTextLabel.truncated("Table", toFit: 0, measure: measure) == "Table")
     }
 
-    @Test("Text that does not fit is cut at the tail with an ellipsis")
-    func longTextIsCut() {
+    @Test
+    func `Text that does not fit is cut at the tail with an ellipsis`() {
         let cut = BarTextLabel.truncated("Table (110 more rows)", toFit: 8, measure: measure)
         #expect(cut == "Table (…")
         #expect(measure(cut) <= 8)
         #expect(BarTextLabel.truncated("Table", toFit: 1, measure: measure) == "…")
     }
 
-    @Test("A narrow label draws a cut line, and its natural size is the whole text")
-    func narrowLabelDrawsCutLine() {
+    @Test
+    func `A narrow label draws a cut line, and its natural size is the whole text`() {
         let label = BarTextLabel()
         label.text = "A caption much wider than its label"
         let natural = label.intrinsicContentSize

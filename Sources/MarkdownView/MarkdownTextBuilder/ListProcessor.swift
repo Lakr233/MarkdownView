@@ -31,7 +31,7 @@ final class ListProcessor {
         bulletDrawing: TextBuilder.BulletDrawingCallback?,
         numberedDrawing: TextBuilder.NumberedDrawingCallback?,
         checkboxDrawing: TextBuilder.CheckboxDrawingCallback?,
-        inlineTextDecoration: TextBuilder.InlineTextDecoration?
+        inlineTextDecoration: TextBuilder.InlineTextDecoration?,
     ) {
         self.theme = theme
         self.viewProvider = viewProvider
@@ -78,7 +78,7 @@ final class ListProcessor {
                 // an `[obj]` box. The attachment hands the pasteboard the markdown the
                 // drawing stands for instead.
                 .litextAttachment: TextLabel.Attachment.hold(
-                    attrString: .init(string: Self.markerText(for: item))
+                    attrString: .init(string: Self.markerText(for: item)),
                 ),
                 .litextLineDrawingAction: TextLabel.LineDrawingAction(action: { context, line, lineOrigin in
                     if item.ordered {
@@ -95,7 +95,7 @@ final class ListProcessor {
 
         string.addAttributes(
             [.paragraphStyle: paragraphStyle],
-            range: .init(location: 0, length: string.length)
+            range: .init(location: 0, length: string.length),
         )
         string.append(.init(string: "\n"))
         return string

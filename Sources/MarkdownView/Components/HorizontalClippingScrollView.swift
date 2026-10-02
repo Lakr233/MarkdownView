@@ -58,7 +58,7 @@
                 x: minX,
                 y: bounds.minY - Self.overflow,
                 width: maxX - minX,
-                height: bounds.height + Self.overflow * 2
+                height: bounds.height + Self.overflow * 2,
             )
             CATransaction.commit()
         }

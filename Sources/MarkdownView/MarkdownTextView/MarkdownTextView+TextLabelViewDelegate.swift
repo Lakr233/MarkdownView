@@ -58,7 +58,7 @@ extension MarkdownTextView: TextLabelViewDelegate {
             let minOffsetY = -scrollView.adjustedContentInset.top
             let maxOffsetY = max(
                 minOffsetY,
-                scrollView.contentSize.height + scrollView.adjustedContentInset.bottom - scrollView.bounds.height
+                scrollView.contentSize.height + scrollView.adjustedContentInset.bottom - scrollView.bounds.height,
             )
             currentOffset.y = min(max(currentOffset.y, minOffsetY), maxOffsetY)
             scrollView.setContentOffset(currentOffset, animated: false)

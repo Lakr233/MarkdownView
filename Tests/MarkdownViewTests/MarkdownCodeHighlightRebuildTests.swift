@@ -43,7 +43,7 @@ struct MarkdownCodeHighlightRebuildTests {
             _ = CodeHighlighter.current.highlight(
                 key: CodeHighlighter.current.key(for: content, language: language),
                 content: content,
-                language: language
+                language: language,
             )
         }
     }
@@ -60,7 +60,7 @@ struct MarkdownCodeHighlightRebuildTests {
         text.enumerateAttribute(
             .foregroundColor,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, _, _ in
             guard let color = value as? PlatformColor else { return }
             colors.insert(String(describing: color))
@@ -69,8 +69,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A cached highlight map colors the code on the first build")
-    func cachedHighlightMapColorsTheCode() {
+    @Test
+    func `A cached highlight map colors the code on the first build`() {
         // Warm the shared cache synchronously so the build does not depend on
         // the asynchronous worker landing in time.
         warmHighlightCache(for: markdown(Self.source))
@@ -86,8 +86,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A highlight update leaves the document unchanged")
-    func highlightUpdateLeavesTheDocumentUnchanged() {
+    @Test
+    func `A highlight update leaves the document unchanged`() {
         warmHighlightCache(for: markdown(Self.source))
         let view = RenderProbe.view(markdown(Self.source))
         RenderProbe.show(markdown(Self.source), in: view)
@@ -97,7 +97,7 @@ struct MarkdownCodeHighlightRebuildTests {
 
         NotificationCenter.default.post(
             name: CodeHighlighter.highlightDidUpdateNotification,
-            object: nil
+            object: nil,
         )
         RenderProbe.layout(view)
 
@@ -108,8 +108,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A highlight update for another document leaves this one alone")
-    func unrelatedHighlightUpdateLeavesThisViewAlone() {
+    @Test
+    func `A highlight update for another document leaves this one alone`() {
         let view = RenderProbe.view(markdown(Self.source))
         RenderProbe.show(markdown(Self.source), in: view)
         let before = RenderProbe.digest(view.textLabelView.attributedText)
@@ -119,11 +119,11 @@ struct MarkdownCodeHighlightRebuildTests {
         _ = CodeHighlighter.current.highlight(
             key: nil,
             content: "print(\"a completely different program\")",
-            language: "python"
+            language: "python",
         )
         NotificationCenter.default.post(
             name: CodeHighlighter.highlightDidUpdateNotification,
-            object: nil
+            object: nil,
         )
         RenderProbe.layout(view)
 
@@ -132,8 +132,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A finished highlight only reaches the views showing that block")
-    func onlyTheViewsShowingTheBlockPickUpAHighlight() {
+    @Test
+    func `A finished highlight only reaches the views showing that block`() {
         // Built before the cache is warm, so the code starts out unhighlighted
         // and picking up colour is proof that a rebuild happened.
         let source = "let uniqueToThisTest = 1"
@@ -148,7 +148,7 @@ struct MarkdownCodeHighlightRebuildTests {
         warmHighlightCache(for: document)
         let strangerKey = CodeHighlighter.current.key(
             for: "print(\"a block this view never showed\")",
-            language: "python"
+            language: "python",
         )
         postHighlightUpdate(keys: [strangerKey])
         RenderProbe.layout(view)
@@ -174,13 +174,13 @@ struct MarkdownCodeHighlightRebuildTests {
         NotificationCenter.default.post(
             name: CodeHighlighter.highlightDidUpdateNotification,
             object: nil,
-            userInfo: [CodeHighlighter.highlightedKeysUserInfoKey: keys]
+            userInfo: [CodeHighlighter.highlightedKeysUserInfoKey: keys],
         )
     }
 
     @MainActor
-    @Test("Code text reaches the view verbatim")
-    func codeTextReachesTheViewVerbatim() {
+    @Test
+    func `Code text reaches the view verbatim`() {
         let view = RenderProbe.view(markdown(Self.source))
         guard let codeView = codeView(in: view) else {
             Issue.record("no code view was built")
@@ -192,8 +192,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A code block without a language still renders its source")
-    func codeWithoutLanguageStillRenders() {
+    @Test
+    func `A code block without a language still renders its source`() {
         let view = RenderProbe.view("""
         ```
         plain fenced text
@@ -208,8 +208,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("Streaming a code block ends with its full source")
-    func streamedCodeBlockEndsComplete() {
+    @Test
+    func `Streaming a code block ends with its full source`() {
         let final = markdown(Self.source)
         let view = MarkdownTextView()
 
@@ -229,8 +229,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A code block replaced by a paragraph releases its view")
-    func codeReplacedByTextReleasesItsView() {
+    @Test
+    func `A code block replaced by a paragraph releases its view`() {
         let view = RenderProbe.view(markdown(Self.source))
         #expect(codeView(in: view) != nil)
 
@@ -242,8 +242,8 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("The same source in two languages is cached apart")
-    func sameSourceInTwoLanguagesIsCachedApart() {
+    @Test
+    func `The same source in two languages is cached apart`() {
         // The highlight cache is keyed on content and language together; keying
         // it on content alone would paint one language with the other's colors.
         let source = "class Thing: pass"
@@ -258,12 +258,12 @@ struct MarkdownCodeHighlightRebuildTests {
     }
 
     @MainActor
-    @Test("A language differing only in case shares one cache entry")
-    func languageCaseDoesNotSplitTheCache() {
+    @Test
+    func `A language differing only in case shares one cache entry`() {
         let source = "let a = 1"
         #expect(
             CodeHighlighter.current.key(for: source, language: "Swift")
-                == CodeHighlighter.current.key(for: source, language: "swift")
+                == CodeHighlighter.current.key(for: source, language: "swift"),
         )
     }
 }

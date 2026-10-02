@@ -21,8 +21,8 @@ public extension MarkdownBlockNode {
                     isTight: isTight,
                     items: items.map {
                         try RawListItem(children: $0.children.rewrite(r))
-                    }
-                )
+                    },
+                ),
             )
         case let .numberedList(isTight, start, items):
             try r(
@@ -31,8 +31,8 @@ public extension MarkdownBlockNode {
                     start: start,
                     items: items.map {
                         try RawListItem(children: $0.children.rewrite(r))
-                    }
-                )
+                    },
+                ),
             )
         case let .taskList(isTight, items):
             try r(
@@ -40,8 +40,8 @@ public extension MarkdownBlockNode {
                     isTight: isTight,
                     items: items.map {
                         try RawTaskListItem(isCompleted: $0.isCompleted, children: $0.children.rewrite(r))
-                    }
-                )
+                    },
+                ),
             )
         default:
             try r(self)
@@ -58,7 +58,7 @@ public extension MarkdownBlockNode {
                     isTight: isTight,
                     items: items.map {
                         try RawListItem(children: $0.children.rewrite(r))
-                    }
+                    },
                 ),
             ]
         case let .numberedList(isTight, start, items):
@@ -68,7 +68,7 @@ public extension MarkdownBlockNode {
                     start: start,
                     items: items.map {
                         try RawListItem(children: $0.children.rewrite(r))
-                    }
+                    },
                 ),
             ]
         case let .taskList(isTight, items):
@@ -77,7 +77,7 @@ public extension MarkdownBlockNode {
                     isTight: isTight,
                     items: items.map {
                         try RawTaskListItem(isCompleted: $0.isCompleted, children: $0.children.rewrite(r))
-                    }
+                    },
                 ),
             ]
         case let .paragraph(content):
@@ -92,9 +92,9 @@ public extension MarkdownBlockNode {
                         try RawTableRow(
                             cells: $0.cells.map {
                                 try RawTableCell(content: $0.content.rewrite(r))
-                            }
+                            },
                         )
-                    }
+                    },
                 ),
             ]
         default:

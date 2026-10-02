@@ -21,7 +21,7 @@ enum CodeViewConfiguration {
 
     static func intrinsicHeight(
         for content: String,
-        theme: MarkdownTheme = .default
+        theme: MarkdownTheme = .default,
     ) -> CGFloat {
         let numberOfRows = content.components(separatedBy: .newlines).count
         return intrinsicHeight(lineCount: numberOfRows, theme: theme)
@@ -29,7 +29,7 @@ enum CodeViewConfiguration {
 
     static func intrinsicHeight(
         lineCount: Int,
-        theme: MarkdownTheme = .default
+        theme: MarkdownTheme = .default,
     ) -> CGFloat {
         let font = theme.fonts.code
         #if canImport(UIKit)
@@ -84,7 +84,7 @@ extension CodeView {
                 x: trailing,
                 y: (barView.bounds.height - buttonSize.height) / 2,
                 width: buttonSize.width,
-                height: buttonSize.height
+                height: buttonSize.height,
             ))
         }
     }
@@ -93,7 +93,7 @@ extension CodeView {
         barView.frame = CGRect(origin: .zero, size: CGSize(width: bounds.width, height: barHeight))
         languageLabel.frame = CGRect(
             origin: CGPoint(x: CodeViewConfiguration.barPadding, y: CodeViewConfiguration.barPadding),
-            size: labelSize
+            size: labelSize,
         )
     }
 
@@ -103,7 +103,7 @@ extension CodeView {
             x: 0,
             y: barHeight,
             width: lineNumberSize.width,
-            height: bounds.height - barHeight
+            height: bounds.height - barHeight,
         )
     }
 
@@ -115,7 +115,7 @@ extension CodeView {
             x: lineNumberWidth,
             y: barHeight,
             width: bounds.width - lineNumberWidth,
-            height: bounds.height - barHeight
+            height: bounds.height - barHeight,
         )
 
         #if canImport(UIKit)
@@ -128,13 +128,13 @@ extension CodeView {
             x: textOrigin.x,
             y: textOrigin.y,
             width: max(scrollView.bounds.width - CodeViewConfiguration.codePadding * 2, textContentSize.width),
-            height: textContentSize.height
+            height: textContentSize.height,
         )
 
         #if canImport(UIKit)
             scrollView.contentSize = CGSize(
                 width: textView.frame.width + CodeViewConfiguration.codePadding * 2,
-                height: 0
+                height: 0,
             )
         #endif
     }
@@ -161,7 +161,7 @@ extension CodeView {
         func setupPreviewButton() {
             let previewImage = UIImage(
                 systemName: "eye",
-                withConfiguration: UIImage.SymbolConfiguration(scale: .small)
+                withConfiguration: UIImage.SymbolConfiguration(scale: .small),
             )
             previewButton.setImage(previewImage, for: .normal)
             previewButton.tintColor = .label
@@ -176,7 +176,7 @@ extension CodeView {
         func setupBarButton(_ button: UIButton, symbol: String, title: String, action: Selector) {
             let image = UIImage(
                 systemName: symbol,
-                withConfiguration: UIImage.SymbolConfiguration(scale: .small)
+                withConfiguration: UIImage.SymbolConfiguration(scale: .small),
             )
             button.setImage(image, for: .normal)
             button.tintColor = .label
@@ -260,7 +260,7 @@ extension CodeView {
                 top: CodeViewConfiguration.codePadding,
                 left: CodeViewConfiguration.codePadding,
                 bottom: CodeViewConfiguration.codePadding,
-                right: CodeViewConfiguration.codePadding
+                right: CodeViewConfiguration.codePadding,
             )
             addSubview(scrollView)
         }

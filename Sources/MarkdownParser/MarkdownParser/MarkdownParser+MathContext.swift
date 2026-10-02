@@ -20,7 +20,7 @@ private let mathPattern: NSRegularExpression? = {
         pattern: pattern,
         options: [
             .caseInsensitive,
-        ]
+        ],
     ) else {
         assertionFailure("failed to create regex for math pattern")
         return nil
@@ -124,7 +124,7 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
         runs.append(BacktickRun(
             range: NSRange(location: index, length: end - index),
             chunk: chunk,
-            isFence: !lineHasContent && end - index >= 3
+            isFence: !lineHasContent && end - index >= 3,
         ))
         lineHasContent = true
         index = end
@@ -150,7 +150,7 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
         let closer = runs[closerIndex].range
         ranges.append(NSRange(
             location: opener.range.location,
-            length: closer.location + closer.length - opener.range.location
+            length: closer.location + closer.length - opener.range.location,
         ))
         openerIndex = closerIndex + 1
     }
@@ -166,7 +166,7 @@ private func extractMathMatches(in text: String, using regex: NSRegularExpressio
             return MathMatch(
                 range: match.range(at: 0),
                 content: nsText.substring(with: captureRange),
-                source: nsText.substring(with: match.range(at: 0))
+                source: nsText.substring(with: match.range(at: 0)),
             )
         }
         return nil
@@ -236,7 +236,7 @@ public extension MarkdownParser {
             for match in matches {
                 if match.range.location > lastEnd {
                     result += nsText.substring(
-                        with: NSRange(location: lastEnd, length: match.range.location - lastEnd)
+                        with: NSRange(location: lastEnd, length: match.range.location - lastEnd),
                     )
                 }
                 let matchEnd = match.range.location + match.range.length
@@ -280,8 +280,8 @@ public extension MarkdownParser {
                 content: content,
                 replacementIdentifier: MarkdownParser.replacementText(
                     for: .math,
-                    identifier: identifier
-                )
+                    identifier: identifier,
+                ),
             )
         }
 
@@ -309,7 +309,7 @@ private let mathPatternWithinBlock: NSRegularExpression? = {
         pattern: pattern,
         options: [
             .caseInsensitive,
-        ]
+        ],
     ) else {
         assertionFailure("failed to create regex for math pattern")
         return nil
@@ -375,7 +375,7 @@ extension MarkdownParser {
         for match in matches {
             if match.range.location > lastEnd {
                 let beforeText = nsText.substring(
-                    with: NSRange(location: lastEnd, length: match.range.location - lastEnd)
+                    with: NSRange(location: lastEnd, length: match.range.location - lastEnd),
                 )
                 if !beforeText.isEmpty {
                     result.append(.text(beforeText))
@@ -385,8 +385,8 @@ extension MarkdownParser {
             result.append(
                 .math(
                     content: match.content,
-                    replacementIdentifier: mathContext.register(content: match.content)
-                )
+                    replacementIdentifier: mathContext.register(content: match.content),
+                ),
             )
 
             lastEnd = match.range.location + match.range.length

@@ -36,7 +36,7 @@ public struct MarkdownView: View {
         // state (and no second layout pass) is needed here.
         MarkdownViewRepresentable(
             contentSource: contentSource,
-            theme: theme
+            theme: theme,
         )
         .frame(maxWidth: .infinity, alignment: .topLeading)
     }

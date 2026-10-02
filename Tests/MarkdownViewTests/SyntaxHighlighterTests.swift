@@ -19,8 +19,8 @@ struct SyntaxHighlighterTests {
         tokens(code, language).first { $0.text == piece }?.token
     }
 
-    @Test("Swift reads as Xcode colours it")
-    func swiftTokens() {
+    @Test
+    func `Swift reads as Xcode colours it`() {
         let code = """
         @MainActor
         func load(_ query: String) -> Int {
@@ -40,7 +40,6 @@ struct SyntaxHighlighterTests {
     }
 
     @Test(
-        "Every language in the catalog colours its sample",
         arguments: [
             ("swift", "let x = 1"),
             ("c", "#include <stdio.h>\nint main(void) { return 0; }"),
@@ -70,45 +69,45 @@ struct SyntaxHighlighterTests {
             ("php", "<?php echo $name; ?>"),
             ("dart", "void main() { print('hi'); }"),
             ("unknown-language", "if (x) { return 1; }"),
-        ]
+        ],
     )
-    func everyLanguageColours(language: String, code: String) {
+    func `Every language in the catalog colours its sample`(language: String, code: String) {
         #expect(!SyntaxHighlighter.highlight(code, language: language).isEmpty)
     }
 
-    @Test("A block that names no language is still highlighted")
-    func unlabelledBlockIsHighlighted() {
+    @Test
+    func `A block that names no language is still highlighted`() {
         #expect(!SyntaxHighlighter.highlight("let x = \"a\" // b", language: nil).isEmpty)
         #expect(!SyntaxHighlighter.highlight("let x = \"a\" // b", language: "").isEmpty)
     }
 
-    @Test("Plain text stays uncoloured")
-    func plainTextIsUncoloured() {
+    @Test
+    func `Plain text stays uncoloured`() {
         for language in ["text", "plaintext", "txt", "output", "markdown"] {
             #expect(SyntaxHighlighter.highlight("let x = \"a\" // b", language: language).isEmpty)
         }
     }
 
-    @Test("Language names are read from the first word, in any case")
-    func languageNameIsNormalised() {
+    @Test
+    func `Language names are read from the first word, in any case`() {
         #expect(kind(of: "func", in: "func a()", "Swift title=\"A\"") == .keyword)
     }
 
-    @Test("A Rust lifetime is not a string, a character literal is")
-    func rustLifetimes() {
+    @Test
+    func `A Rust lifetime is not a string, a character literal is`() {
         let code = "fn f<'a>(x: &'a str) -> char { 'x' }"
         let strings = tokens(code, "rust").filter { $0.token == .string }.map(\.text)
         #expect(strings == ["'x'"])
     }
 
-    @Test("A stray apostrophe does not swallow the rest of the line")
-    func strayApostrophe() {
+    @Test
+    func `A stray apostrophe does not swallow the rest of the line`() {
         let code = "x = it's + 1"
         #expect(kind(of: "1", in: code, "swift") == .number)
     }
 
-    @Test("JSON keys and values take different colours")
-    func jsonKeys() {
+    @Test
+    func `JSON keys and values take different colours`() {
         let code = "{\"name\": \"value\", \"n\": 1, \"ok\": null}"
         #expect(kind(of: "\"name\"", in: code, "json") == .attribute)
         #expect(kind(of: "\"value\"", in: code, "json") == .string)
@@ -116,45 +115,45 @@ struct SyntaxHighlighterTests {
         #expect(kind(of: "null", in: code, "json") == .keyword)
     }
 
-    @Test("YAML keys, including hyphenated ones")
-    func yamlKeys() {
+    @Test
+    func `YAML keys, including hyphenated ones`() {
         let code = "app-name: demo # the name\nreplicas: 3"
         #expect(kind(of: "app-name", in: code, "yaml") == .attribute)
         #expect(kind(of: "# the name", in: code, "yaml") == .comment)
         #expect(kind(of: "3", in: code, "yaml") == .number)
     }
 
-    @Test("An unterminated comment or docstring runs to the end while streaming")
-    func unterminatedRunsToEnd() {
+    @Test
+    func `An unterminated comment or docstring runs to the end while streaming`() {
         #expect(kind(of: "/* still typing", in: "a /* still typing", "swift") == .comment)
         #expect(kind(of: "\"\"\"doc\nmore", in: "x = \"\"\"doc\nmore", "python") == .string)
     }
 
-    @Test("Ranges are UTF-16 offsets")
-    func utf16Ranges() {
+    @Test
+    func `Ranges are UTF-16 offsets`() {
         let code = "let 名字 = \"中文😀\" // 注释"
         #expect(kind(of: "\"中文😀\"", in: code, "swift") == .string)
         #expect(kind(of: "// 注释", in: code, "swift") == .comment)
         #expect(kind(of: "名字", in: code, "swift") == nil)
     }
 
-    @Test("Numbers, and ranges between them")
-    func numbers() {
+    @Test
+    func `Numbers, and ranges between them`() {
         let pieces = tokens("a = 0x1F + 2.5e-3 + 1_000; for i in 1..5 {}", "swift")
             .filter { $0.token == .number }
             .map(\.text)
         #expect(pieces == ["0x1F", "2.5e-3", "1_000", "1", "5"])
     }
 
-    @Test("SQL keywords match in any case")
-    func sqlFoldsCase() {
+    @Test
+    func `SQL keywords match in any case`() {
         #expect(kind(of: "SELECT", in: "SELECT 1", "sql") == .keyword)
         #expect(kind(of: "select", in: "select 1", "sql") == .keyword)
         #expect(kind(of: "-- note", in: "select 1 -- note", "sql") == .comment)
     }
 
-    @Test("Shell variables, and a hash inside one, which is not a comment")
-    func shellVariables() {
+    @Test
+    func `Shell variables, and a hash inside one, which is not a comment`() {
         let code = "echo $HOME ${name} $# # done"
         #expect(kind(of: "$HOME", in: code, "bash") == .variable)
         #expect(kind(of: "${name}", in: code, "bash") == .variable)
@@ -162,8 +161,8 @@ struct SyntaxHighlighterTests {
         #expect(kind(of: "# done", in: code, "bash") == .comment)
     }
 
-    @Test("Markup colours tags and attributes, not the text between them")
-    func markup() {
+    @Test
+    func `Markup colours tags and attributes, not the text between them`() {
         let code = "<!-- note --><div class=\"a\">it's text</div>"
         #expect(kind(of: "<!-- note -->", in: code, "html") == .comment)
         #expect(kind(of: "div", in: code, "html") == .keyword)
@@ -172,15 +171,15 @@ struct SyntaxHighlighterTests {
         #expect(tokens(code, "html").allSatisfy { !$0.text.contains("text") })
     }
 
-    @Test("C directives and Rust attributes are meta")
-    func directives() {
+    @Test
+    func `C directives and Rust attributes are meta`() {
         #expect(kind(of: "#include", in: "#include <stdio.h>", "c") == .meta)
         #expect(kind(of: "#  define", in: "#  define X 1", "c") == .meta)
         #expect(kind(of: "#[derive(Debug)]", in: "#[derive(Debug)]\nstruct A;", "rust") == .meta)
     }
 
-    @Test("Diff lines take the colour of what they do")
-    func diff() {
+    @Test
+    func `Diff lines take the colour of what they do`() {
         let code = "@@ -1 +1 @@\n-old\n+new\n same"
         #expect(kind(of: "@@ -1 +1 @@", in: code, "diff") == .meta)
         #expect(kind(of: "-old", in: code, "diff") == .string)

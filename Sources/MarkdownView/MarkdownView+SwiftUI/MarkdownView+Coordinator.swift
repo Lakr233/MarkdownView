@@ -94,11 +94,10 @@ final class MarkdownViewCoordinator {
 
     private func apply(text: String, theme: MarkdownTheme, to view: MarkdownTextView) {
         cancelScheduledApply()
-        let result: MarkdownParser.ParseResult
-        if lastText == text, let cached = lastParseResult {
-            result = cached
+        let result: MarkdownParser.ParseResult = if lastText == text, let cached = lastParseResult {
+            cached
         } else {
-            result = MarkdownParser().parse(text)
+            MarkdownParser().parse(text)
         }
         let content = MarkdownContent(parserResult: result, theme: theme)
         lastText = text

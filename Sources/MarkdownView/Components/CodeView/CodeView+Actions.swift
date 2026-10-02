@@ -69,7 +69,7 @@ extension CodeView {
         private func setCopySymbol(_ name: String) {
             let image = UIImage(
                 systemName: name,
-                withConfiguration: UIImage.SymbolConfiguration(scale: .small)
+                withConfiguration: UIImage.SymbolConfiguration(scale: .small),
             )
             copyButton.setImage(image, for: .normal)
         }
@@ -79,9 +79,9 @@ extension CodeView {
             button.setImage(
                 UIImage(
                     systemName: action.systemImage,
-                    withConfiguration: UIImage.SymbolConfiguration(scale: .small)
+                    withConfiguration: UIImage.SymbolConfiguration(scale: .small),
                 ),
-                for: .normal
+                for: .normal,
             )
             button.tintColor = .label
             button.tag = tag

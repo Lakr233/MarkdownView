@@ -43,7 +43,7 @@ enum InlineCode {
         let background = InlineCodeBackground(
             color: theme.colors.codeBackground,
             ascent: font.ascender,
-            descent: abs(font.descender)
+            descent: abs(font.descender),
         )
         let result = NSMutableAttributedString()
         result.append(spacer(background: background, font: font))
@@ -112,7 +112,7 @@ private final class InlineCodeLayout: TextLabel.Layout {
         var found = false
         attributedString.enumerateAttribute(
             .inlineCodeBackground,
-            in: NSRange(location: 0, length: attributedString.length)
+            in: NSRange(location: 0, length: attributedString.length),
         ) { value, _, stop in
             guard value != nil else { return }
             found = true
@@ -178,7 +178,7 @@ private final class InlineCodeLayout: TextLabel.Layout {
                 x: origin.x + minX,
                 y: origin.y - background.descent - InlineCode.verticalInset,
                 width: maxX - minX,
-                height: background.ascent + background.descent + InlineCode.verticalInset * 2
+                height: background.ascent + background.descent + InlineCode.verticalInset * 2,
             )
             let radius = min(InlineCode.cornerRadius, rect.height / 2, rect.width / 2)
             context.setFillColor(background.color.cgColor)

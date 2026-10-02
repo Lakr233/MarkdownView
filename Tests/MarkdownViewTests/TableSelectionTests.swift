@@ -31,21 +31,21 @@ import Testing
         private func select(
             in table: TableView,
             from start: (cell: Int, offset: Int),
-            to end: (cell: Int, offset: Int)
+            to end: (cell: Int, offset: Int),
         ) {
             let group = table.selectionGroup
             group.setSelection(
                 group.normalizedSelection(
                     from: .init(member: start.cell, offset: start.offset),
-                    to: .init(member: end.cell, offset: end.offset)
+                    to: .init(member: end.cell, offset: end.offset),
                 ),
-                presentsMenu: false
+                presentsMenu: false,
             )
         }
 
         @MainActor
-        @Test("Every cell joins the table's selection group, row by row")
-        func cellsJoinOneGroup() throws {
+        @Test
+        func `Every cell joins the table's selection group, row by row`() throws {
             let table = try tableView(in: RenderProbe.view(Self.table))
             let cells = table.cellViews
             #expect(cells.count == 12)
@@ -54,8 +54,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A selection across cells copies tabs between cells and line breaks between rows")
-        func selectionAcrossCellsCopiesAsGrid() throws {
+        @Test
+        func `A selection across cells copies tabs between cells and line breaks between rows`() throws {
             let table = try tableView(in: RenderProbe.view(Self.table))
             // From "pha" in Alpha to "Be" in Beta.
             select(in: table, from: (3, 2), to: (6, 2))
@@ -71,8 +71,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Selecting in the table clears the document's selection, and the other way round")
-        func tableAndDocumentSelectionsExclude() throws {
+        @Test
+        func `Selecting in the table clears the document's selection, and the other way round`() throws {
             let view = RenderProbe.view(Self.table)
             let table = try tableView(in: view)
             let text = view.textLabelView.attributedText.string as NSString
@@ -86,8 +86,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Streaming into one cell keeps a selection in the others")
-        func streamingKeepsSelectionInOtherCells() throws {
+        @Test
+        func `Streaming into one cell keeps a selection in the others`() throws {
             let view = RenderProbe.view(Self.table)
             let table = try tableView(in: view)
             let cells = table.cellViews
@@ -101,8 +101,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A new row joins the group in reading order")
-        func newRowJoinsGroup() throws {
+        @Test
+        func `A new row joins the group in reading order`() throws {
             let view = RenderProbe.view(Self.table)
             let table = try tableView(in: view)
             RenderProbe.show(
@@ -110,7 +110,7 @@ import Testing
                 | Gamma | done | third |
                 | Delta | new | fourth |
                 """),
-                in: view
+                in: view,
             )
             #expect(table.cellViews.count == 15)
             #expect(table.selectionGroup.labels.elementsEqual(table.cellViews, by: ===))
@@ -119,8 +119,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Copy as Markdown gives the selected cells as a table, header included")
-        func selectionAsMarkdown() throws {
+        @Test
+        func `Copy as Markdown gives the selected cells as a table, header included`() throws {
             let table = try tableView(in: RenderProbe.view(Self.table))
             // From Alpha's "ok" to Beta's "a|b".
             select(in: table, from: (4, 0), to: (7, 3))
@@ -139,8 +139,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Copy as Markdown keeps a whole selected cell's links and code")
-        func wholeCellsKeepTheirSource() throws {
+        @Test
+        func `Copy as Markdown keeps a whole selected cell's links and code`() throws {
             let table = try tableView(in: RenderProbe.view("""
             | A | B |
             | - | - |
@@ -157,8 +157,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A truncated table selects only the rows it draws")
-        func truncatedTableSelectsVisibleRows() throws {
+        @Test
+        func `A truncated table selects only the rows it draws`() throws {
             let rows = (1 ... 120).map { "| r\($0) | v\($0) |" }.joined(separator: "\n")
             let table = try tableView(in: RenderProbe.view("| A | B |\n| - | - |\n" + rows))
             #expect(table.cellViews.count == 42)

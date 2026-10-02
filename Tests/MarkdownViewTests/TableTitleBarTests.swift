@@ -51,8 +51,8 @@ struct TableTitleBarTests {
 
     // MARK: - Title bar
 
-    @Test("The title bar names the table, and counts the rows a long one leaves out")
-    func titleNamesTheTable() throws {
+    @Test
+    func `The title bar names the table, and counts the rows a long one leaves out`() throws {
         let (_, short) = try tableView(Self.table)
         #expect(titleText(of: short) == TableTitleText.table)
 
@@ -62,8 +62,8 @@ struct TableTitleBarTests {
         #expect(titleText(of: long).contains("110"))
     }
 
-    @Test("The rows sit below the title bar, and the table is as tall as both")
-    func rowsSitBelowTheTitleBar() throws {
+    @Test
+    func `The rows sit below the title bar, and the table is as tall as both`() throws {
         let (_, table) = try tableView(Self.table)
         let barBottom = table.tableViewPadding + table.titleHeight
         #expect(table.titleHeight > 0)
@@ -81,10 +81,10 @@ struct TableTitleBarTests {
         #expect(table.copyControl.frame.maxX <= table.expandControl.frame.minX + 0.5)
     }
 
-    @Test("A narrow table hides the buttons it has no room for, never drawing one past its edge", arguments: [
+    @Test(arguments: [
         40 as CGFloat, 80, 120, 200,
     ])
-    func narrowTableHidesButtons(width: CGFloat) throws {
+    func `A narrow table hides the buttons it has no room for, never drawing one past its edge`(width: CGFloat) throws {
         let (_, table) = try tableView(Self.table)
         table.frame.size.width = width
         layout(table)
@@ -99,8 +99,8 @@ struct TableTitleBarTests {
         }
     }
 
-    @Test("In the sheet, a tap on a header reaches its sort control")
-    func sheetSortControlsAreHittable() throws {
+    @Test
+    func `In the sheet, a tap on a header reaches its sort control`() throws {
         let (_, inline) = try tableView(Self.table)
         let sheet = TableSheetContent(inline).makeTableView()
         sheet.frame = CGRect(x: 0, y: 0, width: 480, height: sheet.intrinsicContentHeight)
@@ -113,8 +113,8 @@ struct TableTitleBarTests {
         }
     }
 
-    @Test("Taps on the title bar's buttons reach them")
-    func titleButtonsAreHittable() throws {
+    @Test
+    func `Taps on the title bar's buttons reach them`() throws {
         let (_, table) = try tableView(Self.table)
         for control in [table.copyControl, table.expandControl] {
             let center = CGPoint(x: control.frame.midX, y: control.frame.midY)
@@ -122,8 +122,8 @@ struct TableTitleBarTests {
         }
     }
 
-    @Test("Expand opens the full table")
-    func expandOpensTheFullTable() throws {
+    @Test
+    func `Expand opens the full table`() throws {
         let (_, table) = try tableView(Self.table)
         var opened: [TableView] = []
         table.expandHandler = { opened.append($0) }
@@ -131,16 +131,16 @@ struct TableTitleBarTests {
         #expect(opened.count == 1 && opened.first === table)
     }
 
-    @Test("The sheet copies the table as Markdown and saves it as CSV")
-    func sheetCopiesAndSavesTheTable() throws {
+    @Test
+    func `The sheet copies the table as Markdown and saves it as CSV`() throws {
         let (_, table) = try tableView(Self.table)
         let content = TableSheetContent(table)
         #expect(content.markdown == table.markdown())
         #expect(content.csv == TableExport.csvData(rows: table.plainTextRows))
     }
 
-    @Test("The sheet's table has no title bar")
-    func sheetTableHasNoTitleBar() throws {
+    @Test
+    func `The sheet's table has no title bar`() throws {
         let (_, table) = try tableView(Self.table)
         let sheet = TableSheetContent(table).makeTableView()
         #expect(sheet.titleHeight == 0)
@@ -149,8 +149,8 @@ struct TableTitleBarTests {
 
     // MARK: - Frame and scrolling
 
-    @Test("The frame stays put and the column lines follow the scroll")
-    func columnLinesFollowTheScroll() throws {
+    @Test
+    func `The frame stays put and the column lines follow the scroll`() throws {
         let markdown = """
         | Column one | Column two | Column three | Column four | Column five |
         | - | - | - | - | - |
@@ -179,8 +179,8 @@ struct TableTitleBarTests {
 
     // MARK: - Export
 
-    @Test("Copy gives every row as the Markdown it was written in")
-    func copyGivesMarkdown() throws {
+    @Test
+    func `Copy gives every row as the Markdown it was written in`() throws {
         let (_, table) = try tableView(Self.table)
         #expect(table.markdown() == """
         | Name | Note | Amount |
@@ -190,7 +190,7 @@ struct TableTitleBarTests {
         """)
     }
 
-    @Test("Copied Markdown parses back to the same table", arguments: [
+    @Test(arguments: [
         """
         | Kind | Example | Value |
         | :-- | :-: | --: |
@@ -209,12 +209,14 @@ struct TableTitleBarTests {
         | backslashes | [d](<a\\\\)>) [g](<a\\\\>) | [f](a\\\\b) [h](a\\b) |
         """,
     ])
-    func copyRoundTrips(markdown: String) throws {
+    func `Copied Markdown parses back to the same table`(markdown: String) throws {
         let (_, table) = try tableView(markdown)
         let source = try #require(table.sourceRows)
         let copied = table.markdown()
         let reparsed = MarkdownParser().parse(copied).document.compactMap { block -> [RawTableRow]? in
-            if case let .table(_, rows) = block { return rows }
+            if case let .table(_, rows) = block {
+                return rows
+            }
             return nil
         }.first
         // Math is numbered per parse; only what it says has to match.
@@ -236,8 +238,8 @@ struct TableTitleBarTests {
         }
     }
 
-    @Test("A <br> tag breaks a cell's line, and <br> written as code stays as written")
-    func lineBreakTags() throws {
+    @Test
+    func `A <br> tag breaks a cell's line, and <br> written as code stays as written`() throws {
         let (_, table) = try tableView("""
         | A | B |
         | - | - |
@@ -248,16 +250,16 @@ struct TableTitleBarTests {
         #expect(TableExport.csv(rows: table.plainTextRows).contains("\"one\ntwo\",x<br>y"))
     }
 
-    @Test("Copy and Download include rows a long table does not draw")
-    func exportIncludesHiddenRows() throws {
+    @Test
+    func `Copy and Download include rows a long table does not draw`() throws {
         let rows = (1 ... 130).map { "| r\($0) | v\($0) |" }.joined(separator: "\n")
         let (_, table) = try tableView("| A | B |\n| - | - |\n" + rows)
         #expect(table.markdown().hasSuffix("| r130 | v130 |"))
         #expect(TableExport.csv(rows: table.plainTextRows).hasSuffix("r130,v130\r\n"))
     }
 
-    @Test("Download gives CSV with fields quoted only where needed")
-    func downloadGivesCSV() throws {
+    @Test
+    func `Download gives CSV with fields quoted only where needed`() throws {
         let (_, table) = try tableView(Self.table)
         let csv = TableExport.csv(rows: table.plainTextRows)
         #expect(csv == "Name,Note,Amount\r\nswift test,a | b,\"1,200\"\r\n\"\"\"quoted\"\"\",\"two\nlines\",3\r\n")
@@ -266,8 +268,8 @@ struct TableTitleBarTests {
         #expect(String(data: data.dropFirst(3), encoding: .utf8) == csv)
     }
 
-    @Test("A table's plain text leaves out inline code's spacers")
-    func plainTextDropsSpacers() throws {
+    @Test
+    func `A table's plain text leaves out inline code's spacers`() throws {
         let (_, table) = try tableView(Self.table)
         let code = try #require(table.contents[safe: 1]?.first)
         #expect(code.string.contains(TextLabel.Attachment.replacementText))
@@ -283,8 +285,8 @@ struct TableTitleBarTests {
 /// the sheet Expand opens.
 @MainActor
 struct CodeBlockBarTests {
-    @Test("The bar holds Copy then Expand, left to right")
-    func barButtonOrder() throws {
+    @Test
+    func `The bar holds Copy then Expand, left to right`() throws {
         let view = RenderProbe.view("```swift\nlet a = 1\n```")
         let code = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
         RenderProbe.layout(view)
@@ -303,16 +305,16 @@ struct CodeBlockBarTests {
         }
     }
 
-    @Test("A code block is saved under its language's extension", arguments: [
+    @Test(arguments: [
         ("swift", "code.swift"), ("Python", "code.py"), ("bash", "code.sh"),
         ("typescript", "code.ts"), ("", "code.txt"), ("made-up", "code.txt"),
     ])
-    func fileNames(language: String, fileName: String) {
+    func `A code block is saved under its language's extension`(language: String, fileName: String) {
         #expect(CodeFileName.fileName(forLanguage: language) == fileName)
     }
 
-    @Test("The sheet shows the highlighted code under its capitalized language, and saves it under its extension")
-    func sheetContent() throws {
+    @Test
+    func `The sheet shows the highlighted code under its capitalized language, and saves it under its extension`() {
         let view = RenderProbe.view("```swift\nlet a = 1\n```\n\n```\nplain\n```")
         let codes = view.contextViews.compactMap { $0 as? CodeView }
         #expect(codes.count == 2)
@@ -328,8 +330,8 @@ struct CodeBlockBarTests {
     }
 
     #if canImport(AppKit) && !canImport(UIKit)
-        @Test("The sheet fits short code, and wraps code past the reading width")
-        func sheetFitsCode() throws {
+        @Test
+        func `The sheet fits short code, and wraps code past the reading width`() throws {
             let long = String(repeating: "let value = compute(value) + 1; ", count: 12)
             let view = RenderProbe.view("```swift\nlet a = 1\nlet b = 2\n```\n\n```swift\n\(long)\n```")
             let codes = view.contextViews.compactMap { $0 as? CodeView }
@@ -357,8 +359,8 @@ struct CodeBlockBarTests {
             #expect(lines > 1)
         }
 
-        @Test("The sheet's bar names the language, or Code when there is none")
-        func sheetTitle() throws {
+        @Test
+        func `The sheet's bar names the language, or Code when there is none`() {
             let view = RenderProbe.view("```swift\nlet a = 1\n```\n\n```\nplain\n```")
             let codes = view.contextViews.compactMap { $0 as? CodeView }
             #expect(codes.count == 2)
@@ -372,8 +374,8 @@ struct CodeBlockBarTests {
             #expect(titles == ["Swift", CodeSheetText.code])
         }
 
-        @Test("A line that sets the sheet's width does not wrap in it")
-        func sheetKeepsFittedLine() throws {
+        @Test
+        func `A line that sets the sheet's width does not wrap in it`() throws {
             let line = "print(\"a line well under the reading width, but over the minimum\")"
             let view = RenderProbe.view("```swift\n\(line)\n```")
             let code = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)

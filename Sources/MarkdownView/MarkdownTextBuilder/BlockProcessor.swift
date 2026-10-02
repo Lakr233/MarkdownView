@@ -27,7 +27,7 @@ final class BlockProcessor {
         viewProvider: ReusableViewProvider,
         context: MarkdownContent,
         thematicBreakDrawing: TextBuilder.DrawingCallback?,
-        inlineTextDecoration: TextBuilder.InlineTextDecoration?
+        inlineTextDecoration: TextBuilder.InlineTextDecoration?,
     ) {
         self.theme = theme
         self.viewProvider = viewProvider
@@ -87,7 +87,7 @@ final class BlockProcessor {
         language: String?,
         content: String,
         highlightMap: CodeHighlighter.HighlightMap?,
-        highlightKey: Int
+        highlightKey: Int,
     ) -> (NSAttributedString, CodeView) {
         let content = content.deletingSuffix(of: .whitespacesAndNewlines)
         let codeView = viewProvider.acquireCodeView()
@@ -106,7 +106,7 @@ final class BlockProcessor {
                 .font: theme.fonts.body,
                 .litextAttachment: ContextViewAttachment(
                     representation: .init(string: content + "\n"),
-                    appearance: appearance
+                    appearance: appearance,
                 ),
                 .contextView: codeView,
             ])
@@ -155,7 +155,7 @@ final class BlockProcessor {
                 .paragraphStyle: baseParagraphStyle,
                 .blockquoteGroup: BlockquoteGroup(),
             ],
-            range: NSRange(location: 0, length: result.length)
+            range: NSRange(location: 0, length: result.length),
         )
         result.append(.init(string: "\n", attributes: [
             .font: theme.fonts.body,
@@ -167,7 +167,7 @@ final class BlockProcessor {
 
     func processTable(
         columnAlignments: [RawTableColumnAlignment],
-        rows: [RawTableRow]
+        rows: [RawTableRow],
     ) -> (NSAttributedString, TableView) {
         let tableView = viewProvider.acquireTableView()
         let representedText: NSAttributedString
@@ -175,7 +175,7 @@ final class BlockProcessor {
             reusingRows: rows,
             columnAlignments: columnAlignments,
             theme: theme,
-            content: context
+            content: context,
         ) {
             representedText = reused
         } else {
@@ -195,7 +195,7 @@ final class BlockProcessor {
                 columnAlignments: columnAlignments,
                 theme: theme,
                 content: context,
-                representedText: representedText
+                representedText: representedText,
             )
         }
 
@@ -207,7 +207,7 @@ final class BlockProcessor {
                 .font: theme.fonts.body,
                 .litextAttachment: ContextViewAttachment(
                     representation: representedText,
-                    appearance: appearance
+                    appearance: appearance,
                 ),
                 .contextView: tableView,
             ])
@@ -222,7 +222,7 @@ extension BlockProcessor {
     private func buildWithParagraphSync(
         withNewLine: Bool = true,
         modifier: (inout NSMutableParagraphStyle) -> Void = { _ in },
-        content: () -> NSMutableAttributedString
+        content: () -> NSMutableAttributedString,
     ) -> NSMutableAttributedString {
         var paragraphStyle: NSMutableParagraphStyle = .init()
         paragraphStyle.paragraphSpacing = theme.spacings.paragraph
@@ -232,7 +232,7 @@ extension BlockProcessor {
         let string = content()
         string.addAttributes(
             [.paragraphStyle: paragraphStyle],
-            range: .init(location: 0, length: string.length)
+            range: .init(location: 0, length: string.length),
         )
         if withNewLine, !string.string.hasSuffix("\n") {
             string.append(.init(string: "\n"))

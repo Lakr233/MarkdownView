@@ -20,8 +20,8 @@ import Testing
         """
 
         @MainActor
-        @Test("Handlers set after content reach the code and table views")
-        func handlersSetAfterContentReachContextViews() {
+        @Test
+        func `Handlers set after content reach the code and table views`() {
             let view = RenderProbe.view(Self.codeAndTable)
             let codeView = view.contextViews.compactMap { $0 as? CodeView }.first
             let tableView = view.contextViews.compactMap { $0 as? TableView }.first
@@ -38,8 +38,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A selection across a code block or table tints them, and only while it covers them")
-        func selectionTintsCoveredContextViews() throws {
+        @Test
+        func `A selection across a code block or table tints them, and only while it covers them`() throws {
             let view = RenderProbe.view("before\n\n" + Self.codeAndTable + "\n\nafter")
             let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
             let tableView = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
@@ -62,8 +62,8 @@ import Testing
         }
 
         @MainActor
-        @Test("Changing the throttle interval keeps the pending content")
-        func throttleIntervalChangeKeepsPendingContent() async throws {
+        @Test
+        func `Changing the throttle interval keeps the pending content`() async throws {
             let view = MarkdownTextView()
             view.throttleInterval = 0.5
             view.setContent(RenderProbe.content("first"))
@@ -75,8 +75,8 @@ import Testing
         }
 
         @MainActor
-        @Test("An Auto Layout host grows with new content")
-        func autoLayoutHostGrowsWithContent() {
+        @Test
+        func `An Auto Layout host grows with new content`() {
             let container = NSView(frame: .init(x: 0, y: 0, width: 300, height: 2000))
             let view = MarkdownTextView()
             view.translatesAutoresizingMaskIntoConstraints = false
@@ -92,7 +92,7 @@ import Testing
 
             let longText = Array(
                 repeating: "A paragraph long enough to wrap and add real height.",
-                count: 12
+                count: 12,
             ).joined(separator: "\n\n")
             view.setContentImmediately(RenderProbe.content(longText))
             container.layoutSubtreeIfNeeded()
@@ -102,13 +102,13 @@ import Testing
         }
 
         @MainActor
-        @Test("Switching from content to empty text clears the document")
-        func switchingFromContentToEmptyTextClears() throws {
+        @Test
+        func `Switching from content to empty text clears the document`() throws {
             let window = NSWindow(
                 contentRect: .init(x: 0, y: 0, width: 400, height: 600),
                 styleMask: [.titled, .resizable],
                 backing: .buffered,
-                defer: true
+                defer: true,
             )
             let content = RenderProbe.content("old document")
             let host = NSHostingView(rootView: MarkdownView(content))
@@ -125,14 +125,14 @@ import Testing
         }
 
         @MainActor
-        @Test("Drag-select autoscroll honours the scroll view's content insets")
-        func dragAutoscrollHonoursContentInsets() {
+        @Test
+        func `Drag-select autoscroll honours the scroll view's content insets`() {
             let scrollView = NSScrollView(frame: .init(x: 0, y: 0, width: 300, height: 200))
             scrollView.automaticallyAdjustsContentInsets = false
             scrollView.contentInsets = .init(top: 40, left: 0, bottom: 40, right: 0)
             let longText = Array(
                 repeating: "A paragraph long enough to wrap and add real height.",
-                count: 20
+                count: 20,
             ).joined(separator: "\n\n")
             let view = RenderProbe.view(longText, width: 300)
             scrollView.documentView = view
@@ -156,7 +156,7 @@ import Testing
             // Dragging far below must reach the bottom inset.
             view.textLabelView(
                 view.textLabelView,
-                didDragSelectionAt: .init(x: 10, y: view.bounds.height + 1000)
+                didDragSelectionAt: .init(x: 10, y: view.bounds.height + 1000),
             )
             let bottom = view.bounds.height + 40 - clipView.bounds.height
             #expect(abs(clipView.bounds.minY - bottom) < 0.5)

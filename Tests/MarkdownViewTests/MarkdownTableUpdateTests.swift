@@ -55,8 +55,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A changed cell reaches the rendered table")
-    func changedCellReachesTheTable() {
+    @Test
+    func `A changed cell reaches the rendered table`() {
         let view = RenderProbe.view(table("| 原始内容 | keep |"))
         #expect(cellTexts(in: view).contains("原始内容"))
 
@@ -68,8 +68,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("An added row reaches the rendered table")
-    func addedRowReachesTheTable() {
+    @Test
+    func `An added row reaches the rendered table`() {
         let view = RenderProbe.view(table("| 1 | one |"))
         let before = tableView(in: view)
         let beforeHeight = before?.intrinsicContentHeight ?? 0
@@ -87,8 +87,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A removed row leaves the rendered table")
-    func removedRowLeavesTheTable() {
+    @Test
+    func `A removed row leaves the rendered table`() {
         let view = RenderProbe.view(table("""
         | 1 | one |
         | 2 | two |
@@ -101,8 +101,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A changed column alignment reaches the cells")
-    func changedAlignmentReachesTheCells() {
+    @Test
+    func `A changed column alignment reaches the cells`() {
         let view = RenderProbe.view(table("| 1 | 2 |", alignment: "| :-- | :-- |"))
         let leading = tableView(in: view).map { cells(in: $0) }?.compactMap {
             ($0.attributedText.attribute(.paragraphStyle, at: 0, effectiveRange: nil)
@@ -121,8 +121,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("Rebuilding an unchanged table keeps the same cells")
-    func unchangedTableKeepsItsCells() {
+    @Test
+    func `Rebuilding an unchanged table keeps the same cells`() {
         let markdown = table("""
         | 1 | 中文单元格 |
         | 2 | another |
@@ -140,8 +140,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("Table content still normalizes HTML line breaks")
-    func htmlLineBreaksStayNormalized() {
+    @Test
+    func `Table content still normalizes HTML line breaks`() {
         let view = RenderProbe.view(table("| 第一行<br>第二行 | plain |"))
 
         let texts = cellTexts(in: view)
@@ -150,8 +150,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A table streamed row by row ends up complete")
-    func streamedTableEndsUpComplete() {
+    @Test
+    func `A table streamed row by row ends up complete`() {
         let final = table("""
         | 1 | one |
         | 2 | two |
@@ -174,8 +174,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A table replaced by a paragraph releases its view")
-    func tableReplacedByTextReleasesItsView() {
+    @Test
+    func `A table replaced by a paragraph releases its view`() {
         let view = RenderProbe.view(table("| 1 | 2 |"))
         #expect(tableView(in: view) != nil)
 
@@ -187,8 +187,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("Inline styling inside a cell survives")
-    func inlineStylingInsideCellsSurvives() {
+    @Test
+    func `Inline styling inside a cell survives`() {
         let view = RenderProbe.view(table("| **bold** | `code` |"))
         guard let tableView = tableView(in: view) else {
             Issue.record("no table view was built")
@@ -226,8 +226,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A header cell is bold without losing its inline font")
-    func headerKeepsInlineFonts() {
+    @Test
+    func `A header cell is bold without losing its inline font`() {
         var theme = MarkdownTheme.default
         let size = theme.fonts.body.pointSize
         guard let serif = PlatformFont(name: "Georgia", size: size),
@@ -267,8 +267,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A changed locale reaches cells of an unchanged table")
-    func changedLocaleReachesTheCells() {
+    @Test
+    func `A changed locale reaches cells of an unchanged table`() {
         let markdown = table("| 漢字內容 | keep |")
         let view = RenderProbe.view(markdown, locale: .init(identifier: "zh-Hant"))
         guard let tableView = tableView(in: view), let before = cell("漢字內容", in: tableView) else {
@@ -288,8 +288,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A math render arriving for an unchanged table reaches its cells")
-    func mathRenderReachesTheCells() {
+    @Test
+    func `A math render arriving for an unchanged table reaches its cells`() {
         let parsed = MarkdownParser().parse(table("| $x^2$ | keep |"))
         let view = MarkdownTextView()
         // First without the rendered math, as a caller building content by hand
@@ -308,8 +308,8 @@ struct MarkdownTableUpdateTests {
     }
 
     @MainActor
-    @Test("A table without math still reuses its cells beside math elsewhere")
-    func tableWithoutMathReusesBesideMath() {
+    @Test
+    func `A table without math still reuses its cells beside math elsewhere`() {
         let markdown = "$x^2$\n\n" + table("| 1 | one |")
         let content = RenderProbe.content(markdown)
         #expect(!content.rendered.isEmpty)
@@ -330,7 +330,7 @@ struct MarkdownTableUpdateTests {
             reusingRows: rows,
             columnAlignments: alignments,
             theme: .default,
-            content: content
+            content: content,
         )
         #expect(reused != nil, "math outside the table stopped it reusing its cells")
     }

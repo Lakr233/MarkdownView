@@ -47,7 +47,7 @@ import Foundation
             }
             let configuration = UIImage.SymbolConfiguration(
                 pointSize: TableHeaderAccessory.glyphSize - 2,
-                weight: .medium
+                weight: .medium,
             )
             imageView.image = UIImage(systemName: name, withConfiguration: configuration)
         }
@@ -118,7 +118,7 @@ import Foundation
             }
             let configuration = NSImage.SymbolConfiguration(
                 pointSize: TableHeaderAccessory.glyphSize - 2,
-                weight: .medium
+                weight: .medium,
             )
             let image = NSImage(systemSymbolName: name, accessibilityDescription: nil)
             imageView.image = image?.withSymbolConfiguration(configuration) ?? image

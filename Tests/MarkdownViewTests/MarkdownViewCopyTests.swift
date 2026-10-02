@@ -42,22 +42,22 @@ struct MarkdownViewCopyTests {
     """
 
     @MainActor
-    @Test("Copying a whole document yields no invisible placeholder characters")
-    func copiedDocumentCarriesNoPlaceholders() throws {
+    @Test
+    func `Copying a whole document yields no invisible placeholder characters`() throws {
         let copied = try #require(copyAll(Self.document, width: 480))
 
         #expect(!copied.contains(TextLabel.Attachment.replacementText))
         for scalar in copied.unicodeScalars {
             #expect(
                 !scalar.properties.isDefaultIgnorableCodePoint,
-                "copied text carries an invisible scalar U+\(String(scalar.value, radix: 16, uppercase: true))"
+                "copied text carries an invisible scalar U+\(String(scalar.value, radix: 16, uppercase: true))",
             )
         }
     }
 
     @MainActor
-    @Test("List markers copy as the markdown they stand for")
-    func listMarkersCopyAsMarkdown() throws {
+    @Test
+    func `List markers copy as the markdown they stand for`() throws {
         let copied = try #require(copyAll(Self.document, width: 480))
 
         #expect(copied.contains("- First bullet"))
@@ -69,8 +69,8 @@ struct MarkdownViewCopyTests {
     }
 
     @MainActor
-    @Test("A code block copies its source rather than its placeholder")
-    func codeBlockCopiesItsSource() throws {
+    @Test
+    func `A code block copies its source rather than its placeholder`() throws {
         let copied = try #require(copyAll("```swift\nlet answer = 42\n```", width: 480))
 
         #expect(copied.contains("let answer = 42"))
@@ -83,7 +83,7 @@ private func copyAll(_ markdown: String, width: CGFloat) -> String? {
     let view = MarkdownTextView()
     view.setContentImmediately(.init(
         parserResult: MarkdownParser().parse(markdown),
-        theme: .default
+        theme: .default,
     ))
     view.frame = .init(x: 0, y: 0, width: width, height: view.boundingSize(for: width).height)
     #if canImport(UIKit)

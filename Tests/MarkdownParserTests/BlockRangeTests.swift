@@ -2,8 +2,8 @@ import MarkdownParser
 import Testing
 
 struct BlockRangeTests {
-    @Test("Block ranges cover full ASCII blocks")
-    func blockRangesCoverFullASCIIBlocks() throws {
+    @Test
+    func `Block ranges cover full ASCII blocks`() throws {
         let markdown = "# Hi\n\nHello world"
         let ranges = MarkdownParser().parseBlockRange(markdown)
 
@@ -14,8 +14,8 @@ struct BlockRangeTests {
         #expect(String(markdown[paragraph.startIndex ..< paragraph.endIndex]) == "Hello world")
     }
 
-    @Test("Block ranges use UTF-8 byte columns for non-ASCII text")
-    func blockRangesUseUTF8ByteColumns() throws {
+    @Test
+    func `Block ranges use UTF-8 byte columns for non-ASCII text`() throws {
         let markdown = "# 你好🌍\n\n段落 emoji 🎉 end"
         let ranges = MarkdownParser().parseBlockRange(markdown)
 

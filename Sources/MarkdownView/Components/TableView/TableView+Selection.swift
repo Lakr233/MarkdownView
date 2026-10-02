@@ -41,7 +41,7 @@ extension TableView {
         cellPositions = Dictionary(
             uniqueKeysWithValues: cells.enumerated().map { index, cell in
                 (ObjectIdentifier(cell), TableCellPosition(row: index / columns, column: index % columns))
-            }
+            },
         )
         guard !selectionGroup.labels.elementsEqual(cells, by: ===) else { return }
         selectionGroup.labels = cells
@@ -95,7 +95,7 @@ extension TableView {
         String(
             localized: "Copy as Markdown",
             bundle: .module,
-            comment: "Menu command that copies the selected table cells as a Markdown table."
+            comment: "Menu command that copies the selected table cells as a Markdown table.",
         )
     }
 }
@@ -106,7 +106,7 @@ extension TableView: TextSelectionGroupDelegate {
     func textSelectionGroup(
         _: TextSelectionGroup,
         didDragSelectionIn label: TextLabelView,
-        at location: CGPoint
+        at location: CGPoint,
     ) {
         scrollHorizontally(toFollowDragAt: location, in: label)
         textSelectionDelegate?.textLabelView(label, didDragSelectionAt: location)
@@ -116,11 +116,11 @@ extension TableView: TextSelectionGroupDelegate {
         @available(iOS 16.0, macCatalyst 16.0, visionOS 1.0, *)
         func textSelectionGroup(
             _: TextSelectionGroup,
-            editMenuForSuggestedActions suggestedActions: [UIMenuElement]
+            editMenuForSuggestedActions suggestedActions: [UIMenuElement],
         ) -> UIMenu? {
             let copyAsMarkdown = UIAction(
                 title: Self.copyAsMarkdownTitle,
-                image: UIImage(systemName: "tablecells")
+                image: UIImage(systemName: "tablecells"),
             ) { [weak self] _ in
                 guard let markdown = self?.selectedMarkdown() else { return }
                 UIPasteboard.general.string = markdown
@@ -133,7 +133,7 @@ extension TableView: TextSelectionGroupDelegate {
             let item = NSMenuItem(
                 title: Self.copyAsMarkdownTitle,
                 action: #selector(copySelectionAsMarkdown(_:)),
-                keyEquivalent: ""
+                keyEquivalent: "",
             )
             item.target = self
             let copyIndex = menu.items.firstIndex { $0.action == #selector(NSText.copy(_:)) }

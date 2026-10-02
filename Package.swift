@@ -38,7 +38,7 @@ let package = Package(
                 .product(name: "DequeModule", package: "swift-collections"),
                 .product(name: "OrderedCollections", package: "swift-collections"),
             ],
-            resources: [.process("Resources")]
+            resources: [.process("Resources")],
         ),
         .target(
             name: "WatchMarkdownView",
@@ -46,20 +46,20 @@ let package = Package(
                 "Litext",
                 "MarkdownParser",
                 "LRUCache",
-            ]
+            ],
         ),
         .executableTarget(
             name: "MarkdownViewBenchmark",
             dependencies: [
                 "MarkdownView",
                 "MarkdownParser",
-            ]
+            ],
         ),
         .executableTarget(
             name: "MarkdownViewCatalog",
             dependencies: [
                 "MarkdownView",
-            ]
+            ],
         ),
         .target(name: "MarkdownParser", dependencies: [
             .product(name: "cmark-gfm", package: "swift-cmark"),
@@ -69,7 +69,7 @@ let package = Package(
             name: "MarkdownParserTests",
             dependencies: [
                 "MarkdownParser",
-            ]
+            ],
         ),
         .testTarget(
             name: "MarkdownViewTests",
@@ -77,7 +77,7 @@ let package = Package(
                 "MarkdownView",
                 "MarkdownParser",
             ],
-            resources: [.process("Fixtures")]
+            resources: [.process("Fixtures")],
         ),
-    ]
+    ],
 )

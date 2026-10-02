@@ -32,8 +32,8 @@ struct SharedPlatformViewTests {
     Outro paragraph.
     """
 
-    @Test("Code blocks keep their source byte for byte")
-    func codeBlocksKeepTheirSource() throws {
+    @Test
+    func `Code blocks keep their source byte for byte`() throws {
         let view = render(Self.document)
         let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
 
@@ -48,8 +48,8 @@ struct SharedPlatformViewTests {
         #expect(copied.contains(Self.codeSource))
     }
 
-    @Test("Tables keep cell text, links and column alignment")
-    func tablesKeepCellTextLinksAndAlignment() throws {
+    @Test
+    func `Tables keep cell text, links and column alignment`() throws {
         let view = render(Self.document)
         let tableView = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
 
@@ -78,8 +78,8 @@ struct SharedPlatformViewTests {
         ].joined(separator: "\n"))
     }
 
-    @Test("The grid draws the header and every other data row")
-    func gridDrawsHeaderAndStripes() throws {
+    @Test
+    func `The grid draws the header and every other data row`() throws {
         let view = render(Self.document)
         let tableView = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
         let gridView = try #require(findGridView(in: tableView))
@@ -109,8 +109,8 @@ struct SharedPlatformViewTests {
         #expect(stripeRows.maxY <= thirdDataCell.minY)
     }
 
-    @Test("A rebuild wires new context views and drops the ones it stopped showing")
-    func rebuildWiresContextViews() throws {
+    @Test
+    func `A rebuild wires new context views and drops the ones it stopped showing`() throws {
         let view = render(Self.document)
         let tableView = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
         #expect(tableView.superview === view)
@@ -124,8 +124,8 @@ struct SharedPlatformViewTests {
         #expect(codeView.content == Self.codeSource)
     }
 
-    @Test("Context views sit in document order across the full width")
-    func contextViewsSitInDocumentOrder() throws {
+    @Test
+    func `Context views sit in document order across the full width`() {
         let view = render(Self.document)
         #expect(view.contextViews.count == 2)
         let frames = view.contextViews.map(\.frame)
@@ -150,7 +150,7 @@ struct SharedPlatformViewTests {
     private func show(_ markdown: String, in view: MarkdownTextView, width: CGFloat = 480) {
         view.setContentImmediately(.init(
             parserResult: MarkdownParser().parse(markdown),
-            theme: .default
+            theme: .default,
         ))
         view.frame = .init(x: 0, y: 0, width: width, height: view.boundingSize(for: width).height)
         #if canImport(UIKit)
@@ -167,9 +167,13 @@ struct SharedPlatformViewTests {
     }
 
     private func findGridView(in view: PlatformView) -> GridView? {
-        if let grid = view as? GridView { return grid }
+        if let grid = view as? GridView {
+            return grid
+        }
         for subview in view.subviews {
-            if let grid = findGridView(in: subview) { return grid }
+            if let grid = findGridView(in: subview) {
+                return grid
+            }
         }
         return nil
     }

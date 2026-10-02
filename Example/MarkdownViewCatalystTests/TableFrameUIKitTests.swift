@@ -1,5 +1,5 @@
-@testable import MarkdownView
 import MarkdownParser
+@testable import MarkdownView
 import Testing
 import UIKit
 
@@ -15,7 +15,7 @@ struct TableFrameUIKitTests {
             | - | - | - | - | - |
             | a considerably long cell | b considerably long cell | c | d | e |
             """),
-            theme: .default
+            theme: .default,
         ))
         view.frame = .init(x: 0, y: 0, width: width, height: view.boundingSize(for: width).height)
         view.layoutIfNeeded()
@@ -24,8 +24,8 @@ struct TableFrameUIKitTests {
         return table
     }
 
-    @Test("The title bar sits above the scrolling columns")
-    func titleBarAboveColumns() throws {
+    @Test
+    func `The title bar sits above the scrolling columns`() throws {
         let table = try makeTable(width: 320)
         let scrollView = try #require(table.subviews.first { $0 is UIScrollView } as? UIScrollView)
         #expect(table.titleHeight > 0)
@@ -37,8 +37,8 @@ struct TableFrameUIKitTests {
         }
     }
 
-    @Test("Scrolling moves the column lines and leaves the frame in place")
-    func scrollingMovesColumnLines() throws {
+    @Test
+    func `Scrolling moves the column lines and leaves the frame in place`() throws {
         let table = try makeTable(width: 320)
         let scrollView = try #require(table.subviews.first { $0 is UIScrollView } as? UIScrollView)
         let grid = try #require(table.subviews.first { $0 is GridView } as? GridView)

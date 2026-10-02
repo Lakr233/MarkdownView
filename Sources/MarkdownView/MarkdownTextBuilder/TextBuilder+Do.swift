@@ -18,7 +18,7 @@ private func builtinSystemImage(_ name: String) -> PlatformImage {
     #if canImport(UIKit)
         guard let image = UIImage(
             systemName: name,
-            withConfiguration: UIImage.SymbolConfiguration(scale: .small)
+            withConfiguration: UIImage.SymbolConfiguration(scale: .small),
         ) else { return .init() }
         let template = image.withTintColor(.label, renderingMode: .alwaysTemplate)
     #elseif canImport(AppKit)
@@ -56,7 +56,7 @@ extension TextBuilder {
     static func build(
         view: MarkdownTextView,
         viewProvider: ReusableViewProvider,
-        ownedContextViews: [PlatformView] = []
+        ownedContextViews: [PlatformView] = [],
     ) -> BuildResult {
         let context: MarkdownContent = view.content
         let theme: MarkdownTheme = view.theme
@@ -114,7 +114,7 @@ extension TextBuilder {
                     x: column.midX - radius,
                     y: column.midY - radius,
                     width: radius * 2,
-                    height: radius * 2
+                    height: radius * 2,
                 )
                 if depth == 0 {
                     context.fillEllipse(in: rect)
@@ -138,7 +138,7 @@ extension TextBuilder {
                 // hangs from the column's trailing edge instead of sharing its center.
                 let font = PlatformFont.monospacedDigitSystemFont(
                     ofSize: theme.fonts.footnote.pointSize,
-                    weight: .regular
+                    weight: .regular,
                 )
                 let attributedText = NSAttributedString(string: "\(num).", attributes: [
                     .font: font,
@@ -151,7 +151,7 @@ extension TextBuilder {
                 context.textMatrix = .identity
                 context.textPosition = .init(
                     x: column.maxX - width,
-                    y: column.midY - (ascent - descent) / 2
+                    y: column.midY - (ascent - descent) / 2,
                 )
                 CTLineDraw(textLine, context)
             }
@@ -169,7 +169,7 @@ extension TextBuilder {
                     image,
                     in: column,
                     color: style.color.withAlphaComponent(0.24),
-                    context: context
+                    context: context,
                 )
             }
             .withThematicBreakDrawing { [weak view] context, line, lineOrigin in

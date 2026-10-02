@@ -48,7 +48,7 @@ public final class MarkdownContent: @unchecked Sendable {
         blocks: [MarkdownBlockNode],
         rendered: RenderedTextContent.Map,
         highlightMaps: [Int: CodeHighlighter.HighlightMap],
-        locale: Locale = .autoupdatingCurrent
+        locale: Locale = .autoupdatingCurrent,
     ) {
         self.blocks = blocks
         self.rendered = rendered
@@ -60,7 +60,7 @@ public final class MarkdownContent: @unchecked Sendable {
     public init(
         parserResult: MarkdownParser.ParseResult,
         theme: MarkdownTheme,
-        locale: Locale = .autoupdatingCurrent
+        locale: Locale = .autoupdatingCurrent,
     ) {
         blocks = parserResult.document
         rendered = parserResult.renderedContent(theme: theme)
@@ -73,12 +73,12 @@ public final class MarkdownContent: @unchecked Sendable {
     public convenience init(
         markdown: String,
         theme: MarkdownTheme = .default,
-        locale: Locale = .autoupdatingCurrent
+        locale: Locale = .autoupdatingCurrent,
     ) {
         self.init(
             parserResult: MarkdownParser().parse(markdown),
             theme: theme,
-            locale: locale
+            locale: locale,
         )
     }
 
@@ -95,7 +95,7 @@ public final class MarkdownContent: @unchecked Sendable {
             text: text,
             localeIdentifier: locale.identifier,
             font: theme.fonts.body,
-            color: theme.colors.body
+            color: theme.colors.body,
         )
         if let cached = Self.inlineRenderCache.value(forKey: key) {
             return cached
@@ -106,7 +106,7 @@ public final class MarkdownContent: @unchecked Sendable {
             attributes: [
                 .font: theme.fonts.body,
                 .foregroundColor: theme.colors.body,
-            ]
+            ],
         )
         // Resolve the fallback font here, once per distinct piece of text,
         // rather than leaving it to the pass over the finished document.
@@ -135,14 +135,14 @@ public extension MarkdownParser.ParseResult {
             var image = MathRenderer.renderToImage(
                 latex: value,
                 fontSize: theme.fonts.body.pointSize,
-                textColor: theme.colors.body
+                textColor: theme.colors.body,
             )
             #if canImport(UIKit)
                 image = image?.withRenderingMode(.alwaysTemplate)
             #endif
             let renderedContext = RenderedTextContent(
                 image: image,
-                text: value
+                text: value,
             )
             let replacementText = MarkdownParser.replacementText(for: .math, identifier: .init(key))
             renderedContexts[replacementText] = renderedContext

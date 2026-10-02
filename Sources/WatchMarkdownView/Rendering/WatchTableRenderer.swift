@@ -29,7 +29,7 @@ enum WatchTableRenderer {
         columnAlignments: [RawTableColumnAlignment],
         theme: WatchMarkdownTheme,
         maxWidth: CGFloat,
-        scale: CGFloat
+        scale: CGFloat,
     ) -> Result {
         var hasher = Hasher()
         hasher.combine(rows)
@@ -56,7 +56,7 @@ enum WatchTableRenderer {
             columnAlignments: columnAlignments,
             theme: theme,
             maxWidth: maxWidth,
-            scale: scale
+            scale: scale,
         )
         cache.setValue(result, forKey: key)
         return result
@@ -68,7 +68,7 @@ enum WatchTableRenderer {
         columnAlignments: [RawTableColumnAlignment],
         theme: WatchMarkdownTheme,
         maxWidth: CGFloat,
-        scale: CGFloat
+        scale: CGFloat,
     ) -> Result {
         guard !rows.isEmpty else { return Result(image: nil, size: .zero) }
 
@@ -103,7 +103,7 @@ enum WatchTableRenderer {
                 mutable.addAttribute(
                     kCTParagraphStyleAttributeName as NSAttributedString.Key,
                     value: paragraphStyle,
-                    range: NSRange(location: 0, length: mutable.length)
+                    range: NSRange(location: 0, length: mutable.length),
                 )
                 cellStrings[r][c] = mutable
             }
@@ -122,7 +122,7 @@ enum WatchTableRenderer {
         let minInnerWidth: CGFloat = 8
         let maxColWidth = max(
             padding * 2 + minInnerWidth,
-            min(theme.tableMaxColumnWidth, availableForCells / CGFloat(numCols))
+            min(theme.tableMaxColumnWidth, availableForCells / CGFloat(numCols)),
         )
         let innerWidth = maxColWidth - padding * 2
 
@@ -152,7 +152,7 @@ enum WatchTableRenderer {
             data: nil, width: pw, height: ph,
             bitsPerComponent: 8, bytesPerRow: 0, space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
-                | CGBitmapInfo.byteOrder32Little.rawValue
+                | CGBitmapInfo.byteOrder32Little.rawValue,
         ) else { return Result(image: nil, size: .zero) }
 
         ctx.scaleBy(x: scale, y: scale)
@@ -185,7 +185,7 @@ enum WatchTableRenderer {
                     x: leftX + padding,
                     y: rowBottomY + padding,
                     width: colW - padding * 2,
-                    height: rowH - padding * 2
+                    height: rowH - padding * 2,
                 )
                 drawText(cellFramesetters[r][c], in: cellRect, ctx: ctx)
                 leftX += colW + borderWidth
@@ -227,7 +227,7 @@ enum WatchTableRenderer {
     private static func drawText(
         _ framesetter: CTFramesetter?,
         in rect: CGRect,
-        ctx: CGContext
+        ctx: CGContext,
     ) {
         guard let framesetter, rect.width > 0, rect.height > 0 else { return }
 
@@ -249,7 +249,7 @@ enum WatchTableRenderer {
             CFRangeMake(0, 0),
             nil,
             constraints,
-            nil
+            nil,
         )
         return CGSize(width: ceil(size.width), height: ceil(size.height))
     }
@@ -274,7 +274,7 @@ enum WatchTableRenderer {
             var setting = CTParagraphStyleSetting(
                 spec: .alignment,
                 valueSize: MemoryLayout<CTTextAlignment>.size,
-                value: pointer
+                value: pointer,
             )
             return CTParagraphStyleCreate(&setting, 1)
         }

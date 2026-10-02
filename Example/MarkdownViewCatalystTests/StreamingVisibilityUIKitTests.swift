@@ -1,6 +1,6 @@
-@testable import MarkdownView
 import Combine
 import MarkdownParser
+@testable import MarkdownView
 import SwiftUI
 import Testing
 import UIKit
@@ -41,7 +41,9 @@ struct StreamingVisibilityUIKitTests {
         var queue = [view]
         while !queue.isEmpty {
             let next = queue.removeFirst()
-            if let match = next as? MarkdownTextView { return match }
+            if let match = next as? MarkdownTextView {
+                return match
+            }
             queue.append(contentsOf: next.subviews)
         }
         return nil
@@ -53,10 +55,18 @@ struct StreamingVisibilityUIKitTests {
         let placed = Set(runs.compactMap { ($0.attributes[.contextView] as? UIView).map(ObjectIdentifier.init) })
         for (index, shown) in view.contextViews.enumerated() {
             let name = "\(type(of: shown)) #\(index)"
-            if shown.superview !== view { problems.append("\(name) is detached") }
-            if shown.isHidden { problems.append("\(name) is hidden") }
-            if !placed.contains(ObjectIdentifier(shown)) { problems.append("\(name) has no line in the layout") }
-            if shown.frame.height <= 0 || shown.frame.width <= 0 { problems.append("\(name) has no size: \(shown.frame)") }
+            if shown.superview !== view {
+                problems.append("\(name) is detached")
+            }
+            if shown.isHidden {
+                problems.append("\(name) is hidden")
+            }
+            if !placed.contains(ObjectIdentifier(shown)) {
+                problems.append("\(name) has no line in the layout")
+            }
+            if shown.frame.height <= 0 || shown.frame.width <= 0 {
+                problems.append("\(name) has no size: \(shown.frame)")
+            }
             if shown.frame.maxY > view.bounds.maxY + 0.5 {
                 problems.append("\(name) sits past the bottom: \(shown.frame) in \(view.bounds)")
             }
@@ -64,8 +74,8 @@ struct StreamingVisibilityUIKitTests {
         return problems
     }
 
-    @Test("Streaming the demo through SwiftUI ends with every block on screen", arguments: [1, 4])
-    func swiftUIStreamEndsWithEveryBlockShown(step: Int) async throws {
+    @Test(arguments: [1, 4])
+    func `Streaming the demo through SwiftUI ends with every block on screen`(step: Int) async throws {
         let document = try Self.exampleDocument()
         let feed = Feed()
         let controller = UIHostingController(rootView: Host(feed: feed))
@@ -99,8 +109,8 @@ struct StreamingVisibilityUIKitTests {
     /// its host. iOS 18 clears the label's pending layout before the view lays
     /// out, so the view has to lay the label out itself or read a layout with
     /// no lines and hide every block.
-    @Test("An update that keeps the height keeps every block on screen")
-    func sameHeightUpdateKeepsBlocks() async throws {
+    @Test
+    func `An update that keeps the height keeps every block on screen`() async throws {
         let document = try Self.exampleDocument()
         let view = MarkdownTextView()
         let controller = UIViewController()
@@ -120,12 +130,14 @@ struct StreamingVisibilityUIKitTests {
             // The frame stays put: the text grows within the room it has.
             view.setContentImmediately(.init(
                 parserResult: MarkdownParser().parse(String(characters[0 ..< end])),
-                theme: .default
+                theme: .default,
             ))
             await Self.spin(0.02)
             let problems = Self.problems(in: view)
             #expect(problems.isEmpty, "after \(end) characters: \(problems)")
-            if !problems.isEmpty { return }
+            if !problems.isEmpty {
+                return
+            }
         }
     }
 }

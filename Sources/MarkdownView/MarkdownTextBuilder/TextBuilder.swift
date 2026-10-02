@@ -29,7 +29,7 @@ final class TextBuilder {
     init(
         nodes: [MarkdownBlockNode],
         context: MarkdownContent,
-        viewProvider: ReusableViewProvider
+        viewProvider: ReusableViewProvider,
     ) {
         self.nodes = nodes
         self.context = context
@@ -149,14 +149,14 @@ final class TextBuilder {
         if !pendingHighlightRequests.isEmpty {
             CodeHighlighter.current.scheduleHighlight(
                 requests: pendingHighlightRequests,
-                requester: highlightRequester
+                requester: highlightRequester,
             )
         }
         return .init(
             document: text,
             subviews: subviewCollector,
             highlightKeys: highlightKeys,
-            fragmentCache: nextFragmentCache
+            fragmentCache: nextFragmentCache,
         )
     }
 }
@@ -196,7 +196,7 @@ extension TextBuilder {
         var placed: PlatformView?
         fragment.enumerateAttributes(
             in: NSRange(location: 0, length: fragment.length),
-            options: []
+            options: [],
         ) { attributes, _, stop in
             guard let found = attributes[.litextAttachment] as? ContextViewAttachment else { return }
             attachment = found
@@ -250,7 +250,7 @@ extension TextBuilder {
             if let last = merged.last, last.upperBound == range.location {
                 merged[merged.count - 1] = NSRange(
                     location: last.location,
-                    length: last.length + range.length
+                    length: last.length + range.length,
                 )
             } else {
                 merged.append(range)
@@ -262,14 +262,14 @@ extension TextBuilder {
     private func processBlock(
         _ node: MarkdownBlockNode,
         context: MarkdownContent,
-        subviews: inout [PlatformView]
+        subviews: inout [PlatformView],
     ) -> NSAttributedString {
         let blockProcessor = BlockProcessor(
             theme: theme,
             viewProvider: viewProvider,
             context: context,
             thematicBreakDrawing: thematicBreakDrawing,
-            inlineTextDecoration: inlineTextDecoration
+            inlineTextDecoration: inlineTextDecoration,
         )
 
         let listProcessor = ListProcessor(
@@ -279,7 +279,7 @@ extension TextBuilder {
             bulletDrawing: bulletDrawing,
             numberedDrawing: numberedDrawing,
             checkboxDrawing: checkboxDrawing,
-            inlineTextDecoration: inlineTextDecoration
+            inlineTextDecoration: inlineTextDecoration,
         )
 
         switch node {
@@ -309,7 +309,7 @@ extension TextBuilder {
                 language: language,
                 content: content,
                 highlightMap: highlightMap,
-                highlightKey: highlightKey
+                highlightKey: highlightKey,
             )
             subviews.append(result.1)
             return result.0
@@ -318,7 +318,7 @@ extension TextBuilder {
         case let .table(columnAlignments, rows):
             let result = blockProcessor.processTable(
                 columnAlignments: columnAlignments,
-                rows: rows
+                rows: rows,
             )
             subviews.append(result.1)
             return result.0

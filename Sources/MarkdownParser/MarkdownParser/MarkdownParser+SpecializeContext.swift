@@ -30,24 +30,24 @@ private extension MarkdownParser.SpecializeContext {
     typealias ProcessedListItem<Item> = (item: Item, picks: [MarkdownBlockNode])
 
     func rawListItemByCherryPick(
-        _ rawListItem: RawListItem
+        _ rawListItem: RawListItem,
     ) -> (RawListItem, [MarkdownBlockNode]) {
         let (children, pickedNodes) = cherryPickChildren(rawListItem.children)
         return (RawListItem(children: children), pickedNodes)
     }
 
     func rawTaskListItemByCherryPick(
-        _ rawTaskListItem: RawTaskListItem
+        _ rawTaskListItem: RawTaskListItem,
     ) -> (RawTaskListItem, [MarkdownBlockNode]) {
         let (children, pickedNodes) = cherryPickChildren(rawTaskListItem.children)
         return (
             RawTaskListItem(isCompleted: rawTaskListItem.isCompleted, children: children),
-            pickedNodes
+            pickedNodes,
         )
     }
 
     func processNodeInsideListEnvironment(
-        _ node: MarkdownBlockNode
+        _ node: MarkdownBlockNode,
     ) -> [MarkdownBlockNode] {
         switch node {
         case let .bulletedList(isTight, items):
@@ -72,7 +72,7 @@ private extension MarkdownParser.SpecializeContext {
     }
 
     func cherryPickChildren(
-        _ children: [MarkdownBlockNode]
+        _ children: [MarkdownBlockNode],
     ) -> ([MarkdownBlockNode], [MarkdownBlockNode]) {
         var sanitizedChildren: [MarkdownBlockNode] = []
         var pickedNodes: [MarkdownBlockNode] = []
@@ -106,7 +106,7 @@ private extension MarkdownParser.SpecializeContext {
 
     func processItems<Item>(
         _ items: [Item],
-        using processor: (Item) -> (Item, [MarkdownBlockNode])
+        using processor: (Item) -> (Item, [MarkdownBlockNode]),
     ) -> [ProcessedListItem<Item>] {
         items.map { item in
             let (processedItem, pickedNodes) = processor(item)
@@ -116,7 +116,7 @@ private extension MarkdownParser.SpecializeContext {
 
     func buildBlocks<Item>(
         from processedItems: [ProcessedListItem<Item>],
-        using makeList: ([Item]) -> MarkdownBlockNode
+        using makeList: ([Item]) -> MarkdownBlockNode,
     ) -> [MarkdownBlockNode] {
         buildBlocks(from: processedItems) { items, _ in makeList(items) }
     }
@@ -125,7 +125,7 @@ private extension MarkdownParser.SpecializeContext {
     /// of items emitted in earlier segments so ordered lists can keep numbering.
     func buildBlocks<Item>(
         from processedItems: [ProcessedListItem<Item>],
-        using makeList: ([Item], _ emittedItemCount: Int) -> MarkdownBlockNode
+        using makeList: ([Item], _ emittedItemCount: Int) -> MarkdownBlockNode,
     ) -> [MarkdownBlockNode] {
         guard !processedItems.isEmpty else { return [] }
 

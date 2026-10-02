@@ -28,7 +28,7 @@ extension MarkdownTextView {
             guard boxesByLine[run.lineIndex] == nil else { continue }
             boxesByLine[run.lineIndex] = .init(
                 label: "line \(run.lineIndex)",
-                frame: convertFromTextLayout(run.lineRect)
+                frame: convertFromTextLayout(run.lineRect),
             )
         }
 

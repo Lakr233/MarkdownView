@@ -41,7 +41,7 @@
                         theme: theme,
                         appearance: appearance,
                         width: width,
-                        showsSource: showsSource
+                        showsSource: showsSource,
                     )
                     .id(sample.id)
                 } else {
@@ -58,7 +58,7 @@
                             // Light and Dark restyle the whole app, sidebar and
                             // toolbar included, not only the rendered page.
                             NSApplication.shared.appearance = newValue.applicationAppearance
-                        }
+                        },
                     )) {
                         ForEach(CatalogAppearance.allCases) { appearance in
                             Label(appearance.title, systemImage: appearance.systemImage)
@@ -115,7 +115,7 @@
             theme: MarkdownTheme,
             appearance: CatalogAppearance,
             width: CatalogWidth,
-            showsSource: Bool
+            showsSource: Bool,
         ) {
             self.sample = sample
             self.theme = theme
@@ -241,7 +241,9 @@
         case dark
         case sideBySide
 
-        var id: Self { self }
+        var id: Self {
+            self
+        }
 
         var title: String {
             switch self {
@@ -285,7 +287,9 @@
         case wide
         case fill
 
-        var id: Self { self }
+        var id: Self {
+            self
+        }
 
         var title: String {
             switch self {

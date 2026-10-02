@@ -37,8 +37,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("A block that did not change is not built again")
-    func unchangedBlocksAreReused() {
+    @Test
+    func `A block that did not change is not built again`() {
         // Not an implementation detail worth hiding: a stream rebuilds the whole
         // document per token, and losing this quietly costs a third of every
         // update while every other test still passes.
@@ -61,8 +61,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("A theme change builds every block again")
-    func themeChangeDropsTheReusedBlocks() {
+    @Test
+    func `A theme change builds every block again`() {
         let markdown = "一段中文 paragraph with text."
         let view = warmedView(markdown)
         let before = cachedFragment(view, at: 0)
@@ -78,21 +78,21 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("Rebuilding the same content twice yields the same document")
-    func rebuildingIsIdempotent() {
+    @Test
+    func `Rebuilding the same content twice yields the same document`() {
         let view = warmedView(RenderProbeDocument.everything)
         let first = RenderProbe.digest(view.textLabelView.attributedText)
 
         let second = RenderProbe.digest(
-            RenderProbe.show(RenderProbeDocument.everything, in: view)
+            RenderProbe.show(RenderProbeDocument.everything, in: view),
         )
 
         #expect(first == second, "\(RenderProbe.firstDifference(first, second))")
     }
 
     @MainActor
-    @Test("A rebuild from a fresh content object matches a reused one")
-    func freshContentMatchesReusedContent() {
+    @Test
+    func `A rebuild from a fresh content object matches a reused one`() {
         // Streaming callers build a new `MarkdownContent` per update, so the
         // per-content inline cache is empty every time; a one-shot caller reuses
         // one. Both have to render the same thing.
@@ -108,7 +108,7 @@ struct MarkdownRebuildDeterminismTests {
         let secondPass = RenderProbe.digest(view.textLabelView.attributedText)
 
         let fresh = RenderProbe.digest(
-            RenderProbe.show(RenderProbeDocument.everything, in: view)
+            RenderProbe.show(RenderProbeDocument.everything, in: view),
         )
 
         #expect(firstPass == secondPass, "\(RenderProbe.firstDifference(firstPass, secondPass))")
@@ -116,8 +116,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("Two views with separate pools build the same document")
-    func separateViewsAgree() {
+    @Test
+    func `Two views with separate pools build the same document`() {
         let left = warmedView(RenderProbeDocument.everything)
         let right = warmedView(RenderProbeDocument.everything)
 
@@ -128,8 +128,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("A streamed document ends where a one-shot document does")
-    func streamingConvergesOnTheOneShotDocument() {
+    @Test
+    func `A streamed document ends where a one-shot document does`() {
         let markdown = RenderProbeDocument.everything
         let characters = Array(markdown)
         let step = max(1, characters.count / 24)
@@ -152,14 +152,14 @@ struct MarkdownRebuildDeterminismTests {
 
         #expect(
             streamedDigest == oneShotDigest,
-            "\(RenderProbe.firstDifference(streamedDigest, oneShotDigest))"
+            "\(RenderProbe.firstDifference(streamedDigest, oneShotDigest))",
         )
         #expect(streamed.boundingSize(for: 480).height == oneShot.boundingSize(for: 480).height)
     }
 
     @MainActor
-    @Test("Repeated rebuilds neither accumulate nor drop context views")
-    func rebuildsKeepContextViewCountStable() {
+    @Test
+    func `Repeated rebuilds neither accumulate nor drop context views`() {
         let markdown = RenderProbeDocument.everything
         let view = warmedView(markdown)
 
@@ -182,8 +182,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("Rebuilding reuses the pooled context views rather than new ones")
-    func rebuildsReuseThePooledViews() {
+    @Test
+    func `Rebuilding reuses the pooled context views rather than new ones`() {
         let markdown = RenderProbeDocument.everything
         let view = warmedView(markdown)
 
@@ -202,8 +202,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("Emptying a view releases everything it was showing")
-    func resetReleasesContextViews() {
+    @Test
+    func `Emptying a view releases everything it was showing`() {
         let view = warmedView(RenderProbeDocument.everything)
         #expect(!view.contextViews.isEmpty)
 
@@ -216,8 +216,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("A document shrinking back to a prefix matches building that prefix")
-    func shrinkingMatchesBuildingThePrefix() {
+    @Test
+    func `A document shrinking back to a prefix matches building that prefix`() {
         // Editing and regeneration both walk content backwards, which is where a
         // cache keyed on "what changed" is easiest to get wrong.
         let prefix = """
@@ -250,8 +250,8 @@ struct MarkdownRebuildDeterminismTests {
     }
 
     @MainActor
-    @Test("Layout width does not leak into the built document")
-    func documentDoesNotDependOnWidth() {
+    @Test
+    func `Layout width does not leak into the built document`() {
         // Only line breaking may depend on the width. The attributed string the
         // builder produces must not, or a cache keyed on content alone would be
         // wrong the moment the window is resized.

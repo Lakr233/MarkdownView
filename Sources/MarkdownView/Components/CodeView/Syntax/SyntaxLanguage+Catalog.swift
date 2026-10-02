@@ -54,7 +54,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false nil self Self super"),
         declarations: Set(words: "func class struct enum protocol extension actor typealias associatedtype macro"),
         directives: true,
-        annotations: true
+        annotations: true,
     )
 
     static let cFamily = SyntaxLanguage(
@@ -77,7 +77,7 @@ extension SyntaxLanguage {
         """),
         declarations: Set(words: "struct class enum union namespace"),
         directives: true,
-        annotations: true
+        annotations: true,
     )
 
     static let csharp = SyntaxLanguage(
@@ -94,7 +94,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false null this base"),
         types: Set(words: "bool byte char decimal double float int long object sbyte short string uint ulong ushort void nint nuint"),
         declarations: Set(words: "class struct interface enum record namespace"),
-        directives: true
+        directives: true,
     )
 
     static let java = SyntaxLanguage(
@@ -110,7 +110,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false null this super"),
         types: Set(words: "boolean byte char double float int long short void"),
         declarations: Set(words: "class interface enum record"),
-        annotations: true
+        annotations: true,
     )
 
     static let kotlin = SyntaxLanguage(
@@ -126,7 +126,7 @@ extension SyntaxLanguage {
         """),
         literals: Set(words: "true false null this super it"),
         declarations: Set(words: "fun class interface object typealias"),
-        annotations: true
+        annotations: true,
     )
 
     static let go = SyntaxLanguage(
@@ -145,7 +145,7 @@ extension SyntaxLanguage {
         uint16 uint32 uint64 uintptr any
         """),
         declarations: Set(words: "func type"),
-        capitalizedTypes: false
+        capitalizedTypes: false,
     )
 
     static let rust = SyntaxLanguage(
@@ -159,7 +159,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false self Self super None Some Ok Err"),
         types: Set(words: "i8 i16 i32 i64 i128 isize u8 u16 u32 u64 u128 usize f32 f64 bool char str"),
         declarations: Set(words: "fn struct enum trait type mod union macro_rules"),
-        directives: true
+        directives: true,
     )
 
     static let javascript = SyntaxLanguage(
@@ -176,7 +176,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false null undefined this super NaN Infinity"),
         types: Set(words: "string number boolean any unknown never object symbol bigint"),
         declarations: Set(words: "function class interface type enum namespace"),
-        annotations: true
+        annotations: true,
     )
 
     static let python = SyntaxLanguage(
@@ -189,7 +189,7 @@ extension SyntaxLanguage {
         literals: Set(words: "True False None self cls"),
         types: Set(words: "int str float bool list dict set tuple bytes object complex frozenset"),
         declarations: Set(words: "def class"),
-        annotations: true
+        annotations: true,
     )
 
     static let ruby = SyntaxLanguage(
@@ -200,7 +200,7 @@ extension SyntaxLanguage {
         attr_accessor attr_reader attr_writer private public protected lambda proc
         """),
         literals: Set(words: "true false nil self"),
-        declarations: Set(words: "def class module")
+        declarations: Set(words: "def class module"),
     )
 
     static let shell = SyntaxLanguage(
@@ -218,7 +218,7 @@ extension SyntaxLanguage {
         """),
         declarations: Set(words: "function"),
         capitalizedTypes: false,
-        variables: true
+        variables: true,
     )
 
     static let sql = SyntaxLanguage(
@@ -239,7 +239,7 @@ extension SyntaxLanguage {
         double decimal numeric serial bigserial real blob json jsonb uuid
         """),
         foldsCase: true,
-        capitalizedTypes: false
+        capitalizedTypes: false,
     )
 
     static let lua = SyntaxLanguage(
@@ -250,7 +250,7 @@ extension SyntaxLanguage {
         """),
         literals: Set(words: "true false nil self"),
         declarations: Set(words: "function"),
-        capitalizedTypes: false
+        capitalizedTypes: false,
     )
 
     static let haskell = SyntaxLanguage(
@@ -261,7 +261,7 @@ extension SyntaxLanguage {
         case class data deriving do else if import in infix infixl infixr instance let module newtype of then type \
         where qualified hiding exposing port alias
         """),
-        literals: Set(words: "True False")
+        literals: Set(words: "True False"),
     )
 
     static let json = SyntaxLanguage(
@@ -270,7 +270,7 @@ extension SyntaxLanguage {
         quotes: [.doubleQuote],
         literals: Set(words: "true false null"),
         capitalizedTypes: false,
-        keySeparator: .colon
+        keySeparator: .colon,
     )
 
     static let yaml = SyntaxLanguage(
@@ -278,7 +278,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false null yes no on off True False Null Yes No"),
         capitalizedTypes: false,
         keySeparator: .colon,
-        hyphenatedWords: true
+        hyphenatedWords: true,
     )
 
     static let toml = SyntaxLanguage(
@@ -287,7 +287,7 @@ extension SyntaxLanguage {
         literals: Set(words: "true false"),
         capitalizedTypes: false,
         keySeparator: .equals,
-        hyphenatedWords: true
+        hyphenatedWords: true,
     )
 
     /// No `//` comments: SCSS has them, but plain CSS has unquoted URLs.
@@ -297,7 +297,7 @@ extension SyntaxLanguage {
         capitalizedTypes: false,
         annotations: true,
         keySeparator: .colon,
-        hyphenatedWords: true
+        hyphenatedWords: true,
     )
 
     static let markup = SyntaxLanguage(mode: .markup)
@@ -313,7 +313,7 @@ extension SyntaxLanguage {
         """),
         foldsCase: true,
         capitalizedTypes: false,
-        variables: true
+        variables: true,
     )
 
     static let makefile = SyntaxLanguage(
@@ -324,7 +324,7 @@ extension SyntaxLanguage {
         set if elseif endif foreach endforeach function endfunction option message find_package
         """),
         capitalizedTypes: false,
-        variables: true
+        variables: true,
     )
 
     static let php = SyntaxLanguage(
@@ -339,7 +339,7 @@ extension SyntaxLanguage {
         """),
         literals: Set(words: "true false null TRUE FALSE NULL this self parent"),
         declarations: Set(words: "function class interface trait enum fn"),
-        variables: true
+        variables: true,
     )
 
     /// For a named language this catalog does not know: the comments, strings
@@ -355,6 +355,6 @@ extension SyntaxLanguage {
         then match when with extends implements and or not
         """),
         literals: Set(words: "true false null nil none undefined self this True False None"),
-        declarations: Set(words: "function func def fn fun defn class struct enum interface trait")
+        declarations: Set(words: "function func def fn fun defn class struct enum interface trait"),
     )
 }

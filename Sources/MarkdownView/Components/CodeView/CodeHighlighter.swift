@@ -22,7 +22,7 @@ struct CodeHighlightRequest {
     let content: String
     let language: String?
     /// The view that asked, or nil when content asked while being built.
-    var requester: ObjectIdentifier? = nil
+    var requester: ObjectIdentifier?
 }
 
 @MainActor
@@ -63,7 +63,7 @@ public extension CodeHighlighter {
         key: Int?,
         content: String,
         language: String?,
-        theme _: MarkdownTheme = .default
+        theme _: MarkdownTheme = .default,
     ) -> HighlightMap {
         let key = key ?? self.key(for: content, language: language)
         if let value = renderCache.value(forKey: key) {
@@ -122,7 +122,7 @@ extension CodeHighlighter {
         NotificationCenter.default.post(
             name: Self.highlightDidUpdateNotification,
             object: nil,
-            userInfo: [Self.highlightedKeysUserInfoKey: Set([key])]
+            userInfo: [Self.highlightedKeysUserInfoKey: Set([key])],
         )
     }
 }
@@ -133,7 +133,7 @@ private final class HighlightWorker: Sendable {
     func highlight(
         content: String,
         language: String?,
-        completion: @escaping @MainActor (CodeHighlighter.HighlightMap) -> Void
+        completion: @escaping @MainActor (CodeHighlighter.HighlightMap) -> Void,
     ) {
         queue.async {
             let map = SyntaxHighlighter.highlight(content, language: language)
@@ -156,7 +156,7 @@ public extension CodeHighlighter.HighlightMap {
                 .font: theme.fonts.code,
                 .paragraphStyle: paragraphStyle,
                 .foregroundColor: plainTextColor,
-            ]
+            ],
         )
 
         let length = attributedContent.length

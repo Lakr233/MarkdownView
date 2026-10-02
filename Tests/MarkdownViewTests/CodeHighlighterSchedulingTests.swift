@@ -17,17 +17,17 @@ struct CodeHighlighterSchedulingTests {
         .init(
             key: highlighter.key(for: content, language: language),
             content: content,
-            language: language
+            language: language,
         )
     }
 
-    @MainActor
     /// Polls until every key is cached, giving up after `attempts` polls.
     ///
     /// Counted in polls, not wall time: a result reaches the cache on the main
     /// actor, and other suites running alongside can hold it for seconds. A
     /// poll only runs when this test has the main actor, so the budget is
     /// spent only on time the highlighter could have used.
+    @MainActor
     private func waitUntilCached(_ keys: [Int], attempts: Int = 500) async -> Bool {
         for _ in 0 ..< attempts {
             if keys.allSatisfy({ highlighter.cachedHighlightMap(for: $0) != nil }) {
@@ -38,8 +38,8 @@ struct CodeHighlighterSchedulingTests {
         return false
     }
 
-    @Test("A request from one view survives another view scheduling its own")
-    func requestsFromAnotherViewAreNotDropped() async {
+    @Test
+    func `A request from one view survives another view scheduling its own`() async {
         let tag = UUID().uuidString
         // The first request goes straight to the worker; the second waits in
         // the queue, which is where a later caller could throw it away.
@@ -57,8 +57,8 @@ struct CodeHighlighterSchedulingTests {
         #expect(finished, "a queued request from another view was dropped")
     }
 
-    @Test("A view asking again replaces what it asked for before")
-    func streamedPrefixIsSuperseded() async {
+    @Test
+    func `A view asking again replaces what it asked for before`() async {
         let tag = UUID().uuidString
         let blocker = request("let blocker = \"\(tag)\"")
         let shorter = request("let streamed = \"\(tag)")

@@ -86,9 +86,11 @@ struct MarkdownContextViewCacheTests {
         text.enumerateAttribute(
             .contextView,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, _, _ in
-            if let codeView = value as? CodeView { result.append(codeView) }
+            if let codeView = value as? CodeView {
+                result.append(codeView)
+            }
         }
         return result
     }
@@ -100,7 +102,7 @@ struct MarkdownContextViewCacheTests {
         text.enumerateAttribute(
             .foregroundColor,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, _, _ in
             guard let color = value as? PlatformColor else { return }
             colors.insert(String(describing: color))
@@ -115,7 +117,7 @@ struct MarkdownContextViewCacheTests {
         text.enumerateAttribute(
             .contextView,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, range, stop in
             guard let placed = value as? PlatformView, placed === contextView else { return }
             let style = text.attribute(.paragraphStyle, at: range.location, effectiveRange: nil) as? NSParagraphStyle
@@ -128,8 +130,8 @@ struct MarkdownContextViewCacheTests {
     // MARK: - Work skipped
 
     @MainActor
-    @Test("Rebuilding an unchanged document with code and tables does not typeset it again")
-    func unchangedRebuildKeepsTheLayout() throws {
+    @Test
+    func `Rebuilding an unchanged document with code and tables does not typeset it again`() throws {
         let (view, label) = countingView(Self.document)
         let digest = RenderProbe.digest(view.textLabelView.attributedText)
         let copied = try #require(copiedText(view))
@@ -149,8 +151,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("A finished highlight colours its code view without touching the document")
-    func highlightCompletionLeavesTheDocumentAlone() throws {
+    @Test
+    func `A finished highlight colours its code view without touching the document`() throws {
         // Unique source, so nothing has highlighted it yet.
         let source = "let onlyInHighlightCompletionTest = \"\(UUID().uuidString)\""
         let markdown = "Before.\n\n```swift\n\(source)\n```\n\nAfter."
@@ -163,14 +165,18 @@ struct MarkdownContextViewCacheTests {
 
         let blocks = MarkdownParser().parse(markdown).document
         guard case let .codeBlock(language, content) = try #require(blocks.first(where: {
-            if case .codeBlock = $0 { true } else { false }
+            if case .codeBlock = $0 {
+                true
+            } else {
+                false
+            }
         })) else { return }
         let key = CodeHighlighter.current.key(for: content, language: language)
         _ = CodeHighlighter.current.highlight(key: key, content: content, language: language)
         NotificationCenter.default.post(
             name: CodeHighlighter.highlightDidUpdateNotification,
             object: nil,
-            userInfo: [CodeHighlighter.highlightedKeysUserInfoKey: Set([key])]
+            userInfo: [CodeHighlighter.highlightedKeysUserInfoKey: Set([key])],
         )
         RenderProbe.layout(view)
 
@@ -183,8 +189,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("A cached code block whose highlight arrived in between is coloured on the next build")
-    func reusedCodeBlockPicksUpAnArrivedHighlight() throws {
+    @Test
+    func `A cached code block whose highlight arrived in between is coloured on the next build`() throws {
         let source = "let pickedUpOnReuse = \"\(UUID().uuidString)\""
         let markdown = "```swift\n\(source)\n```"
         let (view, _) = countingView(markdown)
@@ -205,8 +211,8 @@ struct MarkdownContextViewCacheTests {
     // MARK: - Inputs that change size or appearance still rebuild
 
     @MainActor
-    @Test("Changing a code block's content typesets again and shows the new code")
-    func codeContentChangeRelayouts() throws {
+    @Test
+    func `Changing a code block's content typesets again and shows the new code`() throws {
         let (view, label) = countingView(Self.document)
         let layouts = label.layoutsBuilt
 
@@ -221,8 +227,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("Changing a code block's language typesets again and shows the new language")
-    func codeLanguageChangeRelayouts() throws {
+    @Test
+    func `Changing a code block's language typesets again and shows the new language`() throws {
         let (view, label) = countingView(Self.document)
         let layouts = label.layoutsBuilt
 
@@ -238,15 +244,15 @@ struct MarkdownContextViewCacheTests {
                 .litextAttachment,
                 at: (view.textLabelView.attributedText.string as NSString)
                     .range(of: TextLabel.Attachment.replacementText).location,
-                effectiveRange: nil
-            ) as? ContextViewAttachment
+                effectiveRange: nil,
+            ) as? ContextViewAttachment,
         )
         #expect(attachment.appearance == .of(first))
     }
 
     @MainActor
-    @Test("Changing the code font typesets again and reserves the new height")
-    func codeFontChangeRelayouts() throws {
+    @Test
+    func `Changing the code font typesets again and reserves the new height`() throws {
         let (view, label) = countingView(Self.document)
         let layouts = label.layoutsBuilt
         let first = try #require(codeViews(in: view).first)
@@ -267,8 +273,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("Changing the width reflows the cached code blocks and tables")
-    func widthChangeReflows() throws {
+    @Test
+    func `Changing the width reflows the cached code blocks and tables`() {
         let (view, _) = countingView(Self.document, width: 480)
         let narrowHeight = view.boundingSize(for: 240).height
         RenderProbe.show(Self.document, in: view, width: 240)
@@ -291,8 +297,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("Changing a table cell typesets again and shows the new cell")
-    func tableCellChangeRelayouts() throws {
+    @Test
+    func `Changing a table cell typesets again and shows the new cell`() throws {
         let (view, label) = countingView(Self.document)
         let layouts = label.layoutsBuilt
 
@@ -308,8 +314,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("Changing a table's alignment typesets again and aligns the cells")
-    func tableAlignmentChangeRelayouts() throws {
+    @Test
+    func `Changing a table's alignment typesets again and aligns the cells`() throws {
         let (view, label) = countingView(Self.document)
         let layouts = label.layoutsBuilt
 
@@ -323,8 +329,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("Changing the table theme typesets again")
-    func tableThemeChangeRelayouts() throws {
+    @Test
+    func `Changing the table theme typesets again`() throws {
         let (view, label) = countingView(Self.document)
         let layouts = label.layoutsBuilt
         let table = try #require(tableViews(in: view).first)
@@ -345,8 +351,8 @@ struct MarkdownContextViewCacheTests {
     // MARK: - Identity
 
     @MainActor
-    @Test("Two identical code blocks and tables never share a view")
-    func identicalBlocksKeepTheirOwnViews() {
+    @Test
+    func `Two identical code blocks and tables never share a view`() {
         let block = "```swift\nlet same = 1\n```"
         let table = "| A | B |\n| - | - |\n| 1 | 2 |"
         let markdown = [block, table, block, table].joined(separator: "\n\n")
@@ -380,8 +386,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("A cached view changed behind the builder's back is rebuilt, not trusted")
-    func driftedViewIsRebuilt() throws {
+    @Test
+    func `A cached view changed behind the builder's back is rebuilt, not trusted`() throws {
         let (view, _) = countingView(Self.document)
         let first = try #require(codeViews(in: view).first)
         first.setContent("something else entirely\nover two lines", highlightMap: nil)
@@ -394,8 +400,8 @@ struct MarkdownContextViewCacheTests {
     }
 
     @MainActor
-    @Test("Two views sharing one provider never hand each other's views out")
-    func sharedProviderKeepsViewsApart() {
+    @Test
+    func `Two views sharing one provider never hand each other's views out`() {
         let provider = ReusableViewProvider()
         let left = MarkdownTextView(viewProvider: provider)
         let right = MarkdownTextView(viewProvider: provider)
@@ -417,8 +423,8 @@ struct MarkdownContextViewCacheTests {
     // MARK: - Streaming
 
     @MainActor
-    @Test("Streaming into the last code block shows the right code at every step")
-    func streamedCodeStaysAccurate() throws {
+    @Test
+    func `Streaming into the last code block shows the right code at every step`() {
         let final = """
         Some text.
 
@@ -451,14 +457,16 @@ struct MarkdownContextViewCacheTests {
             #expect(Set(codes.map(ObjectIdentifier.init)).count == codes.count, "at \(cursor)")
             // Once the first block is closed its view stays put.
             if codes.count >= 2 {
-                if let settled { #expect(codes[0] === settled, "at \(cursor)") }
+                if let settled {
+                    #expect(codes[0] === settled, "at \(cursor)")
+                }
                 settled = codes[0]
             }
             for codeView in codes {
                 #expect(
                     reservedHeight(for: codeView, in: view.textLabelView.attributedText)
                         == codeView.intrinsicContentSize.height,
-                    "at \(cursor)"
+                    "at \(cursor)",
                 )
             }
         }
@@ -476,18 +484,18 @@ struct MarkdownContextViewCacheTests {
     // MARK: - Value equality
 
     @MainActor
-    @Test("Attachments compare equal exactly when everything they show matches")
-    func attachmentEquality() {
+    @Test
+    func `Attachments compare equal exactly when everything they show matches`() {
         let theme = MarkdownTheme.default
         func make(
             _ language: String = "swift",
             _ content: String = "let a = 1",
             theme: MarkdownTheme = theme,
-            size: CGSize = .init(width: 100, height: 40)
+            size: CGSize = .init(width: 100, height: 40),
         ) -> ContextViewAttachment {
             .init(
                 representation: .init(string: content + "\n"),
-                appearance: .init(kind: .code(language: language, content: content), theme: theme, size: size)
+                appearance: .init(kind: .code(language: language, content: content), theme: theme, size: size),
             )
         }
         var otherTheme = theme
@@ -505,19 +513,19 @@ struct MarkdownContextViewCacheTests {
         let cells = [[NSAttributedString(string: "a")]]
         let table = ContextViewAttachment(
             representation: .init(string: "a\n"),
-            appearance: .init(kind: .table(cells: cells, columnAlignments: [.left]), theme: theme, size: .init(width: 10, height: 10))
+            appearance: .init(kind: .table(cells: cells, columnAlignments: [.left]), theme: theme, size: .init(width: 10, height: 10)),
         )
         let realigned = ContextViewAttachment(
             representation: .init(string: "a\n"),
-            appearance: .init(kind: .table(cells: cells, columnAlignments: [.right]), theme: theme, size: .init(width: 10, height: 10))
+            appearance: .init(kind: .table(cells: cells, columnAlignments: [.right]), theme: theme, size: .init(width: 10, height: 10)),
         )
         let edited = ContextViewAttachment(
             representation: .init(string: "b\n"),
             appearance: .init(
                 kind: .table(cells: [[NSAttributedString(string: "b")]], columnAlignments: [.left]),
                 theme: theme,
-                size: .init(width: 10, height: 10)
-            )
+                size: .init(width: 10, height: 10),
+            ),
         )
         #expect(table != realigned)
         #expect(table != edited)

@@ -81,7 +81,7 @@ final class CodeView: PlatformView {
     func setContent(
         _ newContent: String,
         highlightMap map: CodeHighlighter.HighlightMap?,
-        highlightKey key: Int? = nil
+        highlightKey key: Int? = nil,
     ) {
         if let map {
             highlightedContent = newContent
@@ -261,12 +261,12 @@ final class CodeView: PlatformView {
         return CGSize(
             width: max(
                 labelSize.width + CodeViewConfiguration.barPadding * 2,
-                lineNumberWidth + textSize.width + CodeViewConfiguration.codePadding * 2
+                lineNumberWidth + textSize.width + CodeViewConfiguration.codePadding * 2,
             ),
             height: max(
                 barHeight + textSize.height + CodeViewConfiguration.codePadding * 2,
-                supposedHeight
-            )
+                supposedHeight,
+            ),
         )
     }
 
@@ -315,14 +315,14 @@ final class CodeView: PlatformView {
             lineCount: cachedLineCount,
             contentHeight: textViewContentHeight,
             font: font,
-            textColor: theme.colors.body.withAlphaComponent(0.5)
+            textColor: theme.colors.body.withAlphaComponent(0.5),
         )
 
         lineNumberView.padding = .init(
             top: CodeViewConfiguration.codePadding,
             left: CodeViewConfiguration.lineNumberPadding,
             bottom: CodeViewConfiguration.codePadding,
-            right: CodeViewConfiguration.lineNumberPadding
+            right: CodeViewConfiguration.lineNumberPadding,
         )
     }
 }

@@ -47,7 +47,7 @@ struct CodeSheetContent {
                 guard let view = view() else { return }
                 FileExporter.export(Data(text.utf8), fileName: fileName, from: view)
             },
-            close: close
+            close: close,
         )
     }
 }
@@ -107,7 +107,7 @@ enum CodeSheetText {
             view.addSubview(textView)
             navigationItem.rightBarButtonItem = .sheetMenu(content.menuActions(
                 from: { [weak self] in self?.view },
-                close: { [weak self] in self?.dismiss(animated: true) }
+                close: { [weak self] in self?.dismiss(animated: true) },
             ))
         }
     }
@@ -122,7 +122,7 @@ enum CodeSheetText {
             let content = CodeSheetContent(codeView)
             let size = CodeSheetGeometry.size(
                 for: content.code,
-                maxHeight: window.frame.height * 0.8
+                maxHeight: window.frame.height * 0.8,
             )
             let sheet = CodeSheetWindow(content: content, size: size)
             window.beginSheet(sheet)
@@ -144,7 +144,7 @@ enum CodeSheetText {
         static func textWidth(for code: NSAttributedString) -> CGFloat {
             let natural = code.boundingRect(
                 with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading]
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
             ).width
             return min(maxTextWidth, ceil(natural))
         }
@@ -153,13 +153,13 @@ enum CodeSheetText {
             let textWidth = textWidth(for: code)
             let textHeight = code.boundingRect(
                 with: CGSize(width: textWidth, height: .greatestFiniteMagnitude),
-                options: [.usesLineFragmentOrigin, .usesFontLeading]
+                options: [.usesLineFragmentOrigin, .usesFontLeading],
             ).height
             let width = textWidth + 2 * (textInset.width + lineFragmentPadding)
             let height = barHeight + ceil(textHeight) + 2 * textInset.height
             return CGSize(
                 width: max(minSize.width, width),
-                height: min(max(minSize.height, height), max(minSize.height, maxHeight))
+                height: min(max(minSize.height, height), max(minSize.height, maxHeight)),
             )
         }
     }
@@ -175,7 +175,7 @@ enum CodeSheetText {
                 contentRect: CGRect(origin: .zero, size: size),
                 styleMask: [.titled, .resizable],
                 backing: .buffered,
-                defer: false
+                defer: false,
             )
             isReleasedWhenClosed = false
             minSize = CodeSheetGeometry.minSize
@@ -209,11 +209,11 @@ enum CodeSheetText {
 
             let menuButton = SheetMenuButton(actions: content.menuActions(
                 from: { [weak container] in container },
-                close: { [weak self] in self?.close(nil) }
+                close: { [weak self] in self?.close(nil) },
             ))
             menuButton.frame.origin = CGPoint(
                 x: size.width - margin - menuButton.frame.width,
-                y: size.height - barHeight + (barHeight - menuButton.frame.height) / 2
+                y: size.height - barHeight + (barHeight - menuButton.frame.height) / 2,
             )
             menuButton.autoresizingMask = [.minXMargin, .minYMargin]
             container.addSubview(menuButton)
@@ -227,7 +227,7 @@ enum CodeSheetText {
                 x: margin,
                 y: size.height - barHeight + (barHeight - titleLabel.frame.height) / 2,
                 width: max(0, menuButton.frame.minX - margin * 2),
-                height: titleLabel.frame.height
+                height: titleLabel.frame.height,
             )
             titleLabel.autoresizingMask = [.width, .minYMargin]
             container.addSubview(titleLabel)

@@ -64,7 +64,7 @@
             configureDataSource()
             navigationItem.rightBarButtonItem = .sheetMenu(content.menuActions(
                 from: { [weak self] in self?.view },
-                close: { [weak self] in self?.dismiss(animated: true) }
+                close: { [weak self] in self?.dismiss(animated: true) },
             ))
         }
 
@@ -113,7 +113,7 @@
                 sortSymbol: isHeader ? sortSymbol(for: item.column) : nil,
                 leadingInset: padding + (item.column == 0 ? edge : 0),
                 trailingInset: padding + (item.column == model.columnCount - 1 ? edge : 0),
-                theme: content.theme
+                theme: content.theme,
             ))
             cell.label.delegate = isHeader ? nil : self
         }
@@ -132,7 +132,7 @@
             let insets = collectionView.adjustedContentInset
             let viewport = CGSize(
                 width: collectionView.bounds.width - insets.left - insets.right,
-                height: collectionView.bounds.height
+                height: collectionView.bounds.height,
             )
             guard viewport.width > 0, viewport.width != fittedViewport.width else { return }
             fittedViewport = viewport
@@ -151,9 +151,9 @@
                 columnWidths: TableSheetGeometry.columnWidths(
                     natural: model.naturalWidths,
                     viewportWidth: viewportWidth,
-                    edgeInset: layout.edgeInset
+                    edgeInset: layout.edgeInset,
                 ),
-                rowHeights: model.rowHeights(in: order)
+                rowHeights: model.rowHeights(in: order),
             )
         }
 
@@ -204,7 +204,7 @@
         func textLabelView(
             _ label: TextLabelView,
             didTapHighlightRegion highlightRegion: TextLabel.HighlightRegion,
-            at location: CGPoint
+            at location: CGPoint,
         ) {
             let link = highlightRegion.attributes[NSAttributedString.Key.link]
             let range = highlightRegion.stringRange
@@ -299,7 +299,7 @@
 
         override func layoutAttributesForDecorationView(
             ofKind kind: String,
-            at indexPath: IndexPath
+            at indexPath: IndexPath,
         ) -> UICollectionViewLayoutAttributes? {
             guard indexPath.section > 0, indexPath.section < geometry.rowCount else { return nil }
             return kind == Self.stripeKind
@@ -314,7 +314,7 @@
         }
 
         override func invalidationContext(
-            forBoundsChange newBounds: CGRect
+            forBoundsChange newBounds: CGRect,
         ) -> UICollectionViewLayoutInvalidationContext {
             let context = super.invalidationContext(forBoundsChange: newBounds)
             guard let collectionView, newBounds.size == collectionView.bounds.size else { return context }
@@ -337,7 +337,7 @@
         private func stripeAttributes(row: Int) -> UICollectionViewLayoutAttributes {
             let attributes = TableSheetDecorationAttributes(
                 forDecorationViewOfKind: Self.stripeKind,
-                with: IndexPath(item: 0, section: row)
+                with: IndexPath(item: 0, section: row),
             )
             attributes.frame = geometry.rowFrame(row)
             attributes.color = table.stripeCellBackgroundColor
@@ -348,7 +348,7 @@
         private func separatorAttributes(row: Int) -> UICollectionViewLayoutAttributes {
             let attributes = TableSheetDecorationAttributes(
                 forDecorationViewOfKind: Self.separatorKind,
-                with: IndexPath(item: 0, section: row)
+                with: IndexPath(item: 0, section: row),
             )
             let frame = geometry.rowFrame(row)
             attributes.frame = CGRect(x: frame.minX, y: frame.maxY - hairline, width: frame.width, height: hairline)
@@ -443,7 +443,7 @@
             glyphView.image = configuration.sortSymbol.flatMap {
                 UIImage(
                     systemName: $0,
-                    withConfiguration: UIImage.SymbolConfiguration(pointSize: TableHeaderAccessory.glyphSize - 2, weight: .semibold)
+                    withConfiguration: UIImage.SymbolConfiguration(pointSize: TableHeaderAccessory.glyphSize - 2, weight: .semibold),
                 )
             }
             setNeedsLayout()
@@ -460,7 +460,7 @@
                 x: minX,
                 y: (bounds.height - configuration.textHeight) / 2,
                 width: max(0, maxX - minX - accessory),
-                height: configuration.textHeight
+                height: configuration.textHeight,
             )
             let glyph = TableHeaderAccessory.glyphSize
             glyphView.frame = CGRect(x: maxX - glyph, y: bounds.midY - glyph / 2, width: glyph, height: glyph)

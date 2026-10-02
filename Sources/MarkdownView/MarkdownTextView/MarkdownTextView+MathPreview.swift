@@ -16,7 +16,7 @@
             guard let image = MathRenderer.renderToImage(
                 latex: latexContent,
                 fontSize: previewFontSize,
-                textColor: theme.colors.body
+                textColor: theme.colors.body,
             ) else {
                 print("[MarkdownView] Failed to render LaTeX for preview: \(latexContent)")
                 return
@@ -68,7 +68,7 @@
             view.backgroundColor = .systemBackground
             navigationItem.rightBarButtonItem = UIBarButtonItem(
                 systemItem: .close,
-                primaryAction: UIAction { [weak self] _ in self?.dismiss(animated: true) }
+                primaryAction: UIAction { [weak self] _ in self?.dismiss(animated: true) },
             )
 
             scrollView.delegate = self
@@ -92,7 +92,7 @@
             let fit = min(
                 1,
                 max(1, frame.width - padding * 2) / max(1, image.size.width),
-                max(1, frame.height - padding * 2) / max(1, image.size.height)
+                max(1, frame.height - padding * 2) / max(1, image.size.height),
             )
             scrollView.minimumZoomScale = fit
             scrollView.maximumZoomScale = max(fit * 4, 2)
@@ -115,7 +115,7 @@
                 top: max(0, (size.height - content.height) / 2),
                 left: max(0, (size.width - content.width) / 2),
                 bottom: 0,
-                right: 0
+                right: 0,
             )
         }
     }

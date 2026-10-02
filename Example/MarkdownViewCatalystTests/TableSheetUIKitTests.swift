@@ -1,5 +1,5 @@
-@testable import MarkdownView
 import MarkdownParser
+@testable import MarkdownView
 import Testing
 import UIKit
 
@@ -36,8 +36,8 @@ struct TableSheetUIKitTests {
         sheet.collectionView.cellForItem(at: IndexPath(item: column, section: row)) as? TableSheetCell
     }
 
-    @Test("Every row and column is laid out, filling the width")
-    func cellsFillTheSheet() throws {
+    @Test
+    func `Every row and column is laid out, filling the width`() throws {
         let (window, sheet) = try makeSheet()
         let collection = sheet.collectionView
         #expect(collection.numberOfSections == 5)
@@ -51,8 +51,8 @@ struct TableSheetUIKitTests {
         withExtendedLifetime(window) {}
     }
 
-    @Test("The header stays at the top while the rows scroll under it")
-    func headerIsPinned() throws {
+    @Test
+    func `The header stays at the top while the rows scroll under it`() throws {
         let (window, sheet) = try makeSheet(size: CGSize(width: 600, height: 220))
         let collection = sheet.collectionView
         collection.contentOffset.y = 60 - collection.adjustedContentInset.top
@@ -63,8 +63,8 @@ struct TableSheetUIKitTests {
         withExtendedLifetime(window) {}
     }
 
-    @Test("Tapping a header sorts the rows by it, and again reverses them")
-    func headerTapSorts() throws {
+    @Test
+    func `Tapping a header sorts the rows by it, and again reverses them`() throws {
         let (window, sheet) = try makeSheet()
         let header = IndexPath(item: 1, section: 0)
         sheet.collectionView(sheet.collectionView, didSelectItemAt: header)
@@ -79,8 +79,8 @@ struct TableSheetUIKitTests {
         withExtendedLifetime(window) {}
     }
 
-    @Test("The sheet renders in light and dark appearance")
-    func snapshots() throws {
+    @Test
+    func `The sheet renders in light and dark appearance`() throws {
         for style in [UIUserInterfaceStyle.light, .dark] {
             let (window, sheet) = try makeSheet()
             window.overrideUserInterfaceStyle = style

@@ -18,7 +18,7 @@ struct BenchmarkCase {
         name: String,
         operations: Int = 1,
         iterationLimit: Int? = nil,
-        run: @escaping @MainActor (_ iterations: Int) -> Void
+        run: @escaping @MainActor (_ iterations: Int) -> Void,
     ) {
         self.name = name
         self.operations = operations
@@ -40,7 +40,7 @@ struct MarkdownViewBenchmark {
         for benchmark in cases {
             let iterations = min(
                 configuration.iterations,
-                benchmark.iterationLimit ?? .max
+                benchmark.iterationLimit ?? .max,
             )
             for _ in 0 ..< configuration.warmupIterations {
                 benchmark.run(1)
@@ -60,7 +60,7 @@ struct MarkdownViewBenchmark {
                     + " avg_ms=\(format(averageMilliseconds))"
                     + " op_ms=\(format(operationMilliseconds))"
                     + " iterations=\(iterations)"
-                    + " ops=\(benchmark.operations)"
+                    + " ops=\(benchmark.operations)",
             )
         }
     }
@@ -92,7 +92,7 @@ struct MarkdownViewBenchmark {
                         _ = CodeHighlighter.current.highlight(
                             key: nextKey,
                             content: source,
-                            language: language
+                            language: language,
                         )
                     }
                 }
@@ -114,11 +114,11 @@ struct MarkdownViewBenchmark {
         let tableHeavyParsed = parser.parse(tableHeavyMarkdown)
         let preprocessed = MarkdownContent(
             parserResult: parsed,
-            theme: theme
+            theme: theme,
         )
         let tableHeavyPreprocessed = MarkdownContent(
             parserResult: tableHeavyParsed,
-            theme: theme
+            theme: theme,
         )
 
         return [
@@ -135,7 +135,7 @@ struct MarkdownViewBenchmark {
                         let result = parser.parse(markdown)
                         _ = MarkdownContent(
                             parserResult: result,
-                            theme: theme
+                            theme: theme,
                         )
                     }
                 }
@@ -250,12 +250,12 @@ struct MarkdownViewBenchmark {
         for sections in [4, 16] {
             let prefixes = streamingPrefixes(
                 of: benchmarkDocument(sections: sections),
-                updates: 120
+                updates: 120,
             )
             cases.append(BenchmarkCase(
                 name: "stream/\(sections)",
                 operations: prefixes.count,
-                iterationLimit: 3
+                iterationLimit: 3,
             ) { iterations in
                 for _ in 0 ..< iterations {
                     let view = MarkdownTextView()
@@ -263,7 +263,7 @@ struct MarkdownViewBenchmark {
                         autoreleasepool {
                             let content = MarkdownContent(
                                 parserResult: parser.parse(prefix),
-                                theme: theme
+                                theme: theme,
                             )
                             view.setContentImmediately(content)
                             _ = view.boundingSize(for: 600)
@@ -277,12 +277,12 @@ struct MarkdownViewBenchmark {
         // whole document. This is the worst update a reader ever waits on.
         let longPrefixes = Array(
             streamingPrefixes(of: benchmarkDocument(sections: 16), updates: 120)
-                .suffix(20)
+                .suffix(20),
         )
         cases.append(BenchmarkCase(
             name: "stream/tail_16",
             operations: longPrefixes.count,
-            iterationLimit: 5
+            iterationLimit: 5,
         ) { iterations in
             for _ in 0 ..< iterations {
                 let view = MarkdownTextView()
@@ -290,7 +290,7 @@ struct MarkdownViewBenchmark {
                     autoreleasepool {
                         let content = MarkdownContent(
                             parserResult: parser.parse(prefix),
-                            theme: theme
+                            theme: theme,
                         )
                         view.setContentImmediately(content)
                         _ = view.boundingSize(for: 600)
@@ -306,12 +306,12 @@ struct MarkdownViewBenchmark {
         for (rows, columns) in [(20, 5), (8, 5)] {
             let tablePrefixes = streamingPrefixes(
                 of: streamingTableMarkdown(rows: rows, columns: columns),
-                updates: 120
+                updates: 120,
             )
             cases.append(BenchmarkCase(
                 name: "stream/table_\(rows)x\(columns)",
                 operations: tablePrefixes.count,
-                iterationLimit: 5
+                iterationLimit: 5,
             ) { iterations in
                 for _ in 0 ..< iterations {
                     let view = MarkdownTextView()
@@ -319,7 +319,7 @@ struct MarkdownViewBenchmark {
                         autoreleasepool {
                             let content = MarkdownContent(
                                 parserResult: parser.parse(prefix),
-                                theme: theme
+                                theme: theme,
                             )
                             view.setContentImmediately(content)
                             _ = view.boundingSize(for: 600)
@@ -335,7 +335,7 @@ struct MarkdownViewBenchmark {
         cases.append(BenchmarkCase(
             name: "stream/quote_heavy",
             operations: quotePrefixes.count,
-            iterationLimit: 3
+            iterationLimit: 3,
         ) { iterations in
             for _ in 0 ..< iterations {
                 let view = MarkdownTextView()
@@ -343,7 +343,7 @@ struct MarkdownViewBenchmark {
                     autoreleasepool {
                         let content = MarkdownContent(
                             parserResult: parser.parse(prefix),
-                            theme: theme
+                            theme: theme,
                         )
                         view.setContentImmediately(content)
                         _ = view.boundingSize(for: 600)
@@ -364,7 +364,7 @@ struct MarkdownViewBenchmark {
             cases.append(BenchmarkCase(
                 name: "stream/hosted/\(name)",
                 operations: prefixes.count,
-                iterationLimit: 3
+                iterationLimit: 3,
             ) { iterations in
                 for _ in 0 ..< iterations {
                     let view = MarkdownTextView()
@@ -372,7 +372,7 @@ struct MarkdownViewBenchmark {
                         autoreleasepool {
                             let content = MarkdownContent(
                                 parserResult: parser.parse(prefix),
-                                theme: theme
+                                theme: theme,
                             )
                             view.setContentImmediately(content)
                             let height = view.boundingSize(for: 600).height
@@ -420,7 +420,7 @@ struct MarkdownViewBenchmark {
         var cases = shapes.map { name, markdown in
             let content = MarkdownContent(
                 parserResult: parser.parse(markdown),
-                theme: theme
+                theme: theme,
             )
             return BenchmarkCase(name: "shape/\(name)") { iterations in
                 let view = MarkdownTextView()
@@ -437,7 +437,7 @@ struct MarkdownViewBenchmark {
         // A regression here is invisible in every other case.
         let content = MarkdownContent(
             parserResult: parser.parse(benchmarkDocument(sections: 4)),
-            theme: theme
+            theme: theme,
         )
         cases.append(BenchmarkCase(name: "measure/repeat_width", operations: 8) { iterations in
             let view = MarkdownTextView()
@@ -479,7 +479,7 @@ struct MarkdownViewBenchmark {
             let content = MarkdownContent(
                 parserResult: parsed,
                 theme: theme,
-                locale: Locale(identifier: identifier)
+                locale: Locale(identifier: identifier),
             )
             return BenchmarkCase(name: "locale/\(identifier)") { iterations in
                 let view = MarkdownTextView()

@@ -33,7 +33,7 @@ extension MarkdownTextView {
         let artifacts = TextBuilder.build(
             view: self,
             viewProvider: viewProvider,
-            ownedContextViews: ownedContextViews
+            ownedContextViews: ownedContextViews,
         )
         textLabelView.attributedText = artifacts.document
         contextViews = artifacts.subviews

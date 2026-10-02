@@ -47,7 +47,7 @@ public struct WatchMarkdownView: View {
     public init(
         markdown: String,
         theme: WatchMarkdownTheme = .default,
-        contentWidth: CGFloat = 200
+        contentWidth: CGFloat = 200,
     ) {
         self.theme = theme
         self.contentWidth = contentWidth
@@ -58,7 +58,7 @@ public struct WatchMarkdownView: View {
     public init(
         blocks: [MarkdownBlockNode],
         theme: WatchMarkdownTheme = .default,
-        contentWidth: CGFloat = 200
+        contentWidth: CGFloat = 200,
     ) {
         content = .blocks(blocks)
         self.theme = theme
@@ -78,7 +78,7 @@ public struct WatchMarkdownView: View {
             blocks: resolvedBlocks,
             theme: theme,
             maxWidth: contentWidth,
-            scale: displayScale
+            scale: displayScale,
         )
         .build()
     }
@@ -87,9 +87,9 @@ public struct WatchMarkdownView: View {
     private var resolvedBlocks: [MarkdownBlockNode] {
         switch content {
         case let .blocks(blocks):
-            return blocks
+            blocks
         case let .markdown(markdown):
-            return Self.parsedBlocks(for: markdown)
+            Self.parsedBlocks(for: markdown)
         }
     }
 

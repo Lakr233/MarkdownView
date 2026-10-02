@@ -70,7 +70,7 @@ struct MarkdownLocaleLanguageTests {
                 .font: theme.fonts.body,
                 .foregroundColor: theme.colors.body,
                 .coreTextLanguage: identifier,
-            ]
+            ],
         )
         text.fixAttributes(in: NSRange(location: 0, length: text.length))
         return shape(of: text)
@@ -88,7 +88,7 @@ struct MarkdownLocaleLanguageTests {
         text.enumerateAttribute(
             .coreTextLanguage,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, _, _ in
             if let language = value as? String {
                 result.insert(language)
@@ -99,7 +99,6 @@ struct MarkdownLocaleLanguageTests {
 
     @MainActor
     @Test(
-        "A locale is folded by its language, script and region",
         arguments: [
             ("zh", "zh-Hans"),
             ("zh_CN", "zh-Hans"),
@@ -124,26 +123,25 @@ struct MarkdownLocaleLanguageTests {
             ("jam", "zh-Hans"),
             ("kok", "zh-Hans"),
             ("", "zh-Hans"),
-        ]
+        ],
     )
-    func localeIsFolded(identifier: String, expected: String) {
+    func `A locale is folded by its language, script and region`(identifier: String, expected: String) {
         #expect(MarkdownContentLocale.normalizedLanguage(Locale(identifier: identifier).language) == expected)
     }
 
     @MainActor
     @Test(
-        "Simplified Chinese leaves no language attribute, however the locale is spelled",
-        arguments: ["zh", "zh_CN", "zh_SG", "zh-Hans-CN", "zh-Hans"]
+        arguments: ["zh", "zh_CN", "zh_SG", "zh-Hans-CN", "zh-Hans"],
     )
-    func simplifiedDropsTheAttribute(identifier: String) {
+    func `Simplified Chinese leaves no language attribute, however the locale is spelled`(identifier: String) {
         let text = rendered("简体中文 mixed 汉字。", locale: identifier)
         #expect(text.string == "简体中文 mixed 汉字。")
         #expect(languages(in: text).isEmpty)
     }
 
     @MainActor
-    @Test("Traditional Chinese keeps its attribute, with its region")
-    func traditionalKeepsTheAttribute() {
+    @Test
+    func `Traditional Chinese keeps its attribute, with its region`() {
         // Dropping it would change the glyph of four in ten ideographs, so it
         // stays; the region stays with it, because Hong Kong and Macau have
         // fonts of their own.
@@ -155,13 +153,12 @@ struct MarkdownLocaleLanguageTests {
 
     @MainActor
     @Test(
-        "Folding the locale draws every ideograph exactly as the raw locale did",
         arguments: [
             "zh", "zh_CN", "zh_SG", "zh-Hans-CN", "zh-Hans_HK",
             "zh-Hant", "zh_TW", "zh-Hant-TW", "zh-Hant_US", "zh_HK", "zh_MO",
-        ]
+        ],
     )
-    func foldingDoesNotChangeTheGlyphs(identifier: String) {
+    func `Folding the locale draws every ideograph exactly as the raw locale did`(identifier: String) {
         let before = shapeWithRawLanguage(identifier)
         let after = shape(of: rendered(Self.han, locale: identifier))
 
@@ -172,8 +169,8 @@ struct MarkdownLocaleLanguageTests {
     }
 
     @MainActor
-    @Test("Simplified and Traditional readers never see each other's glyphs")
-    func scriptsDoNotCrossContaminate() {
+    @Test
+    func `Simplified and Traditional readers never see each other's glyphs`() {
         // Rendered alternately, so a cache keyed on the folded language rather
         // than the locale would hand one reader the other's text.
         let simplified = shape(of: rendered(Self.han, locale: "zh_CN"))
@@ -192,37 +189,37 @@ struct MarkdownLocaleLanguageTests {
     }
 
     @MainActor
-    @Test("A document under zh_CN is the document under zh-Hans, attribute for attribute")
-    func wholeDocumentMatchesSimplified() {
+    @Test
+    func `A document under zh_CN is the document under zh-Hans, attribute for attribute`() {
         let spelled = RenderProbe.show(
             RenderProbeDocument.everything,
             in: MarkdownTextView(),
-            locale: Locale(identifier: "zh_CN")
+            locale: Locale(identifier: "zh_CN"),
         )
         let canonical = RenderProbe.show(
             RenderProbeDocument.everything,
             in: MarkdownTextView(),
-            locale: Locale(identifier: "zh-Hans")
+            locale: Locale(identifier: "zh-Hans"),
         )
 
         let spelledDigest = RenderProbe.digest(spelled)
         let canonicalDigest = RenderProbe.digest(canonical)
         #expect(
             spelledDigest == canonicalDigest,
-            "\(RenderProbe.firstDifference(spelledDigest, canonicalDigest))"
+            "\(RenderProbe.firstDifference(spelledDigest, canonicalDigest))",
         )
         #expect(languages(in: spelled).isEmpty)
     }
 
     @MainActor
-    @Test("Copying a document reads the same text under every Chinese locale")
-    func copiedTextIsUnchanged() {
+    @Test
+    func `Copying a document reads the same text under every Chinese locale`() {
         func copied(_ identifier: String) -> String? {
             let view = MarkdownTextView()
             RenderProbe.show(
                 RenderProbeDocument.everything,
                 in: view,
-                locale: Locale(identifier: identifier)
+                locale: Locale(identifier: identifier),
             )
             view.textLabelView.selectAll()
             return view.textLabelView.selectedPlainText()

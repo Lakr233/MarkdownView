@@ -2,8 +2,8 @@ import MarkdownParser
 import Testing
 
 struct ParserRegressionTests {
-    @Test("Math placeholder next to a code span stays separate")
-    func mathPlaceholderNextToCodeSpanStaysSeparate() {
+    @Test
+    func `Math placeholder next to a code span stays separate`() {
         let result = MarkdownParser().parse("`a`$$x$$ and $$y$$`b`")
         let inlines = allInlines(in: result.document)
 
@@ -16,15 +16,15 @@ struct ParserRegressionTests {
         })
     }
 
-    @Test("Adjacent math placeholders stay separate")
-    func adjacentMathPlaceholdersStaySeparate() {
+    @Test
+    func `Adjacent math placeholders stay separate`() {
         let result = MarkdownParser().parse("$$a$$$$b$$")
 
         #expect(mathContents(in: allInlines(in: result.document)) == ["a", "b"])
     }
 
-    @Test("Backtick runs do not pair across paragraphs")
-    func backtickRunsDoNotPairAcrossParagraphs() {
+    @Test
+    func `Backtick runs do not pair across paragraphs`() {
         let result = MarkdownParser().parse("Press ` to open.\n\n$$x^2$$\n\nRun `ls`.")
         let inlines = allInlines(in: result.document)
 
@@ -32,8 +32,8 @@ struct ParserRegressionTests {
         #expect(inlines.contains(.code("ls")))
     }
 
-    @Test("Fenced code containing blank lines keeps math source")
-    func fencedCodeWithBlankLinesKeepsMathSource() {
+    @Test
+    func `Fenced code containing blank lines keeps math source`() {
         let markdown = "```\n`\n\n$$x$$\n```"
         let result = MarkdownParser().parse(markdown)
 
@@ -44,16 +44,16 @@ struct ParserRegressionTests {
         #expect(content == "`\n\n$$x$$\n")
     }
 
-    @Test("A fence opened after a list marker still pairs across blank lines")
-    func fenceAfterListMarkerPairsAcrossBlankLines() {
+    @Test
+    func `A fence opened after a list marker still pairs across blank lines`() {
         let markdown = "- ```\n  a\n\n  b\n  ```\n\n$$x$$\n\n```\nc\n```"
         let result = MarkdownParser().parse(markdown)
 
         #expect(mathContents(in: allInlines(in: result.document)) == ["x"])
     }
 
-    @Test("A line of digits inside a code span does not end it")
-    func digitLineDoesNotEndCodeSpan() {
+    @Test
+    func `A line of digits inside a code span does not end it`() {
         let result = MarkdownParser().parse("`a $$x$$\n2024\nb` then $$y$$")
         let inlines = allInlines(in: result.document)
 
@@ -61,8 +61,8 @@ struct ParserRegressionTests {
         #expect(mathContents(in: inlines) == ["y"])
     }
 
-    @Test("Code blocks keep math beside a backtick exactly as written")
-    func codeBlocksKeepMathBesideBacktickVerbatim() {
+    @Test
+    func `Code blocks keep math beside a backtick exactly as written`() {
         let indented = MarkdownParser().parse("    `a`$$x$$")
         guard case let .codeBlock(_, indentedContent) = indented.document.first else {
             Issue.record("Expected an indented code block")
@@ -78,8 +78,8 @@ struct ParserRegressionTests {
         #expect(tildeContent == "`a`$$x$$\n")
     }
 
-    @Test("An escaped backtick before math adds no space")
-    func escapedBacktickBeforeMathAddsNoSpace() {
+    @Test
+    func `An escaped backtick before math adds no space`() {
         let result = MarkdownParser().parse("\\`$$x$$")
         let inlines = allInlines(in: result.document)
 
@@ -87,8 +87,8 @@ struct ParserRegressionTests {
         #expect(mathContents(in: inlines) == ["x"])
     }
 
-    @Test("Nested lists mixing task and plain items stay homogeneous")
-    func nestedListsMixingTaskAndPlainItemsStayHomogeneous() {
+    @Test
+    func `Nested lists mixing task and plain items stay homogeneous`() {
         let result = MarkdownParser().parse("- a\n  - [ ] x\n  - y")
 
         guard case let .bulletedList(_, items) = result.document.first,
@@ -111,8 +111,8 @@ struct ParserRegressionTests {
         #expect(plainItems.count == 1)
     }
 
-    @Test("Blockquote inside a list inside a blockquote keeps its text")
-    func blockquoteInsideListInsideBlockquoteKeepsText() {
+    @Test
+    func `Blockquote inside a list inside a blockquote keeps its text`() {
         let result = MarkdownParser().parse("> - a\n>\n>   > b")
         let inlines = allInlines(in: result.document)
 
@@ -120,8 +120,8 @@ struct ParserRegressionTests {
         #expect(inlines.contains(.text("b")))
     }
 
-    @Test("Table inside a list inside a blockquote keeps its cells")
-    func tableInsideListInsideBlockquoteKeepsCells() {
+    @Test
+    func `Table inside a list inside a blockquote keeps its cells`() {
         let result = MarkdownParser().parse("> - a\n>\n>   | h |\n>   |---|\n>   | c |")
         let inlines = allInlines(in: result.document)
 
@@ -129,8 +129,8 @@ struct ParserRegressionTests {
         #expect(inlines.contains(.text("c")))
     }
 
-    @Test("Blockquote lifted out of a list holds only paragraphs")
-    func blockquoteLiftedOutOfListHoldsOnlyParagraphs() {
+    @Test
+    func `Blockquote lifted out of a list holds only paragraphs`() {
         let result = MarkdownParser().parse("1. step\n   > quote\n   > - a\n   >   - b")
         let quotes = result.document.compactMap { block -> [MarkdownBlockNode]? in
             guard case let .blockquote(children) = block else { return nil }
@@ -145,8 +145,8 @@ struct ParserRegressionTests {
         #expect(allInlines(in: result.document).contains(.text("b")))
     }
 
-    @Test("Block ranges handle CRLF line endings")
-    func blockRangesHandleCRLFLineEndings() {
+    @Test
+    func `Block ranges handle CRLF line endings`() {
         let markdown = "# a\r\n\r\nb\r\nc\r\n\r\nd"
         let ranges = MarkdownParser().parseBlockRange(markdown)
 

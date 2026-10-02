@@ -25,7 +25,7 @@ import SwiftUI
         func sizeThatFits(
             _ proposal: ProposedViewSize,
             uiView: MarkdownTextView,
-            context: Context
+            context: Context,
         ) -> CGSize? {
             context.coordinator.sizeThatFits(proposal, for: uiView)
         }
@@ -53,7 +53,7 @@ import SwiftUI
         func sizeThatFits(
             _ proposal: ProposedViewSize,
             nsView: MarkdownTextView,
-            context: Context
+            context: Context,
         ) -> CGSize? {
             context.coordinator.sizeThatFits(proposal, for: nsView)
         }

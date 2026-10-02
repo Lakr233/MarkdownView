@@ -16,8 +16,8 @@ struct CodeViewHighlightRetentionTests {
     }
 
     @MainActor
-    @Test("Streaming append keeps stale highlight until a fresh map arrives")
-    func streamingAppendKeepsStaleHighlight() {
+    @Test
+    func `Streaming append keeps stale highlight until a fresh map arrives`() {
         let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
         codeView.theme = .default
 
@@ -38,8 +38,8 @@ struct CodeViewHighlightRetentionTests {
     }
 
     @MainActor
-    @Test("Unrelated content drops the stale highlight")
-    func unrelatedContentDropsStaleHighlight() {
+    @Test
+    func `Unrelated content drops the stale highlight`() {
         let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
         codeView.theme = .default
 
@@ -52,8 +52,8 @@ struct CodeViewHighlightRetentionTests {
     }
 
     @MainActor
-    @Test("The theme's syntax colours colour the code")
-    func themeSyntaxColoursTheCode() {
+    @Test
+    func `The theme's syntax colours colour the code`() {
         let codeView = CodeView(frame: .init(x: 0, y: 0, width: 260, height: 160))
         var theme = MarkdownTheme.default
         theme.syntax.keyword = .systemGreen

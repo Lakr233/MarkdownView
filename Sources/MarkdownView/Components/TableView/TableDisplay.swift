@@ -62,14 +62,14 @@ struct TableHeaderSlot: Equatable {
             x: contentMinX,
             y: columnFrame.minY,
             width: textMaxX - contentMinX,
-            height: columnFrame.height
+            height: columnFrame.height,
         )
         let glyph = TableHeaderAccessory.glyphSize
         glyphFrame = CGRect(
             x: contentMaxX - glyph,
             y: columnFrame.midY - glyph / 2,
             width: glyph,
-            height: glyph
+            height: glyph,
         )
     }
 }

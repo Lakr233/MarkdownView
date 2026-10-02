@@ -61,7 +61,7 @@ extension CatalogSample {
         > If the type is only touched from the UI, `@MainActor` alone is enough — no actor needed.
 
         Let me know if you want the `async let` version too.
-        """
+        """,
     )
 
     static let paragraphs = CatalogSample(
@@ -77,7 +77,7 @@ extension CatalogSample {
         while a hard break (a trailing backslash) starts a new line.
 
         *A closing line in italics, as a footer would be.*
-        """
+        """,
     )
 
     static let inlineStyles = CatalogSample(
@@ -95,7 +95,7 @@ extension CatalogSample {
         Escapes stay literal: \\*not italic\\*, \\`not code\\`, \\# not a heading.
 
         Entities: &copy; &amp; &rarr; &mdash; &nbsp;and typographic quotes “like these”.
-        """
+        """,
     )
 
     static let headings = CatalogSample(
@@ -129,7 +129,7 @@ extension CatalogSample {
 
         Also supported
         --------------
-        """
+        """,
     )
 
     static let links = CatalogSample(
@@ -145,7 +145,7 @@ extension CatalogSample {
         A bare URL in text: https://github.com/Lakr233/MarkdownView
 
         [ref]: https://example.com
-        """
+        """,
     )
 
     static let lists = CatalogSample(
@@ -180,7 +180,7 @@ extension CatalogSample {
           ```sh
           swift build
           ```
-        """
+        """,
     )
 
     static let tasks = CatalogSample(
@@ -195,7 +195,7 @@ extension CatalogSample {
           - [x] Header row
           - [ ] Sorting
         - [ ] A task long enough to wrap onto a second line, to show how the checkbox aligns with the first line of text
-        """
+        """,
     )
 
     static let blockquotes = CatalogSample(
@@ -226,7 +226,7 @@ extension CatalogSample {
         > ```js
         > console.log("quoted")
         > ```
-        """
+        """,
     )
 
     static let codeBlocks = CatalogSample(
@@ -273,7 +273,7 @@ extension CatalogSample {
         ```
 
             An indented code block.
-        """
+        """,
     )
 
     static let tables = CatalogSample(
@@ -312,7 +312,7 @@ extension CatalogSample {
         | A | wide | table | with | many | columns | that | should | scroll | sideways | instead | of | squeezing |
         |---|------|-------|------|------|---------|------|--------|--------|----------|---------|----|-----------|
         | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 | 9 | 10 | 11 | 12 | 13 |
-        """
+        """,
     )
 
     static let math = CatalogSample(
@@ -330,7 +330,7 @@ extension CatalogSample {
         $$
         \\mathbf{A} = \\begin{pmatrix} a & b \\\\ c & d \\end{pmatrix}, \\quad \\det \\mathbf{A} = ad - bc
         $$
-        """
+        """,
     )
 
     static let thematicBreaks = CatalogSample(
@@ -348,7 +348,7 @@ extension CatalogSample {
         ***
 
         Text below the rule.
-        """
+        """,
     )
 
     static let narrow = CatalogSample(
@@ -362,7 +362,7 @@ extension CatalogSample {
         A long URL: https://example.com/a/very/long/path/that/keeps/going/and/going/without/any/spaces/to/break/at
 
         Pneumonoultramicroscopicsilicovolcanoconiosis is a long word too.
-        """
+        """,
     )
 
     static let multilingual = CatalogSample(
@@ -393,7 +393,7 @@ extension CatalogSample {
 
         - 🍎 Apple
         - 🍊 Orange
-        """
+        """,
     )
 
     static let nesting = CatalogSample(
@@ -414,7 +414,7 @@ extension CatalogSample {
            |----|---|------|
            | 1  | 2 | 3    |
         3. Final step
-        """
+        """,
     )
 
     static let everything = CatalogSample(
@@ -427,6 +427,6 @@ extension CatalogSample {
             blockquotes, codeBlocks, tables, math, thematicBreaks,
         ]
         .map { "# \($0.title)\n\n\($0.markdown)" }
-        .joined(separator: "\n\n---\n\n")
+        .joined(separator: "\n\n---\n\n"),
     )
 }

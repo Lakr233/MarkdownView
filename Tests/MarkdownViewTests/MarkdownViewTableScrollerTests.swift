@@ -15,10 +15,10 @@ import Testing
         """
 
         @MainActor
-        @Test("A scrolling table keeps its last row", arguments: [
+        @Test(arguments: [
             180.0 as CGFloat, 240, 320, 400, 480, 540, 720,
         ])
-        func scrollingTableKeepsItsLastRow(width: CGFloat) throws {
+        func `A scrolling table keeps its last row`(width: CGFloat) throws {
             let view = makeView(Self.markdown, width: width)
             let scrollView = try #require(tableScrollView(in: view))
             let documentView = try #require(scrollView.documentView)
@@ -35,8 +35,8 @@ import Testing
         }
 
         @MainActor
-        @Test("A table only scrolls when its columns outgrow the viewport")
-        func tableScrollsOnlyWhenColumnsOutgrowTheViewport() throws {
+        @Test
+        func `A table only scrolls when its columns outgrow the viewport`() throws {
             let narrow = makeView(Self.markdown, width: 320)
             let narrowScroll = try #require(tableScrollView(in: narrow))
             #expect(try #require(narrowScroll.documentView).frame.width > narrowScroll.contentView.bounds.width)
@@ -54,7 +54,7 @@ import Testing
         let view = MarkdownTextView()
         view.setContentImmediately(.init(
             parserResult: MarkdownParser().parse(markdown),
-            theme: .default
+            theme: .default,
         ))
         view.frame = .init(x: 0, y: 0, width: width, height: view.boundingSize(for: width).height)
         view.needsLayout = true

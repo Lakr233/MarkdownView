@@ -45,7 +45,7 @@ struct TableSheetContent {
                 guard let view = view() else { return }
                 FileExporter.export(csv, fileName: "table.csv", from: view)
             },
-            close: close
+            close: close,
         )
     }
 
@@ -83,13 +83,13 @@ struct TableSheetContent {
             let margin = TableSheetContentView.margin
             let size = CGSize(
                 width: min(960, max(420, tableView.naturalContentWidth + margin * 2)),
-                height: min(720, max(240, tableView.intrinsicContentHeight + margin * 2 + TableSheetContentView.barHeight))
+                height: min(720, max(240, tableView.intrinsicContentHeight + margin * 2 + TableSheetContentView.barHeight)),
             )
             super.init(
                 contentRect: CGRect(origin: .zero, size: size),
                 styleMask: [.titled, .resizable],
                 backing: .buffered,
-                defer: false
+                defer: false,
             )
             isReleasedWhenClosed = false
             minSize = CGSize(width: 320, height: 200)
@@ -97,7 +97,7 @@ struct TableSheetContent {
             self.contentView = contentView
             contentView.installMenu(content.menuActions(
                 from: { [weak contentView] in contentView },
-                close: { [weak self] in self?.close(nil) }
+                close: { [weak self] in self?.close(nil) },
             ))
             tableView.sortHandler = { [weak contentView] _ in
                 contentView?.needsLayout = true
@@ -158,12 +158,12 @@ struct TableSheetContent {
                 x: 0,
                 y: 0,
                 width: bounds.width,
-                height: max(0, bounds.height - Self.barHeight)
+                height: max(0, bounds.height - Self.barHeight),
             )
             if let menuButton {
                 menuButton.frame.origin = CGPoint(
                     x: bounds.width - margin - menuButton.frame.width,
-                    y: bounds.height - Self.barHeight + (Self.barHeight - menuButton.frame.height) / 2
+                    y: bounds.height - Self.barHeight + (Self.barHeight - menuButton.frame.height) / 2,
                 )
             }
             let width = max(0, scrollView.contentSize.width - margin * 2)
@@ -172,7 +172,7 @@ struct TableSheetContent {
                 x: 0,
                 y: 0,
                 width: scrollView.contentSize.width,
-                height: max(scrollView.contentSize.height, height + margin * 2)
+                height: max(scrollView.contentSize.height, height + margin * 2),
             )
             tableView.frame = CGRect(x: margin, y: margin, width: width, height: height)
         }

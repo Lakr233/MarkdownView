@@ -2,8 +2,8 @@ import MarkdownParser
 import Testing
 
 struct MathPreprocessingTests {
-    @Test("Inline dollar math splits text nodes")
-    func inlineDollarMathSplitsTextNodes() throws {
+    @Test
+    func `Inline dollar math splits text nodes`() throws {
         let result = MarkdownParser().parse("Before $x+y$ after")
         let paragraph = try #require(firstParagraph(in: result.document))
 
@@ -20,8 +20,8 @@ struct MathPreprocessingTests {
         #expect(replacementIdentifier == MarkdownParser.replacementText(for: .math, identifier: "0"))
     }
 
-    @Test("Fenced code blocks preserve math source text")
-    func fencedCodeBlocksPreserveMathSourceText() throws {
+    @Test
+    func `Fenced code blocks preserve math source text`() throws {
         let markdown = """
         ```latex
         $$x+y$$
@@ -35,8 +35,8 @@ struct MathPreprocessingTests {
         #expect(!codeBlock.content.contains("md://content"))
     }
 
-    @Test("Inline code spans preserve escaped math source text")
-    func inlineCodeSpansPreserveEscapedMathSourceText() throws {
+    @Test
+    func `Inline code spans preserve escaped math source text`() throws {
         let result = MarkdownParser().parse("`\\(x\\)` and \\(y\\)")
         let paragraph = try #require(firstParagraph(in: result.document))
 

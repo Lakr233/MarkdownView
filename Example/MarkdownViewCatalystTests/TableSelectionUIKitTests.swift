@@ -41,14 +41,14 @@ import Testing
             group.setSelection(
                 group.normalizedSelection(
                     from: .init(member: start.0, offset: start.1),
-                    to: .init(member: end.0, offset: end.1)
+                    to: .init(member: end.0, offset: end.1),
                 ),
-                presentsMenu: false
+                presentsMenu: false,
             )
         }
 
-        @Test("A selection runs across cells and copies them as a grid")
-        func selectionRunsAcrossCells() throws {
+        @Test
+        func `A selection runs across cells and copies them as a grid`() throws {
             let (window, view) = render(Self.document)
             defer { window.isHidden = true }
             let table = try #require(view.contextViews.compactMap { $0 as? TableView }.first)
@@ -59,8 +59,8 @@ import Testing
             #expect(table.cellViews[4].selectionRange == NSRange(location: 0, length: 2))
         }
 
-        @Test("The edit menu adds Copy as Markdown after the system's commands")
-        func editMenuAddsCopyAsMarkdown() throws {
+        @Test
+        func `The edit menu adds Copy as Markdown after the system's commands`() throws {
             guard #available(iOS 16.0, macCatalyst 16.0, *) else { return }
             let (window, view) = render(Self.document)
             defer { window.isHidden = true }
@@ -70,7 +70,7 @@ import Testing
             let copy = UIAction(title: "Copy") { _ in }
             let menu = try #require(table.textSelectionGroup(
                 table.selectionGroup,
-                editMenuForSuggestedActions: [copy]
+                editMenuForSuggestedActions: [copy],
             ))
             #expect(menu.children.first === copy)
             let markdownAction = try #require(menu.children.last as? UIAction)

@@ -27,7 +27,7 @@ struct TableLayoutMetrics: Equatable {
         maximumColumnWidth: 280,
         horizontalCellPadding: 9,
         verticalCellPadding: 7,
-        minimumRowHeight: 38
+        minimumRowHeight: 38,
     )
 
     static let regular = TableLayoutMetrics(
@@ -35,7 +35,7 @@ struct TableLayoutMetrics: Equatable {
         maximumColumnWidth: 320,
         horizontalCellPadding: 10,
         verticalCellPadding: 8,
-        minimumRowHeight: 38
+        minimumRowHeight: 38,
     )
 
     var maximumTextWidth: CGFloat {
@@ -74,7 +74,7 @@ struct TableLayoutMetrics: Equatable {
                 isHeader: Bool,
                 alignment: RawTableColumnAlignment,
                 maximumTextWidth: CGFloat,
-                accessoryWidth: CGFloat
+                accessoryWidth: CGFloat,
             ) -> Bool {
                 self.isHeader == isHeader
                     && self.alignment == alignment
@@ -110,7 +110,7 @@ struct TableLayoutMetrics: Equatable {
             columnAlignments: [RawTableColumnAlignment] = [],
             headerAccessoryWidths: [CGFloat] = [],
             in containerView: PlatformView,
-            metrics: TableLayoutMetrics
+            metrics: TableLayoutMetrics,
         ) {
             metrics.validate()
 
@@ -123,7 +123,7 @@ struct TableLayoutMetrics: Equatable {
             }
 
             let (requiredCellCount, countOverflow) = numberOfRows.multipliedReportingOverflow(
-                by: numberOfColumns
+                by: numberOfColumns,
             )
             guard !countOverflow else {
                 assertionFailure("Markdown table cell count overflowed Int.")
@@ -158,7 +158,7 @@ struct TableLayoutMetrics: Equatable {
                         alignment: columnAlignments[safe: column] ?? .none,
                         accessoryWidth: accessoryWidth,
                         metrics: metrics,
-                        in: containerView
+                        in: containerView,
                     )
                     cellSizes[index] = cellSize
                     rowHeight = max(rowHeight, cellSize.height)
@@ -197,7 +197,7 @@ struct TableLayoutMetrics: Equatable {
             alignment: RawTableColumnAlignment,
             accessoryWidth: CGFloat,
             metrics: TableLayoutMetrics,
-            in containerView: PlatformView
+            in containerView: PlatformView,
         ) -> CGSize {
             let cell: TextLabelView
 
@@ -227,7 +227,7 @@ struct TableLayoutMetrics: Equatable {
                 isHeader: isHeader,
                 alignment: alignment,
                 maximumTextWidth: maximumTextWidth,
-                accessoryWidth: accessoryWidth
+                accessoryWidth: accessoryWidth,
             ) {
                 return record.size
             }
@@ -236,7 +236,7 @@ struct TableLayoutMetrics: Equatable {
             let styledText = TableCellStyle(theme: theme).styledText(
                 from: attributedText,
                 isHeader: isHeader,
-                alignment: alignment
+                alignment: alignment,
             )
             cell.isSelectable = true
             if cell.preferredMaxLayoutWidth != maximumTextWidth {
@@ -252,7 +252,7 @@ struct TableLayoutMetrics: Equatable {
                 alignment: alignment,
                 maximumTextWidth: maximumTextWidth,
                 accessoryWidth: accessoryWidth,
-                size: size
+                size: size,
             )
             return size
         }
@@ -280,7 +280,7 @@ struct TableLayoutMetrics: Equatable {
         private func calculateCellSize(
             for cell: TextLabelView,
             accessoryWidth: CGFloat,
-            metrics: TableLayoutMetrics
+            metrics: TableLayoutMetrics,
         ) -> CGSize {
             let contentSize = cell.intrinsicContentSize
             let paddedWidth = ceil(contentSize.width) + accessoryWidth + metrics.horizontalCellPadding * 2
@@ -288,9 +288,9 @@ struct TableLayoutMetrics: Equatable {
             return CGSize(
                 width: min(
                     metrics.maximumColumnWidth,
-                    max(metrics.minimumColumnWidth, paddedWidth)
+                    max(metrics.minimumColumnWidth, paddedWidth),
                 ),
-                height: max(metrics.minimumRowHeight, paddedHeight)
+                height: max(metrics.minimumRowHeight, paddedHeight),
             )
         }
     }

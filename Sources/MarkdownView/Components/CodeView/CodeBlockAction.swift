@@ -29,7 +29,7 @@ public struct CodeBlockAction {
     public init(
         title: String,
         systemImage: String,
-        handler: @escaping @MainActor (CodeBlock) -> Void
+        handler: @escaping @MainActor (CodeBlock) -> Void,
     ) {
         self.title = title
         self.systemImage = systemImage

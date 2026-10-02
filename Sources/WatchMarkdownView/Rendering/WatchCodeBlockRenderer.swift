@@ -22,7 +22,7 @@ enum WatchCodeBlockRenderer {
         code: String,
         theme: WatchMarkdownTheme,
         maxWidth: CGFloat,
-        scale: CGFloat
+        scale: CGFloat,
     ) -> Result {
         var hasher = Hasher()
         hasher.combine(code)
@@ -46,7 +46,7 @@ enum WatchCodeBlockRenderer {
         code: String,
         theme: WatchMarkdownTheme,
         maxWidth: CGFloat,
-        scale: CGFloat
+        scale: CGFloat,
     ) -> Result {
         let trimmed = trimTrailingCharacters(in: code, set: .whitespacesAndNewlines)
         let attributed = NSAttributedString(
@@ -54,7 +54,7 @@ enum WatchCodeBlockRenderer {
             attributes: [
                 kCTFontAttributeName as NSAttributedString.Key: theme.codeFont,
                 kCTForegroundColorAttributeName as NSAttributedString.Key: theme.codeColor,
-            ]
+            ],
         )
 
         let padding = theme.tableCellPadding
@@ -62,7 +62,7 @@ enum WatchCodeBlockRenderer {
         let measured = measureSize(attributed, maxWidth: textWidth)
         let size = CGSize(
             width: min(maxWidth, max(padding * 2 + measured.width, 1)),
-            height: max(padding * 2 + measured.height, theme.bodySize + padding * 2)
+            height: max(padding * 2 + measured.height, theme.bodySize + padding * 2),
         )
 
         let pixelWidth = Int(ceil(size.width * scale))
@@ -80,7 +80,7 @@ enum WatchCodeBlockRenderer {
             bytesPerRow: 0,
             space: colorSpace,
             bitmapInfo: CGImageAlphaInfo.premultipliedFirst.rawValue
-                | CGBitmapInfo.byteOrder32Little.rawValue
+                | CGBitmapInfo.byteOrder32Little.rawValue,
         ) else {
             return Result(image: nil, size: .zero)
         }
@@ -94,7 +94,7 @@ enum WatchCodeBlockRenderer {
             roundedRect: backgroundRect,
             cornerWidth: 6,
             cornerHeight: 6,
-            transform: nil
+            transform: nil,
         )
         context.addPath(backgroundPath)
         context.setFillColor(theme.codeBackgroundColor)
@@ -117,7 +117,7 @@ enum WatchCodeBlockRenderer {
             CFRangeMake(0, 0),
             nil,
             constraints,
-            nil
+            nil,
         )
         return CGSize(width: ceil(size.width), height: ceil(size.height))
     }

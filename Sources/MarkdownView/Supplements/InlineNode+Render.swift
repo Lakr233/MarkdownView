@@ -21,7 +21,7 @@ extension [MarkdownInlineNode] {
         theme: MarkdownTheme,
         context: MarkdownContent,
         viewProvider: ReusableViewProvider,
-        decoration: TextBuilder.InlineTextDecoration? = nil
+        decoration: TextBuilder.InlineTextDecoration? = nil,
     ) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
         for node in self {
@@ -29,7 +29,7 @@ extension [MarkdownInlineNode] {
                 theme: theme,
                 context: context,
                 viewProvider: viewProvider,
-                decoration: decoration
+                decoration: decoration,
             ))
         }
         return result
@@ -42,7 +42,7 @@ extension MarkdownInlineNode {
         theme: MarkdownTheme,
         context: MarkdownContent,
         viewProvider: ReusableViewProvider,
-        decoration: TextBuilder.InlineTextDecoration? = nil
+        decoration: TextBuilder.InlineTextDecoration? = nil,
     ) -> NSAttributedString {
         assert(Thread.isMainThread)
         switch self {
@@ -71,7 +71,7 @@ extension MarkdownInlineNode {
                     .underlineStyle: NSUnderlineStyle.thick.rawValue,
                     .underlineColor: theme.colors.emphasis,
                 ],
-                range: NSRange(location: 0, length: ans.length)
+                range: NSRange(location: 0, length: ans.length),
             )
             return ans
         case let .strong(children):
@@ -105,7 +105,7 @@ extension MarkdownInlineNode {
                 .forEach { ans.append($0) }
             ans.addAttributes(
                 [.strikethroughStyle: NSUnderlineStyle.thick.rawValue],
-                range: NSRange(location: 0, length: ans.length)
+                range: NSRange(location: 0, length: ans.length),
             )
             return ans
         case let .link(destination, children):
@@ -118,7 +118,7 @@ extension MarkdownInlineNode {
                     .link: destination,
                     .foregroundColor: theme.colors.highlight,
                 ],
-                range: NSRange(location: 0, length: ans.length)
+                range: NSRange(location: 0, length: ans.length),
             )
             return ans
         case let .image(source, _): // children => alternative text can be ignored?
@@ -128,7 +128,7 @@ extension MarkdownInlineNode {
                     .link: source,
                     .font: theme.fonts.body,
                     .foregroundColor: theme.colors.body,
-                ]
+                ],
             )
         case let .math(content, replacementIdentifier):
             // Get LaTeX content from rendered context or fallback to raw content
@@ -166,7 +166,7 @@ extension MarkdownInlineNode {
                         x: lineOrigin.x + runOffsetX,
                         y: lineOrigin.y,
                         width: drawSize.width,
-                        height: drawSize.height
+                        height: drawSize.height,
                     )
 
                     context.saveGState()
@@ -206,7 +206,7 @@ extension MarkdownInlineNode {
 
                 return NSAttributedString(
                     string: TextLabel.Attachment.replacementText,
-                    attributes: attributes
+                    attributes: attributes,
                 )
             } else {
                 // Fallback: render failed, show original LaTeX as inline code

@@ -50,20 +50,20 @@ extension MarkdownBlockNode {
             if unsafeNode.children.contains(where: \.isTaskListItem) {
                 self = .taskList(
                     isTight: unsafeNode.isTightList,
-                    items: unsafeNode.children.map(RawTaskListItem.init(unsafeNode:))
+                    items: unsafeNode.children.map(RawTaskListItem.init(unsafeNode:)),
                 )
             } else {
                 switch unsafeNode.listType {
                 case CMARK_BULLET_LIST:
                     self = .bulletedList(
                         isTight: unsafeNode.isTightList,
-                        items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
+                        items: unsafeNode.children.map(RawListItem.init(unsafeNode:)),
                     )
                 case CMARK_ORDERED_LIST:
                     self = .numberedList(
                         isTight: unsafeNode.isTightList,
                         start: unsafeNode.listStart,
-                        items: unsafeNode.children.map(RawListItem.init(unsafeNode:))
+                        items: unsafeNode.children.map(RawListItem.init(unsafeNode:)),
                     )
                 default:
                     fatalError("cmark reported a list node without a list type.")
@@ -78,12 +78,12 @@ extension MarkdownBlockNode {
         case .heading:
             self = .heading(
                 level: unsafeNode.headingLevel,
-                content: unsafeNode.children.compactMap(MarkdownInlineNode.init(unsafeNode:))
+                content: unsafeNode.children.compactMap(MarkdownInlineNode.init(unsafeNode:)),
             )
         case .table:
             self = .table(
                 columnAlignments: unsafeNode.tableAlignments,
-                rows: unsafeNode.children.map(RawTableRow.init(unsafeNode:))
+                rows: unsafeNode.children.map(RawTableRow.init(unsafeNode:)),
             )
         case .thematicBreak:
             self = .thematicBreak
@@ -110,7 +110,7 @@ extension RawTaskListItem {
         }
         self.init(
             isCompleted: unsafeNode.isTaskListItemChecked,
-            children: unsafeNode.children.flatMap(MarkdownBlockNode.makeBlocks(unsafeNode:))
+            children: unsafeNode.children.flatMap(MarkdownBlockNode.makeBlocks(unsafeNode:)),
         )
     }
 }
@@ -155,12 +155,12 @@ extension MarkdownInlineNode {
         case .link:
             self = .link(
                 destination: unsafeNode.url ?? "",
-                children: unsafeNode.children.compactMap(MarkdownInlineNode.init(unsafeNode:))
+                children: unsafeNode.children.compactMap(MarkdownInlineNode.init(unsafeNode:)),
             )
         case .image:
             self = .image(
                 source: unsafeNode.url ?? "",
-                children: unsafeNode.children.compactMap(MarkdownInlineNode.init(unsafeNode:))
+                children: unsafeNode.children.compactMap(MarkdownInlineNode.init(unsafeNode:)),
             )
         default:
             assertionFailure("Unhandled node type '\(unsafeNode.nodeType)' in InlineNode.")

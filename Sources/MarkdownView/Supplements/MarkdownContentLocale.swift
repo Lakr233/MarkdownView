@@ -28,7 +28,7 @@ enum MarkdownContentLocale {
 
     static func applyLanguageAttributes(
         to attributedString: NSMutableAttributedString,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) {
         guard attributedString.length > 0 else { return }
 
@@ -37,7 +37,7 @@ enum MarkdownContentLocale {
             attributedString.addAttribute(
                 .coreTextLanguage,
                 value: language,
-                range: range
+                range: range,
             )
         }
     }
@@ -51,7 +51,7 @@ enum MarkdownContentLocale {
     /// through here rather than being left to the pass over the document.
     static func resolveFonts(
         in attributedString: NSMutableAttributedString,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) {
         applyLanguageAttributes(to: attributedString, fallbackLocale: fallbackLocale)
         let fullRange = NSRange(location: 0, length: attributedString.length)
@@ -88,7 +88,7 @@ enum MarkdownContentLocale {
 
     static func dominantLanguageIdentifier(
         for text: String,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) -> String? {
         let scriptLanguage = scriptLanguageIdentifier(for: text, fallbackLocale: fallbackLocale)
         if scriptLanguage != nil {
@@ -107,7 +107,7 @@ enum MarkdownContentLocale {
     private static func languageIdentifier(
         for character: Character,
         token: LanguageToken?,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) -> String? {
         if let token, character.unicodeScalars.contains(where: { isHan($0.value) }) {
             if token.containsKana {
@@ -122,14 +122,14 @@ enum MarkdownContentLocale {
 
     private static func scriptLanguageIdentifier(
         for text: String,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) -> String? {
         scriptLanguageIdentifier(scalars: text.unicodeScalars, fallbackLocale: fallbackLocale)
     }
 
     private static func scriptLanguageIdentifier(
         scalars: some Sequence<Unicode.Scalar>,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) -> String? {
         var containsHan = false
         var containsArabic = false
@@ -236,7 +236,7 @@ enum MarkdownContentLocale {
 
     private static func cachedLanguageRuns(
         for string: String,
-        fallbackLocale: Locale
+        fallbackLocale: Locale,
     ) -> [(NSRange, String)] {
         let key = "\(fallbackLocale.identifier)|\(string)" as NSString
         if let cached = cache.object(forKey: key) {
@@ -266,7 +266,7 @@ enum MarkdownContentLocale {
             let language = languageIdentifier(
                 for: character,
                 token: token,
-                fallbackLocale: fallbackLocale
+                fallbackLocale: fallbackLocale,
             )
             if language != currentLanguage {
                 flush(until: range.location)
@@ -318,7 +318,7 @@ enum MarkdownContentLocale {
                 currentToken = LanguageToken(
                     range: range,
                     containsKana: containsKana,
-                    containsHangul: containsHangul
+                    containsHangul: containsHangul,
                 )
             }
         }

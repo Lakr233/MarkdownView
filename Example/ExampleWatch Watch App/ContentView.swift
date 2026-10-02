@@ -73,7 +73,7 @@ private extension String {
     func completedForStreamingPreview() -> String {
         let fenceCount = split(
             separator: "\n",
-            omittingEmptySubsequences: false
+            omittingEmptySubsequences: false,
         )
         .count(where: {
             $0.trimmingCharacters(in: .whitespaces).hasPrefix("```")

@@ -22,7 +22,7 @@ struct TableCellStyle {
     func styledText(
         from source: NSAttributedString,
         isHeader: Bool,
-        alignment: RawTableColumnAlignment
+        alignment: RawTableColumnAlignment,
     ) -> NSAttributedString {
         guard let attributedText = source.mutableCopy() as? NSMutableAttributedString else {
             return source
@@ -46,7 +46,7 @@ struct TableCellStyle {
             attributedText.addAttribute(
                 .foregroundColor,
                 value: theme.colors.body,
-                range: subRange
+                range: subRange,
             )
         }
 
@@ -70,7 +70,7 @@ struct TableCellStyle {
 
     private func applyParagraphStyle(
         to attributedText: NSMutableAttributedString,
-        alignment: RawTableColumnAlignment
+        alignment: RawTableColumnAlignment,
     ) {
         let range = NSRange(location: 0, length: attributedText.length)
         let textAlignment: NSTextAlignment = switch alignment {
@@ -95,7 +95,7 @@ struct TableCellStyle {
             attributedText.addAttribute(
                 .paragraphStyle,
                 value: paragraphStyle,
-                range: subRange
+                range: subRange,
             )
         }
     }

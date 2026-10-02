@@ -27,7 +27,7 @@ struct TableRowLimit: Equatable {
     init(
         rowCount: Int,
         truncationThreshold: Int = Self.truncationThreshold,
-        maximumVisibleRows: Int = Self.maximumVisibleRows
+        maximumVisibleRows: Int = Self.maximumVisibleRows,
     ) {
         let contentRows = max(0, rowCount - 1)
         visibleRowCount = contentRows > truncationThreshold
@@ -61,6 +61,7 @@ enum TableSymbol {
             "arrow.up.left.and.arrow.down.right"
         }
     }
+
     static let sortAscending = "chevron.up"
     static let sortDescending = "chevron.down"
 }

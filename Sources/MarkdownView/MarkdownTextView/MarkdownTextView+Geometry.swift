@@ -18,7 +18,7 @@ extension MarkdownTextView {
             x: textLabelView.frame.minX + rect.minX,
             y: textLabelView.frame.minY + textLabelView.bounds.height - rect.maxY,
             width: rect.width,
-            height: rect.height
+            height: rect.height,
         )
     }
 
@@ -43,7 +43,7 @@ extension MarkdownTextView {
                     x: textLabelView.frame.minX,
                     y: $0.minY,
                     width: BlockquoteBarView.width,
-                    height: $0.height
+                    height: $0.height,
                 )
             }
     }

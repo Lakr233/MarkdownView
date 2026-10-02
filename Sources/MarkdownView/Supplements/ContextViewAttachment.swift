@@ -40,10 +40,6 @@ final class ContextViewAttachment: TextLabel.Attachment, Hashable {
         let theme: MarkdownTheme
         /// The size the view asked for, and so the room the text reserves.
         let size: CGSize
-
-        static func == (lhs: Appearance, rhs: Appearance) -> Bool {
-            lhs.size == rhs.size && lhs.kind == rhs.kind && lhs.theme == rhs.theme
-        }
     }
 
     /// What copying the block yields. Immutable: a copy is taken on the way in.
@@ -61,7 +57,7 @@ final class ContextViewAttachment: TextLabel.Attachment, Hashable {
     init(representation: NSAttributedString, appearance: Appearance) {
         payload = .init(
             representation: representation.copy() as! NSAttributedString,
-            appearance: appearance
+            appearance: appearance,
         )
         super.init()
     }
@@ -71,7 +67,9 @@ final class ContextViewAttachment: TextLabel.Attachment, Hashable {
     }
 
     nonisolated static func == (lhs: ContextViewAttachment, rhs: ContextViewAttachment) -> Bool {
-        if lhs === rhs { return true }
+        if lhs === rhs {
+            return true
+        }
         return lhs.payload.appearance == rhs.payload.appearance
             && lhs.payload.representation.isEqual(to: rhs.payload.representation)
     }
@@ -89,7 +87,7 @@ extension ContextViewAttachment.Appearance {
         .init(
             kind: .code(language: codeView.language, content: codeView.content),
             theme: codeView.theme,
-            size: codeView.intrinsicContentSize
+            size: codeView.intrinsicContentSize,
         )
     }
 
@@ -98,7 +96,7 @@ extension ContextViewAttachment.Appearance {
         .init(
             kind: .table(cells: tableView.contents, columnAlignments: tableView.columnAlignments),
             theme: tableView.theme,
-            size: CGSize(width: tableView.naturalContentWidth, height: tableView.intrinsicContentHeight)
+            size: CGSize(width: tableView.naturalContentWidth, height: tableView.intrinsicContentHeight),
         )
     }
 }

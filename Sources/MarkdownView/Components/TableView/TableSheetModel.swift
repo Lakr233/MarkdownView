@@ -59,7 +59,7 @@ struct TableSheetModel {
                 let text = style.styledText(
                     from: source,
                     isHeader: isHeader,
-                    alignment: content.columnAlignments[safe: column] ?? .none
+                    alignment: content.columnAlignments[safe: column] ?? .none,
                 )
                 sizer.attributedText = text
                 let size = sizer.intrinsicContentSize

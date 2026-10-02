@@ -10,8 +10,8 @@ import Testing
 
 struct MarkdownViewSizingProbeTests {
     @MainActor
-    @Test("Zero-width probe does not report the concrete width as a minimum")
-    func zeroWidthProbeReportsSmallMinimum() throws {
+    @Test
+    func `Zero-width probe does not report the concrete width as a minimum`() throws {
         let view = MarkdownTextView()
         view.setContentImmediately(.init(markdown: """
         A paragraph long enough to wrap when narrow, repeated to gain both
@@ -20,7 +20,7 @@ struct MarkdownViewSizingProbeTests {
         let coordinator = MarkdownViewCoordinator()
 
         let concrete = try #require(coordinator.sizeThatFits(
-            ProposedViewSize(width: 800, height: nil), for: view
+            ProposedViewSize(width: 800, height: nil), for: view,
         ))
         #expect(concrete.width == 800)
 
@@ -28,14 +28,14 @@ struct MarkdownViewSizingProbeTests {
         // Reporting the last concrete width here pins the hosting window's
         // minimum width, making it impossible to shrink the window.
         if let minimum = coordinator.sizeThatFits(
-            ProposedViewSize(width: 0, height: nil), for: view
+            ProposedViewSize(width: 0, height: nil), for: view,
         ) {
             #expect(minimum.width < 300)
         }
 
         // Ideal-size probes must still answer with the last concrete width.
         let ideal = try #require(coordinator.sizeThatFits(
-            ProposedViewSize(width: nil, height: nil), for: view
+            ProposedViewSize(width: nil, height: nil), for: view,
         ))
         #expect(ideal.width == 800)
     }

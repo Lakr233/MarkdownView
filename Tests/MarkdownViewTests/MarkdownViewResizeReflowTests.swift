@@ -25,18 +25,18 @@ import Testing
         }
 
         @MainActor
-        @Test("SwiftUI host reflows markdown text when the window shrinks")
-        func hostReflowsOnWindowResize() throws {
+        @Test
+        func `SwiftUI host reflows markdown text when the window shrinks`() throws {
             let window = NSWindow(
                 contentRect: .init(x: 0, y: 0, width: 800, height: 600),
                 styleMask: [.titled, .resizable],
                 backing: .buffered,
-                defer: true
+                defer: true,
             )
             let host = NSHostingView(
                 rootView: ScrollView {
                     MarkdownView(Self.document)
-                }
+                },
             )
             window.contentView = host
             host.layoutSubtreeIfNeeded()

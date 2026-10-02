@@ -107,7 +107,7 @@ final class LineNumberView: PlatformView {
 
         return CGSize(
             width: textSize.width + padding.left + padding.right,
-            height: max(contentHeight + padding.top + padding.bottom, textSize.height + padding.top + padding.bottom)
+            height: max(contentHeight + padding.top + padding.bottom, textSize.height + padding.top + padding.bottom),
         )
     }
 
@@ -149,7 +149,7 @@ final class LineNumberView: PlatformView {
                 x: x,
                 y: y,
                 width: textWidth,
-                height: textHeight
+                height: textHeight,
             )
 
             numberString.draw(in: textRect, withAttributes: textAttributes)

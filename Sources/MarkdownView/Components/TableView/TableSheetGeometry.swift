@@ -34,13 +34,13 @@ struct TableSheetGeometry: Equatable {
     static func columnWidths(
         natural: [CGFloat],
         viewportWidth: CGFloat,
-        edgeInset: CGFloat
+        edgeInset: CGFloat,
     ) -> [CGFloat] {
         guard !natural.isEmpty else { return [] }
         var widths = fittedTableColumnWidths(
             natural,
             to: max(0, viewportWidth - edgeInset * 2),
-            outerPadding: 0
+            outerPadding: 0,
         )
         widths[0] += edgeInset
         widths[widths.count - 1] += edgeInset
@@ -65,7 +65,7 @@ struct TableSheetGeometry: Equatable {
             x: columnOffsets[column],
             y: rowOffsets[row],
             width: columnWidths[column],
-            height: rowHeights[row]
+            height: rowHeights[row],
         )
     }
 

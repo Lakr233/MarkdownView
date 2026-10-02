@@ -27,13 +27,13 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
             public var body = UIFont.preferredFont(forTextStyle: .body)
             public var codeInline = UIFont.monospacedSystemFont(
                 ofSize: UIFont.preferredFont(forTextStyle: .body).pointSize * codeInlineScale,
-                weight: .regular
+                weight: .regular,
             )
             public var bold = UIFont.preferredFont(forTextStyle: .body).bold
             public var italic = UIFont.preferredFont(forTextStyle: .body).italic
             public var code = UIFont.monospacedSystemFont(
                 ofSize: ceil(UIFont.preferredFont(forTextStyle: .body).pointSize * codeScale),
-                weight: .regular
+                weight: .regular,
             )
             public var largeTitle = UIFont.preferredFont(forTextStyle: .body).bold
             public var title = UIFont.preferredFont(forTextStyle: .body).bold
@@ -42,13 +42,13 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
             public var body = NSFont.systemFont(ofSize: NSFont.systemFontSize)
             public var codeInline = NSFont.monospacedSystemFont(
                 ofSize: NSFont.systemFontSize * codeInlineScale,
-                weight: .regular
+                weight: .regular,
             )
             public var bold = NSFont.systemFont(ofSize: NSFont.systemFontSize).bold
             public var italic = NSFont.systemFont(ofSize: NSFont.systemFontSize).italic
             public var code = NSFont.monospacedSystemFont(
                 ofSize: ceil(NSFont.systemFontSize * codeScale),
-                weight: .regular
+                weight: .regular,
             )
             public var largeTitle = NSFont.systemFont(ofSize: NSFont.systemFontSize).bold
             public var title = NSFont.systemFont(ofSize: NSFont.systemFontSize).bold
@@ -151,7 +151,7 @@ public struct MarkdownTheme: Equatable, @unchecked Sendable {
 enum CodeBlockDefaults {
     static let background = PlatformColor(
         light: PlatformColor.black.withAlphaComponent(0.05),
-        dark: PlatformColor.white.withAlphaComponent(0.1)
+        dark: PlatformColor.white.withAlphaComponent(0.1),
     )
     static let barBackground = background
 }

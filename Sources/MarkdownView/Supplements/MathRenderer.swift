@@ -40,7 +40,7 @@ public enum MathRenderer {
     public static func renderToImage(
         latex: String,
         fontSize: CGFloat = 16,
-        textColor: PlatformColor = .black
+        textColor: PlatformColor = .black,
     ) -> PlatformImage? {
         let cacheKey = renderCacheKey(for: latex, fontSize: fontSize, textColor: textColor)
         if let cachedImage = renderCache.value(forKey: cacheKey) {
@@ -63,7 +63,7 @@ public enum MathRenderer {
             latex: processedLatex,
             fontSize: fontSize,
             textColor: resolvedTextColor,
-            labelMode: .text
+            labelMode: .text,
         )
         let (error, image) = mathImage.asImage()
 

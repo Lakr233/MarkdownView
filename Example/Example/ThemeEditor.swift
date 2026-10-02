@@ -53,9 +53,9 @@ struct ThemeEditor: View {
                 title: "Body (aligns all)",
                 value: Binding(
                     get: { theme.fonts.body.pointSize },
-                    set: { theme.align(to: $0) }
+                    set: { theme.align(to: $0) },
                 ),
-                range: 8 ... 32
+                range: 8 ... 32,
             )
             ValueSlider(title: "Code", value: fontSize(\.fonts.code), range: 6 ... 32)
             ValueSlider(title: "Inline Code", value: fontSize(\.fonts.codeInline), range: 6 ... 32)
@@ -78,8 +78,8 @@ struct ThemeEditor: View {
                 "Selection",
                 selection: Binding(
                     get: { Color(platformColor: theme.colors.selectionBackground ?? .clear) },
-                    set: { theme.colors.selectionBackground = PlatformColor($0) }
-                )
+                    set: { theme.colors.selectionBackground = PlatformColor($0) },
+                ),
             )
         }
     }
@@ -123,14 +123,14 @@ struct ThemeEditor: View {
     private func color(_ keyPath: WritableKeyPath<MarkdownTheme, PlatformColor>) -> Binding<Color> {
         Binding(
             get: { Color(platformColor: theme[keyPath: keyPath]) },
-            set: { theme[keyPath: keyPath] = PlatformColor($0) }
+            set: { theme[keyPath: keyPath] = PlatformColor($0) },
         )
     }
 
     private func fontSize(_ keyPath: WritableKeyPath<MarkdownTheme, PlatformFont>) -> Binding<CGFloat> {
         Binding(
             get: { theme[keyPath: keyPath].pointSize },
-            set: { theme[keyPath: keyPath] = theme[keyPath: keyPath].withSize($0) }
+            set: { theme[keyPath: keyPath] = theme[keyPath: keyPath].withSize($0) },
         )
     }
 }

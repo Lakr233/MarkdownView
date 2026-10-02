@@ -41,12 +41,12 @@ enum RenderProbe {
     static func content(
         _ markdown: String,
         theme: MarkdownTheme = .default,
-        locale: Locale = .init(identifier: "en_US")
+        locale: Locale = .init(identifier: "en_US"),
     ) -> MarkdownContent {
         .init(
             parserResult: MarkdownParser().parse(markdown),
             theme: theme,
-            locale: locale
+            locale: locale,
         )
     }
 
@@ -56,7 +56,7 @@ enum RenderProbe {
         _ markdown: String,
         width: CGFloat = 480,
         theme: MarkdownTheme = .default,
-        locale: Locale = .init(identifier: "en_US")
+        locale: Locale = .init(identifier: "en_US"),
     ) -> MarkdownTextView {
         let view = MarkdownTextView()
         view.theme = theme
@@ -76,14 +76,14 @@ enum RenderProbe {
         in view: MarkdownTextView,
         width: CGFloat = 480,
         theme: MarkdownTheme = .default,
-        locale: Locale = .init(identifier: "en_US")
+        locale: Locale = .init(identifier: "en_US"),
     ) -> NSAttributedString {
         view.setContentImmediately(content(markdown, theme: theme, locale: locale))
         view.frame = .init(
             x: 0,
             y: 0,
             width: width,
-            height: view.boundingSize(for: width).height
+            height: view.boundingSize(for: width).height,
         )
         layout(view)
         return view.textLabelView.attributedText
@@ -149,7 +149,7 @@ enum RenderProbe {
         text.enumerateAttribute(
             .litextAttachment,
             in: NSRange(location: 0, length: text.length),
-            options: []
+            options: [],
         ) { value, _, _ in
             guard let attachment = value as? TextLabel.Attachment else { return }
             result.append(attachment.attributedStringRepresentation().string)
