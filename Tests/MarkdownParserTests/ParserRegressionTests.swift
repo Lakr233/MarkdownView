@@ -129,6 +129,22 @@ struct ParserRegressionTests {
         #expect(inlines.contains(.text("c")))
     }
 
+    @Test("Blockquote lifted out of a list holds only paragraphs")
+    func blockquoteLiftedOutOfListHoldsOnlyParagraphs() {
+        let result = MarkdownParser().parse("1. step\n   > quote\n   > - a\n   >   - b")
+        let quotes = result.document.compactMap { block -> [MarkdownBlockNode]? in
+            guard case let .blockquote(children) = block else { return nil }
+            return children
+        }
+
+        #expect(quotes.count == 1)
+        #expect(quotes.flatMap(\.self).allSatisfy { child in
+            guard case .paragraph = child else { return false }
+            return true
+        })
+        #expect(allInlines(in: result.document).contains(.text("b")))
+    }
+
     @Test("Block ranges handle CRLF line endings")
     func blockRangesHandleCRLFLineEndings() {
         let markdown = "# a\r\n\r\nb\r\nc\r\n\r\nd"

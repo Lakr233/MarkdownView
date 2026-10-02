@@ -79,8 +79,11 @@ private extension MarkdownParser.SpecializeContext {
 
         for child in children {
             switch child {
-            case .codeBlock, .table, .heading, .thematicBreak, .blockquote:
+            case .codeBlock, .table, .heading, .thematicBreak:
                 pickedNodes.append(child)
+            case let .blockquote(children):
+                // A lifted quote skips processNode, so flatten it here.
+                pickedNodes.append(.blockquote(children: flattenBlockquoteChildren(children)))
             case let .bulletedList(isTight, items):
                 let processedItems = processItems(items, using: rawListItemByCherryPick)
                 sanitizedChildren.append(.bulletedList(isTight: isTight, items: processedItems.map(\.item)))
