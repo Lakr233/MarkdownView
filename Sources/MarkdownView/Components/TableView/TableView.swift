@@ -399,12 +399,12 @@ final class TableView: PlatformView {
                     ? display.headerAccessoryWidths[safe: column] ?? 0
                     : 0
 
-                cell.frame = .init(
+                cell.applyFrame(.init(
                     x: x + layoutMetrics.horizontalCellPadding,
                     y: y + verticalOffset,
                     width: max(0, columnWidth - layoutMetrics.horizontalCellPadding * 2 - accessoryWidth),
                     height: cellHeight
-                )
+                ))
 
                 x += columnWidth
             }
@@ -688,7 +688,7 @@ private extension RawTableRow {
                     horizontalPadding: layoutMetrics.horizontalCellPadding,
                     accessoryWidth: TableHeaderAccessory.width
                 )
-                control.frame = columnFrame
+                control.applyFrame(columnFrame)
                 control.glyphFrame = slot.glyphFrame.offsetBy(
                     dx: -columnFrame.minX,
                     dy: -columnFrame.minY

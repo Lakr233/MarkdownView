@@ -1,17 +1,6 @@
 {
   "sourceLanguage" : "en",
   "strings" : {
-    "Code" : {
-      "comment" : "Title of a code block's sheet when it names no language.",
-      "localizations" : {
-        "zh-Hans" : {
-          "stringUnit" : {
-            "state" : "translated",
-            "value" : "代码"
-          }
-        }
-      }
-    },
     "Copy" : {
       "comment" : "Button that copies a table or a code block.",
       "localizations" : {

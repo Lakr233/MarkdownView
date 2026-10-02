@@ -24,12 +24,11 @@ extension CodeView {
     static let copySymbol = TableSymbol.copy
     static let copiedSymbol = TableSymbol.copied
     static let downloadSymbol = TableSymbol.download
-    static let expandSymbol = TableSymbol.expand
 
-    /// The bar's buttons from the trailing edge: Expand, Download, Copy,
-    /// Preview, then the host's actions.
+    /// The bar's buttons from the trailing edge: Copy, Download, Preview,
+    /// then the host's actions — Download, Copy reading left to right.
     var barButtons: [PlatformButton] {
-        [expandButton, downloadButton, copyButton, previewButton] + actionButtons.reversed()
+        [copyButton, downloadButton, previewButton] + actionButtons.reversed()
     }
 
     /// Saves the block as a file named for its language.

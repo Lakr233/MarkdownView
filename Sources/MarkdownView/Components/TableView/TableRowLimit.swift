@@ -61,9 +61,17 @@ enum TableSheetText {
 enum TableSymbol {
     static let copy = "doc.on.doc"
     static let copied = "checkmark"
-    static let download = "arrow.down.circle"
-    /// Outward arrows: open the table in full.
-    static let expand = "arrow.up.left.and.arrow.down.right"
+    static let download = "arrow.down"
+    /// Outward arrows to the bottom left and top right: open in full. The
+    /// symbol is newer than the oldest systems this ships on, which get the
+    /// other diagonal.
+    static var expand: String {
+        if #available(iOS 17, macCatalyst 17, macOS 14, visionOS 1, *) {
+            "arrow.down.left.and.arrow.up.right"
+        } else {
+            "arrow.up.left.and.arrow.down.right"
+        }
+    }
     static let sortAscending = "chevron.up"
     static let sortDescending = "chevron.down"
 }

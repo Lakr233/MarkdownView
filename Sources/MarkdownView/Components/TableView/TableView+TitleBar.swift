@@ -134,12 +134,12 @@ enum TableTitleText {
 
 enum TableTitleBar {
     static let verticalPadding: CGFloat = 8
-    /// Each button's tappable width: a touch target on UIKit, a pointer
-    /// target on AppKit.
+    /// Each button's width, shared by tables and code blocks. Narrow enough
+    /// that the glyphs read as one group; the button stays full height.
     #if canImport(UIKit)
-        static let buttonWidth: CGFloat = 44
+        static let buttonWidth: CGFloat = 32
     #elseif canImport(AppKit)
-        static let buttonWidth: CGFloat = 28
+        static let buttonWidth: CGFloat = 24
     #endif
     /// How long Copy shows a checkmark after it is tapped.
     static let copyFeedbackDuration: TimeInterval = 1.5
@@ -157,9 +157,9 @@ extension TableView {
         return control
     }
 
-    /// The title at the leading end and Copy, Download and Expand at the
+    /// The title at the leading end and Download, Copy and Expand at the
     /// trailing end, inside the bar above the rows. A button the bar has no
-    /// room for is hidden — Copy first, then Download — rather than drawn
+    /// room for is hidden — Download first, then Copy — rather than drawn
     /// past the table's edge, where no tap could reach it.
     func layoutTitleBar() {
         guard mode == .inline else { return }
@@ -167,11 +167,11 @@ extension TableView {
         let glyph = TableHeaderAccessory.glyphSize
         let leading = tableViewPadding + layoutMetrics.horizontalCellPadding
         var trailing = bounds.width - tableViewPadding - 4
-        for control in [expandControl, downloadControl, copyControl] {
+        for control in [expandControl, copyControl, downloadControl] {
             control.isHidden = trailing - TableTitleBar.buttonWidth < leading
             guard !control.isHidden else { continue }
             trailing -= TableTitleBar.buttonWidth
-            control.frame = CGRect(x: trailing, y: tableViewPadding, width: TableTitleBar.buttonWidth, height: height)
+            control.applyFrame(CGRect(x: trailing, y: tableViewPadding, width: TableTitleBar.buttonWidth, height: height))
             control.glyphFrame = CGRect(
                 x: (TableTitleBar.buttonWidth - glyph) / 2,
                 y: (height - glyph) / 2,
@@ -180,12 +180,12 @@ extension TableView {
             )
         }
         let labelHeight = titleLabel.intrinsicContentSize.height
-        titleLabel.frame = CGRect(
+        titleLabel.applyFrame(CGRect(
             x: leading,
             y: tableViewPadding + (height - labelHeight) / 2,
             width: max(0, trailing - leading),
             height: labelHeight
-        )
+        ))
     }
 
     /// Every row as plain text, header first.
