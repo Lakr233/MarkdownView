@@ -22,7 +22,7 @@ final class LineNumberView: PlatformView {
         didSet {
             guard oldValue != lineCount else { return }
             markNeedsDisplay()
-            invalidateIntrinsicContentSize()
+            invalidateSize()
         }
     }
 
@@ -30,7 +30,7 @@ final class LineNumberView: PlatformView {
         didSet {
             guard oldValue != font else { return }
             markNeedsDisplay()
-            invalidateIntrinsicContentSize()
+            invalidateSize()
         }
     }
 
@@ -49,7 +49,16 @@ final class LineNumberView: PlatformView {
                 guard !NSEdgeInsetsEqual(oldValue, padding) else { return }
             #endif
             markNeedsDisplay()
-            invalidateIntrinsicContentSize()
+            invalidateSize()
+        }
+    }
+
+    /// The space between two lines of the code, which the text engine adds
+    /// after every line but the last.
+    var lineSpacing: CGFloat = 0 {
+        didSet {
+            guard oldValue != lineSpacing else { return }
+            markNeedsDisplay()
         }
     }
 
@@ -57,7 +66,7 @@ final class LineNumberView: PlatformView {
         didSet {
             guard oldValue != contentHeight else { return }
             markNeedsDisplay()
-            invalidateIntrinsicContentSize()
+            invalidateSize()
         }
     }
 
@@ -100,15 +109,45 @@ final class LineNumberView: PlatformView {
         }
     #endif
 
+    /// Measured once per change: layout asks for it several times a pass,
+    /// and every pass while a window resizes.
+    private var cachedIntrinsicSize: CGSize?
+
+    private func invalidateSize() {
+        cachedIntrinsicSize = nil
+        invalidateIntrinsicContentSize()
+    }
+
     override var intrinsicContentSize: CGSize {
+        if let cachedIntrinsicSize {
+            return cachedIntrinsicSize
+        }
         let maxLineNumber = max(lineCount, 1)
         let numberString = "\(maxLineNumber)"
         let textSize = numberString.size(withAttributes: [.font: font])
 
-        return CGSize(
+        let size = CGSize(
             width: textSize.width + padding.left + padding.right,
             height: max(contentHeight + padding.top + padding.bottom, textSize.height + padding.top + padding.bottom),
         )
+        cachedIntrinsicSize = size
+        return size
+    }
+
+    /// How far apart the code's lines sit. Every line but the last is
+    /// followed by `lineSpacing`, so it is not the content height shared out
+    /// evenly, which would spread the spacing over every line and let the
+    /// numbers drift off their lines down the block.
+    private var linePitch: CGFloat {
+        guard lineCount > 0 else { return 0 }
+        return (contentHeight + lineSpacing) / CGFloat(lineCount)
+    }
+
+    /// The vertical centre of the code line `lineNumber` (from 1), which its
+    /// number is centred on.
+    func lineMidY(_ lineNumber: Int) -> CGFloat {
+        let pitch = linePitch
+        return padding.top + CGFloat(lineNumber - 1) * pitch + (pitch - lineSpacing) / 2
     }
 
     /// Draws the numbers of the lines that cross `rect`, into the context
@@ -121,14 +160,11 @@ final class LineNumberView: PlatformView {
             .foregroundColor: textColor,
         ]
 
-        let availableHeight = contentHeight
-        let lineSpacing = availableHeight / CGFloat(lineCount)
-        let startY = padding.top
+        let pitch = linePitch
+        guard pitch > 0 else { return }
 
-        guard lineSpacing > 0 else { return }
-
-        let firstLine = max(1, Int(floor((rect.minY - padding.top) / lineSpacing)))
-        let lastLine = min(lineCount, Int(ceil((rect.maxY - padding.top) / lineSpacing)) + 1)
+        let firstLine = max(1, Int(floor((rect.minY - padding.top) / pitch)))
+        let lastLine = min(lineCount, Int(ceil((rect.maxY - padding.top) / pitch)) + 1)
         guard firstLine <= lastLine else { return }
 
         let textHeight = "0".size(withAttributes: textAttributes).height
@@ -143,7 +179,7 @@ final class LineNumberView: PlatformView {
             }
 
             let x = bounds.width - padding.right - textWidth
-            let y = startY + CGFloat(lineNumber - 1) * lineSpacing + (lineSpacing - textHeight) / 2
+            let y = lineMidY(lineNumber) - textHeight / 2
 
             let textRect = CGRect(
                 x: x,
@@ -156,8 +192,15 @@ final class LineNumberView: PlatformView {
         }
     }
 
-    func configure(lineCount: Int, contentHeight: CGFloat, font: PlatformFont, textColor: PlatformColor) {
+    func configure(
+        lineCount: Int,
+        contentHeight: CGFloat,
+        lineSpacing: CGFloat,
+        font: PlatformFont,
+        textColor: PlatformColor,
+    ) {
         self.lineCount = lineCount
+        self.lineSpacing = lineSpacing
         self.contentHeight = contentHeight
         self.font = font
         self.textColor = textColor

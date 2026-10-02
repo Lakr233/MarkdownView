@@ -314,6 +314,7 @@ final class CodeView: PlatformView {
         lineNumberView.configure(
             lineCount: cachedLineCount,
             contentHeight: textViewContentHeight,
+            lineSpacing: CodeViewConfiguration.codeLineSpacing,
             font: font,
             textColor: theme.colors.body.withAlphaComponent(0.5),
         )
