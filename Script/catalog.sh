@@ -4,6 +4,7 @@
 #
 #   Script/catalog.sh            debug build
 #   Script/catalog.sh release    release build
+#   NO_OPEN=1 Script/catalog.sh  build without opening, e.g. to launch under Instruments
 
 set -e
 
@@ -70,4 +71,4 @@ EOF
 codesign --force --deep --sign - "$APP" >/dev/null 2>&1 || true
 
 echo "[*] $APP"
-open "$APP"
+[ -n "$NO_OPEN" ] || open "$APP"

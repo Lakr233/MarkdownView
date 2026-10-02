@@ -95,6 +95,9 @@
             .task {
                 await CatalogSnapshot.run { selection = $0 }
             }
+            .task {
+                await CatalogResizeStress.run { selection = $0 } fill: { width = .fill }
+            }
         }
     }
 
