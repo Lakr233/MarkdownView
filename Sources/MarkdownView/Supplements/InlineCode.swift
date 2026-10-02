@@ -38,6 +38,22 @@ enum InlineCode {
         return tag == "<br>" || tag == "<br/>"
     }
 
+    /// Where `run` starts and ends on its line. A run's glyphs sit side by
+    /// side, so whichever end is leftmost, in either direction, starts it and
+    /// its typographic width spans the rest; this costs no lookup of the
+    /// line's character clusters, which offsets by string index do.
+    nonisolated static func horizontalExtent(of run: CTRun) -> (CGFloat, CGFloat)? {
+        let count = CTRunGetGlyphCount(run)
+        guard count > 0 else { return nil }
+        var first = CGPoint.zero
+        var last = CGPoint.zero
+        CTRunGetPositions(run, CFRange(location: 0, length: 1), &first)
+        CTRunGetPositions(run, CFRange(location: count - 1, length: 1), &last)
+        let width = CGFloat(CTRunGetTypographicBounds(run, CFRange(location: 0, length: 0), nil, nil, nil))
+        let start = min(first.x, last.x)
+        return (start, start + width)
+    }
+
     static func attributedString(_ string: String, theme: MarkdownTheme) -> NSAttributedString {
         let font = theme.fonts.codeInline
         let background = InlineCodeBackground(
@@ -121,18 +137,71 @@ private final class InlineCodeLayout: TextLabel.Layout {
         return found
     }()
 
+    /// The pills of each line drawn so far, kept with the line they were
+    /// measured on. A resize redraws every line, and finding the spans means
+    /// walking each run's attributes; a new layout makes new lines, so a
+    /// stored line that is not the one being drawn is measured again.
+    private var pillCache: [Int: (line: CTLine, pills: [Pill])] = [:]
+
+    /// One span's pill on a line, relative to the line's baseline origin.
+    private struct Pill {
+        let background: InlineCodeBackground
+        let minX: CGFloat
+        let maxX: CGFloat
+    }
+
     override func draw(line: CTLine, at index: Int, in context: CGContext) {
         if hasInlineCode {
-            drawInlineCodeBackgrounds(of: line, in: context)
+            drawInlineCodeBackgrounds(of: line, at: index, in: context)
         }
         super.draw(line: line, at: index, in: context)
     }
 
-    /// Fills one pill per code span on `line`, spanning its text and the
-    /// spacers beside it. A spacer the line break left on a line by itself
-    /// gets none, and a side the span wraps on, with its spacer on another
-    /// line, reaches `wrappedEndInset` past the text instead.
-    private func drawInlineCodeBackgrounds(of line: CTLine, in context: CGContext) {
+    private func drawInlineCodeBackgrounds(of line: CTLine, at index: Int, in context: CGContext) {
+        let pills: [Pill]
+        if let cached = pillCache[index], cached.line === line {
+            pills = cached.pills
+        } else {
+            pills = Self.pills(of: line)
+            pillCache[index] = (line, pills)
+        }
+        guard !pills.isEmpty else { return }
+
+        // CoreText space: the text position is the line's baseline origin.
+        let origin = context.textPosition
+        context.saveGState()
+        defer { context.restoreGState() }
+        for pill in pills {
+            let background = pill.background
+            let rect = CGRect(
+                x: origin.x + pill.minX,
+                y: origin.y - background.descent - InlineCode.verticalInset,
+                width: pill.maxX - pill.minX,
+                height: background.ascent + background.descent + InlineCode.verticalInset * 2,
+            )
+            let radius = min(InlineCode.cornerRadius, rect.height / 2, rect.width / 2)
+            context.setFillColor(background.color.cgColor)
+            context.addPath(CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
+            context.fillPath()
+        }
+        context.textPosition = origin
+    }
+
+    private static let backgroundKey = NSAttributedString.Key.inlineCodeBackground.rawValue as CFString
+    private static let attachmentKey = NSAttributedString.Key.litextAttachment.rawValue as CFString
+
+    /// One attribute of a run, read without bridging the run's whole
+    /// attribute dictionary, which a resize would do for every run it draws.
+    private static func runValue(_ attributes: CFDictionary, _ key: CFString) -> AnyObject? {
+        guard let value = CFDictionaryGetValue(attributes, Unmanaged.passUnretained(key).toOpaque()) else { return nil }
+        return Unmanaged<AnyObject>.fromOpaque(value).takeUnretainedValue()
+    }
+
+    /// One pill per code span on `line`, spanning its text and the spacers
+    /// beside it. A spacer the line break left on a line by itself gets
+    /// none, and a side the span wraps on, with its spacer on another line,
+    /// reaches `wrappedEndInset` past the text instead.
+    private static func pills(of line: CTLine) -> [Pill] {
         struct Span {
             let background: InlineCodeBackground
             var minX: CGFloat
@@ -143,48 +212,33 @@ private final class InlineCodeLayout: TextLabel.Layout {
         }
         var spans: [Span] = []
         for run in CTLineGetGlyphRuns(line) as! [CTRun] {
-            let attributes = CTRunGetAttributes(run) as? [NSAttributedString.Key: Any]
-            guard let background = attributes?[.inlineCodeBackground] as? InlineCodeBackground else { continue }
+            let attributes = CTRunGetAttributes(run)
+            guard let background = runValue(attributes, backgroundKey) as? InlineCodeBackground,
+                  let (start, end) = InlineCode.horizontalExtent(of: run)
+            else { continue }
             let cfRange = CTRunGetStringRange(run)
             let range = NSRange(location: cfRange.location, length: cfRange.length)
-            let start = CTLineGetOffsetForStringIndex(line, cfRange.location, nil)
-            let end = CTLineGetOffsetForStringIndex(line, cfRange.location + cfRange.length, nil)
             let index = spans.firstIndex { $0.background === background } ?? {
-                spans.append(Span(background: background, minX: min(start, end), maxX: max(start, end)))
+                spans.append(Span(background: background, minX: start, maxX: end))
                 return spans.count - 1
             }()
-            spans[index].minX = min(spans[index].minX, start, end)
-            spans[index].maxX = max(spans[index].maxX, start, end)
-            if attributes?[.litextAttachment] == nil {
+            spans[index].minX = min(spans[index].minX, start)
+            spans[index].maxX = max(spans[index].maxX, end)
+            if runValue(attributes, attachmentKey) == nil {
                 spans[index].code = spans[index].code.map { NSUnionRange($0, range) } ?? range
             } else {
                 spans[index].spacers.append(range)
             }
         }
-        guard !spans.isEmpty else { return }
-
-        // CoreText space: the text position is the line's baseline origin.
-        let origin = context.textPosition
-        context.saveGState()
-        defer { context.restoreGState() }
-        for span in spans {
-            guard let code = span.code, span.minX < span.maxX else { continue }
+        return spans.compactMap { span in
+            guard let code = span.code, span.minX < span.maxX else { return nil }
             let hasLeadingSpacer = span.spacers.contains { $0.location < code.location }
             let hasTrailingSpacer = span.spacers.contains { $0.location >= NSMaxRange(code) }
-            let minX = span.minX - (hasLeadingSpacer ? 0 : InlineCode.wrappedEndInset)
-            let maxX = span.maxX + (hasTrailingSpacer ? 0 : InlineCode.wrappedEndInset)
-            let background = span.background
-            let rect = CGRect(
-                x: origin.x + minX,
-                y: origin.y - background.descent - InlineCode.verticalInset,
-                width: maxX - minX,
-                height: background.ascent + background.descent + InlineCode.verticalInset * 2,
+            return Pill(
+                background: span.background,
+                minX: span.minX - (hasLeadingSpacer ? 0 : InlineCode.wrappedEndInset),
+                maxX: span.maxX + (hasTrailingSpacer ? 0 : InlineCode.wrappedEndInset),
             )
-            let radius = min(InlineCode.cornerRadius, rect.height / 2, rect.width / 2)
-            context.setFillColor(background.color.cgColor)
-            context.addPath(CGPath(roundedRect: rect, cornerWidth: radius, cornerHeight: radius, transform: nil))
-            context.fillPath()
         }
-        context.textPosition = origin
     }
 }

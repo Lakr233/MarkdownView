@@ -1,3 +1,4 @@
+import CoreText
 @testable import MarkdownView
 import Testing
 
@@ -72,6 +73,45 @@ import Testing
             #expect(InlineCode.isLineBreak("<br>"))
             #expect(InlineCode.isLineBreak("<BR />"))
             #expect(!InlineCode.isLineBreak("<b>"))
+        }
+
+        @Test
+        func `A run's extent matches its string offsets`() throws {
+            let line = Self.line("let x = 1 and code here")
+            for run in try #require(CTLineGetGlyphRuns(line) as? [CTRun]) {
+                let range = CTRunGetStringRange(run)
+                let start = CTLineGetOffsetForStringIndex(line, range.location, nil)
+                let end = CTLineGetOffsetForStringIndex(line, range.location + range.length, nil)
+                let extent = InlineCode.horizontalExtent(of: run)
+                #expect(abs((extent?.0 ?? .nan) - start) < 0.5)
+                #expect(abs((extent?.1 ?? .nan) - end) < 0.5)
+            }
+        }
+
+        /// A caret offset at a change of direction belongs to the run beside
+        /// it, so right-to-left runs are checked against their glyphs.
+        @Test
+        func `A right-to-left run's extent covers its glyphs`() throws {
+            let line = Self.line("code مرحبا بالعالم and שלום עולם")
+            for run in try #require(CTLineGetGlyphRuns(line) as? [CTRun]) {
+                let count = CTRunGetGlyphCount(run)
+                var positions = [CGPoint](repeating: .zero, count: count)
+                var advances = [CGSize](repeating: .zero, count: count)
+                CTRunGetPositions(run, CFRange(location: 0, length: 0), &positions)
+                CTRunGetAdvances(run, CFRange(location: 0, length: 0), &advances)
+                let start = positions.map(\.x).min() ?? 0
+                let end = zip(positions, advances).map { $0.x + $1.width }.max() ?? 0
+                let extent = InlineCode.horizontalExtent(of: run)
+                #expect(abs((extent?.0 ?? .nan) - start) < 0.5)
+                #expect(abs((extent?.1 ?? .nan) - end) < 0.5)
+            }
+        }
+
+        private static func line(_ text: String) -> CTLine {
+            CTLineCreateWithAttributedString(NSAttributedString(
+                string: text,
+                attributes: [.font: PlatformFont.systemFont(ofSize: 14)],
+            ))
         }
     }
 #endif
