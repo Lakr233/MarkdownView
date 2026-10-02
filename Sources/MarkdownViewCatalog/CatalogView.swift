@@ -126,17 +126,23 @@
         }
 
         var body: some View {
-            HSplitView {
-                if showsSource {
-                    TextEditor(text: $source)
-                        .font(.system(.body, design: .monospaced))
-                        .scrollContentBackground(.hidden)
-                        .padding(8)
-                        .frame(minWidth: 240, idealWidth: 380)
-                        .background(.background)
+            GeometryReader { proxy in
+                // The source takes one share and each rendered pane another,
+                // so source, light and dark all get the same width.
+                let shares = CGFloat(appearance.schemes.count + (showsSource ? 1 : 0))
+                let paneWidth = proxy.size.width / shares
+                HStack(spacing: 0) {
+                    if showsSource {
+                        TextEditor(text: $source)
+                            .font(.system(.body, design: .monospaced))
+                            .scrollContentBackground(.hidden)
+                            .padding(8)
+                            .frame(width: paneWidth)
+                            .background(.background)
+                        Divider()
+                    }
+                    canvas
                 }
-                canvas
-                    .frame(minWidth: 320)
             }
             .navigationTitle(sample.title)
             .navigationSubtitle(sample.summary)
