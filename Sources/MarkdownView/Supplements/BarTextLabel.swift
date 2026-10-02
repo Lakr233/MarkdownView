@@ -73,9 +73,15 @@ class BarTextLabel: TextLabelView {
         ceil(font.ascender + abs(font.descender) + font.leading)
     }
 
+    /// The width of the whole text, measured once per change: the bar
+    /// lays out on every pass while a window resizes.
+    private var textWidth: CGFloat?
+
     /// The whole text on one line, however wide.
     override var intrinsicContentSize: CGSize {
-        CGSize(width: ceil(width(of: text)), height: lineHeight)
+        let width = textWidth ?? ceil(width(of: text))
+        textWidth = width
+        return CGSize(width: width, height: lineHeight)
     }
 
     #if canImport(UIKit)
@@ -97,6 +103,7 @@ class BarTextLabel: TextLabelView {
 
     private func textDidChange() {
         fittedWidth = -1
+        textWidth = nil
         invalidateIntrinsicContentSize()
         fitTextIfNeeded()
     }
