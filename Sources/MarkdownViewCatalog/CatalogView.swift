@@ -136,7 +136,7 @@
                         TextEditor(text: $source)
                             .font(.system(.body, design: .monospaced))
                             .scrollContentBackground(.hidden)
-                            .padding(8)
+                            .sourceMargins()
                             .frame(width: paneWidth)
                             .background(.background)
                         Divider()
@@ -221,6 +221,20 @@
                     try? await Task.sleep(for: .milliseconds(12))
                 }
                 streaming = nil
+            }
+        }
+    }
+
+    private extension View {
+        /// Insets the source inside its scroll view, so lines scroll to the
+        /// pane's edge rather than being cut off a margin short of it.
+        @ViewBuilder
+        func sourceMargins() -> some View {
+            if #available(macOS 14, *) {
+                contentMargins(.horizontal, 20, for: .scrollContent)
+                    .contentMargins(.vertical, 24, for: .scrollContent)
+            } else {
+                padding(8)
             }
         }
     }
