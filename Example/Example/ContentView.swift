@@ -127,16 +127,29 @@ A long table shows its first eight rows; tap the last row or the expand button t
 struct ContentView: View {
     @State private var markdownText: String = document
     @State private var playing = false
+    @State private var theme: MarkdownTheme = .default
+    @State private var editingTheme = false
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                MarkdownView(markdownText)
+                MarkdownView(markdownText, theme: theme)
                     .padding()
             }
             .background(.gray.opacity(0.1))
             .background(.background)
             .toolbar {
+                Button {
+                    editingTheme = true
+                } label: {
+                    Image(systemName: "paintpalette")
+                }
+                .popover(isPresented: $editingTheme) {
+                    ThemeEditor(theme: $theme)
+                        .frame(idealWidth: 380, idealHeight: 640)
+                        .presentationDetents([.medium, .large])
+                        .interactiveBehindMediumDetent()
+                }
                 Button {
                     tik()
                 } label: {
@@ -162,6 +175,19 @@ struct ContentView: View {
                 markdownText += String(value)
             }
             playing = false
+        }
+    }
+}
+
+private extension View {
+    /// Keeps the document scrollable behind a half-height sheet, so a token
+    /// can be tuned while the block it affects is on screen.
+    @ViewBuilder
+    func interactiveBehindMediumDetent() -> some View {
+        if #available(iOS 16.4, macOS 13.3, *) {
+            presentationBackgroundInteraction(.enabled(upThrough: .medium))
+        } else {
+            self
         }
     }
 }
