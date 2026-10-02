@@ -48,6 +48,10 @@ struct TableSheetModel {
         let columnCount = content.contents.first?.count ?? 0
         let rows = content.contents.filter { $0.count == columnCount }
         let style = TableCellStyle(theme: content.theme)
+        // `content` is not Sendable (its link handler is a plain closure), and
+        // Xcode 26.6 rejects a Release build that captures it in `measure`:
+        // "sending 'content' risks causing data races". The alignments are.
+        let alignments = content.columnAlignments
         let sizer = MarkdownTextLabelView()
         var widths = Array(repeating: metrics.minimumColumnWidth, count: columnCount)
 
@@ -59,7 +63,7 @@ struct TableSheetModel {
                 let text = style.styledText(
                     from: source,
                     isHeader: isHeader,
-                    alignment: content.columnAlignments[safe: column] ?? .none,
+                    alignment: alignments[safe: column] ?? .none,
                 )
                 sizer.attributedText = text
                 let size = sizer.intrinsicContentSize
