@@ -88,8 +88,6 @@ final class LineNumberView: PlatformView {
         }
 
         override func draw(_ rect: CGRect) {
-            guard let context = UIGraphicsGetCurrentContext() else { return }
-            context.clear(rect)
             drawLineNumbers(in: rect)
         }
     #elseif canImport(AppKit)
@@ -103,8 +101,6 @@ final class LineNumberView: PlatformView {
         }
 
         override func draw(_ dirtyRect: NSRect) {
-            guard let context = NSGraphicsContext.current?.cgContext else { return }
-            context.clear(dirtyRect)
             drawLineNumbers(in: dirtyRect)
         }
     #endif
@@ -150,8 +146,12 @@ final class LineNumberView: PlatformView {
         return padding.top + CGFloat(lineNumber - 1) * pitch + (pitch - lineSpacing) / 2
     }
 
-    /// Draws the numbers of the lines that cross `rect`, into the context
-    /// the platform's `draw` has already cleared.
+    /// Draws the numbers of the lines that cross `rect`, and nothing else.
+    ///
+    /// The view is transparent and the system clears its own backing before
+    /// drawing, so it must not clear the context itself: drawn into a shared
+    /// context, as a snapshot, PDF or print is, a clear punches through the
+    /// code block's background and leaves the gutter black.
     private func drawLineNumbers(in rect: CGRect) {
         guard lineCount > 0, contentHeight > 0 else { return }
 
