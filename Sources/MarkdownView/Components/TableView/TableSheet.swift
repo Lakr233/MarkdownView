@@ -187,7 +187,7 @@ struct TableSheetContent {
     }
 
     private final class FlippedView: NSView {
-        override var isFlipped: Bool {
+        override nonisolated var isFlipped: Bool {
             true
         }
     }

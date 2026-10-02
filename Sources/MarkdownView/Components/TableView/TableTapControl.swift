@@ -106,7 +106,7 @@ import Foundation
             fatalError("init(coder:) has not been implemented")
         }
 
-        override var isFlipped: Bool {
+        override nonisolated var isFlipped: Bool {
             true
         }
 

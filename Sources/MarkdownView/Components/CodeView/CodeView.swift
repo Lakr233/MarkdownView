@@ -167,7 +167,7 @@ final class CodeView: PlatformView {
             updateLineNumberView()
         }
     #elseif canImport(AppKit)
-        override var isFlipped: Bool {
+        override nonisolated var isFlipped: Bool {
             true
         }
 

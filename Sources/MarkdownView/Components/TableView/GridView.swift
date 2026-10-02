@@ -73,7 +73,7 @@ final class GridView: PlatformView {
             color.cgColor
         }
     #elseif canImport(AppKit)
-        override var isFlipped: Bool {
+        override nonisolated var isFlipped: Bool {
             true
         }
 

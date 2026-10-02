@@ -112,7 +112,7 @@ open class MarkdownTextView: PlatformView {
             syncContextViewLayout()
         }
     #elseif canImport(AppKit)
-        override open var isFlipped: Bool {
+        override open nonisolated var isFlipped: Bool {
             true
         }
 

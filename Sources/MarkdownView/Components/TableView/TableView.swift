@@ -245,7 +245,7 @@ final class TableView: PlatformView {
             layoutContent()
         }
     #elseif canImport(AppKit)
-        override var isFlipped: Bool {
+        override nonisolated var isFlipped: Bool {
             true
         }
 
@@ -606,7 +606,7 @@ private extension RawTableRow {
 
     /// A plain flipped view, so content laid out from the top stays there.
     final class FlippedContainerView: NSView {
-        override var isFlipped: Bool {
+        override nonisolated var isFlipped: Bool {
             true
         }
     }
