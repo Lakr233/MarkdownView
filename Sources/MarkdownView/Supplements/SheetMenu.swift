@@ -32,7 +32,7 @@ enum SheetMenuText {
 }
 
 enum SheetMenuSymbol {
-    static let menu = "ellipsis.circle"
+    static let menu = "ellipsis"
     static let close = "chevron.down"
 }
 

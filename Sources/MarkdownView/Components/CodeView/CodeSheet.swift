@@ -22,7 +22,10 @@ struct CodeSheetContent {
 
     @MainActor
     init(_ codeView: CodeView) {
-        title = codeView.language.isEmpty ? CodeSheetText.code : codeView.language
+        let language = codeView.language
+        // The fence's word as written, with only its first letter raised:
+        // "swift" reads as "Swift", and "objectiveC" keeps its inner capital.
+        title = language.isEmpty ? CodeSheetText.code : language.prefix(1).uppercased() + language.dropFirst()
         code = codeView.textView.attributedText
         text = codeView.content
         fileName = CodeFileName.fileName(forLanguage: codeView.language)
@@ -112,21 +115,60 @@ enum CodeSheetText {
 #elseif canImport(AppKit)
     @MainActor
     enum CodeSheetPresenter {
-        /// Presents `codeView`'s code in a sheet half as tall as its window.
+        /// Presents `codeView`'s code in a sheet fitted to the code: as wide
+        /// as its longest line, up to a reading width past which lines wrap.
         static func present(_ codeView: CodeView) {
             guard let window = codeView.window else { return }
-            let size = CGSize(
-                width: min(900, max(420, window.frame.width * 0.8)),
-                height: max(240, window.frame.height * 0.5)
+            let content = CodeSheetContent(codeView)
+            let size = CodeSheetGeometry.size(
+                for: content.code,
+                maxHeight: window.frame.height * 0.8
             )
-            let sheet = CodeSheetWindow(content: CodeSheetContent(codeView), size: size)
+            let sheet = CodeSheetWindow(content: content, size: size)
             window.beginSheet(sheet)
+        }
+    }
+
+    /// The sheet's size, from the code it shows.
+    enum CodeSheetGeometry {
+        /// Lines longer than this wrap rather than widening the sheet.
+        static let maxTextWidth: CGFloat = 600
+        static let minSize = CGSize(width: 320, height: 200)
+        static let barHeight: CGFloat = 48
+        static let textInset = NSSize(width: 12, height: 12)
+        /// NSTextContainer's default padding at each end of a line.
+        static let lineFragmentPadding: CGFloat = 5
+
+        /// The text width `code` lays out at: its longest line, capped at
+        /// ``maxTextWidth``.
+        static func textWidth(for code: NSAttributedString) -> CGFloat {
+            let natural = code.boundingRect(
+                with: CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading]
+            ).width
+            return min(maxTextWidth, ceil(natural))
+        }
+
+        static func size(for code: NSAttributedString, maxHeight: CGFloat) -> CGSize {
+            let textWidth = textWidth(for: code)
+            let textHeight = code.boundingRect(
+                with: CGSize(width: textWidth, height: .greatestFiniteMagnitude),
+                options: [.usesLineFragmentOrigin, .usesFontLeading]
+            ).height
+            let width = textWidth + 2 * (textInset.width + lineFragmentPadding)
+            let height = barHeight + ceil(textHeight) + 2 * textInset.height
+            return CGSize(
+                width: max(minSize.width, width),
+                height: min(max(minSize.height, height), max(minSize.height, maxHeight))
+            )
         }
     }
 
     /// A code block's text, highlighted, in a selectable text view.
     final class CodeSheetWindow: NSWindow {
         let textView = NSTextView()
+        /// The language, or "Code"; a sheet draws no window title.
+        let titleLabel = NSTextField(labelWithString: "")
 
         init(content: CodeSheetContent, size: CGSize) {
             super.init(
@@ -136,33 +178,31 @@ enum CodeSheetText {
                 defer: false
             )
             isReleasedWhenClosed = false
-            minSize = CGSize(width: 320, height: 200)
+            minSize = CodeSheetGeometry.minSize
             title = content.title
 
-            let barHeight: CGFloat = 48
+            let barHeight = CodeSheetGeometry.barHeight
             let margin: CGFloat = 16
             let container = NSView(frame: CGRect(origin: .zero, size: size))
 
             let scrollView = NSScrollView(frame: CGRect(x: 0, y: 0, width: size.width, height: size.height - barHeight))
             scrollView.autoresizingMask = [.width, .height]
             scrollView.hasVerticalScroller = true
-            scrollView.hasHorizontalScroller = true
             scrollView.autohidesScrollers = true
             scrollView.drawsBackground = false
             textView.frame = scrollView.bounds
             textView.isEditable = false
             textView.isSelectable = true
             textView.drawsBackground = false
-            textView.textContainerInset = NSSize(width: 12, height: 12)
+            textView.textContainerInset = CodeSheetGeometry.textInset
+            textView.textContainer?.lineFragmentPadding = CodeSheetGeometry.lineFragmentPadding
             textView.autoresizingMask = [.width, .height]
-            // Code keeps its lines, as in the block, and scrolls sideways.
-            textView.isHorizontallyResizable = true
+            // The sheet is sized to the code, so lines only wrap past the
+            // reading width, or when the sheet is resized narrower.
+            textView.isHorizontallyResizable = false
+            textView.isVerticallyResizable = true
             textView.maxSize = NSSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude)
-            textView.textContainer?.widthTracksTextView = false
-            textView.textContainer?.containerSize = NSSize(
-                width: CGFloat.greatestFiniteMagnitude,
-                height: .greatestFiniteMagnitude
-            )
+            textView.textContainer?.widthTracksTextView = true
             textView.textStorage?.setAttributedString(content.code)
             scrollView.documentView = textView
             container.addSubview(scrollView)
@@ -177,6 +217,20 @@ enum CodeSheetText {
             )
             menuButton.autoresizingMask = [.minXMargin, .minYMargin]
             container.addSubview(menuButton)
+
+            titleLabel.stringValue = content.title
+            titleLabel.font = .systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
+            titleLabel.textColor = .labelColor
+            titleLabel.lineBreakMode = .byTruncatingTail
+            titleLabel.sizeToFit()
+            titleLabel.frame = CGRect(
+                x: margin,
+                y: size.height - barHeight + (barHeight - titleLabel.frame.height) / 2,
+                width: max(0, menuButton.frame.minX - margin * 2),
+                height: titleLabel.frame.height
+            )
+            titleLabel.autoresizingMask = [.width, .minYMargin]
+            container.addSubview(titleLabel)
             contentView = container
         }
 

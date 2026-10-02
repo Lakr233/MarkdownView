@@ -311,13 +311,13 @@ struct CodeBlockBarTests {
         #expect(CodeFileName.fileName(forLanguage: language) == fileName)
     }
 
-    @Test("The sheet shows the highlighted code under its language, and saves it under its extension")
+    @Test("The sheet shows the highlighted code under its capitalized language, and saves it under its extension")
     func sheetContent() throws {
         let view = RenderProbe.view("```swift\nlet a = 1\n```\n\n```\nplain\n```")
         let codes = view.contextViews.compactMap { $0 as? CodeView }
         #expect(codes.count == 2)
         let swift = CodeSheetContent(codes[0])
-        #expect(swift.title == "swift")
+        #expect(swift.title == "Swift")
         #expect(swift.code.string == "let a = 1")
         #expect(swift.code.isEqual(to: codes[0].textView.attributedText))
         #expect(swift.text == "let a = 1")
@@ -326,4 +326,69 @@ struct CodeBlockBarTests {
         #expect(plain.title == CodeSheetText.code)
         #expect(plain.fileName == "code.txt")
     }
+
+    #if canImport(AppKit) && !canImport(UIKit)
+        @Test("The sheet fits short code, and wraps code past the reading width")
+        func sheetFitsCode() throws {
+            let long = String(repeating: "let value = compute(value) + 1; ", count: 12)
+            let view = RenderProbe.view("```swift\nlet a = 1\nlet b = 2\n```\n\n```swift\n\(long)\n```")
+            let codes = view.contextViews.compactMap { $0 as? CodeView }
+            #expect(codes.count == 2)
+
+            let short = CodeSheetContent(codes[0])
+            let shortSize = CodeSheetGeometry.size(for: short.code, maxHeight: 800)
+            #expect(shortSize.width == CodeSheetGeometry.minSize.width)
+            #expect(shortSize.height == CodeSheetGeometry.minSize.height)
+
+            let wide = CodeSheetContent(codes[1])
+            #expect(CodeSheetGeometry.textWidth(for: wide.code) == CodeSheetGeometry.maxTextWidth)
+            let wideSize = CodeSheetGeometry.size(for: wide.code, maxHeight: 800)
+            #expect(wideSize.width < 700)
+            let sheet = CodeSheetWindow(content: wide, size: wideSize)
+            let layout = try #require(sheet.textView.layoutManager)
+            let container = try #require(sheet.textView.textContainer)
+            layout.ensureLayout(for: container)
+            let used = layout.usedRect(for: container)
+            #expect(used.width <= CodeSheetGeometry.maxTextWidth + 2 * CodeSheetGeometry.lineFragmentPadding + 0.5)
+            var lines = 0
+            layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(for: container)) { _, _, _, _, _ in
+                lines += 1
+            }
+            #expect(lines > 1)
+        }
+
+        @Test("The sheet's bar names the language, or Code when there is none")
+        func sheetTitle() throws {
+            let view = RenderProbe.view("```swift\nlet a = 1\n```\n\n```\nplain\n```")
+            let codes = view.contextViews.compactMap { $0 as? CodeView }
+            #expect(codes.count == 2)
+            let titles = codes.map { code in
+                let content = CodeSheetContent(code)
+                let sheet = CodeSheetWindow(content: content, size: CodeSheetGeometry.size(for: content.code, maxHeight: 800))
+                #expect(sheet.titleLabel.superview === sheet.contentView)
+                #expect(!sheet.titleLabel.frame.isEmpty)
+                return sheet.titleLabel.stringValue
+            }
+            #expect(titles == ["Swift", CodeSheetText.code])
+        }
+
+        @Test("A line that sets the sheet's width does not wrap in it")
+        func sheetKeepsFittedLine() throws {
+            let line = "print(\"a line well under the reading width, but over the minimum\")"
+            let view = RenderProbe.view("```swift\n\(line)\n```")
+            let code = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
+            let content = CodeSheetContent(code)
+            let size = CodeSheetGeometry.size(for: content.code, maxHeight: 800)
+            #expect(size.width > CodeSheetGeometry.minSize.width)
+            let sheet = CodeSheetWindow(content: content, size: size)
+            let layout = try #require(sheet.textView.layoutManager)
+            let container = try #require(sheet.textView.textContainer)
+            layout.ensureLayout(for: container)
+            var lines = 0
+            layout.enumerateLineFragments(forGlyphRange: layout.glyphRange(for: container)) { _, _, _, _, _ in
+                lines += 1
+            }
+            #expect(lines == 1)
+        }
+    #endif
 }
