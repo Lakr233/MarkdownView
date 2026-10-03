@@ -166,7 +166,7 @@ public extension MarkdownParser.ParseResult {
 
 public extension MarkdownParser.ParseResult {
     @MainActor
-    fileprivate func renderHighlighMap(_: MarkdownTheme, highlightMaps: inout [Int: CodeHighlighter.HighlightMap]) {
+    fileprivate func renderHighlightMap(_: MarkdownTheme, highlightMaps: inout [Int: CodeHighlighter.HighlightMap]) {
         var pendingRequests: [CodeHighlightRequest] = []
         var queue: [MarkdownBlockNode] = document
         var index = 0
@@ -196,7 +196,7 @@ public extension MarkdownParser.ParseResult {
     @MainActor
     func highlightMaps(theme: MarkdownTheme) -> [Int: CodeHighlighter.HighlightMap] {
         var highlightMap = [Int: CodeHighlighter.HighlightMap]()
-        renderHighlighMap(theme, highlightMaps: &highlightMap)
+        renderHighlightMap(theme, highlightMaps: &highlightMap)
         return highlightMap
     }
 

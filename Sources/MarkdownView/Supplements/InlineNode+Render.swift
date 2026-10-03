@@ -20,7 +20,6 @@ extension [MarkdownInlineNode] {
     func render(
         theme: MarkdownTheme,
         context: MarkdownContent,
-        viewProvider: ReusableViewProvider,
         decoration: TextBuilder.InlineTextDecoration? = nil,
     ) -> NSMutableAttributedString {
         let result = NSMutableAttributedString()
@@ -28,7 +27,6 @@ extension [MarkdownInlineNode] {
             result.append(node.render(
                 theme: theme,
                 context: context,
-                viewProvider: viewProvider,
                 decoration: decoration,
             ))
         }
@@ -41,7 +39,6 @@ extension MarkdownInlineNode {
     func render(
         theme: MarkdownTheme,
         context: MarkdownContent,
-        viewProvider: ReusableViewProvider,
         decoration: TextBuilder.InlineTextDecoration? = nil,
     ) -> NSAttributedString {
         assert(Thread.isMainThread)
@@ -64,7 +61,7 @@ extension MarkdownInlineNode {
         case let .emphasis(children):
             let ans = NSMutableAttributedString()
             children
-                .map { $0.render(theme: theme, context: context, viewProvider: viewProvider, decoration: decoration) }
+                .map { $0.render(theme: theme, context: context, decoration: decoration) }
                 .forEach { ans.append($0) }
             ans.addAttributes(
                 [
@@ -77,7 +74,7 @@ extension MarkdownInlineNode {
         case let .strong(children):
             let ans = NSMutableAttributedString()
             children
-                .map { $0.render(theme: theme, context: context, viewProvider: viewProvider, decoration: decoration) }
+                .map { $0.render(theme: theme, context: context, decoration: decoration) }
                 .forEach { ans.append($0) }
             ans.enumerateAttribute(.font, in: NSRange(location: 0, length: ans.length)) { value, range, _ in
                 #if canImport(UIKit)
@@ -101,7 +98,7 @@ extension MarkdownInlineNode {
         case let .strikethrough(children):
             let ans = NSMutableAttributedString()
             children
-                .map { $0.render(theme: theme, context: context, viewProvider: viewProvider, decoration: decoration) }
+                .map { $0.render(theme: theme, context: context, decoration: decoration) }
                 .forEach { ans.append($0) }
             ans.addAttributes(
                 [.strikethroughStyle: NSUnderlineStyle.thick.rawValue],
@@ -111,7 +108,7 @@ extension MarkdownInlineNode {
         case let .link(destination, children):
             let ans = NSMutableAttributedString()
             children
-                .map { $0.render(theme: theme, context: context, viewProvider: viewProvider, decoration: decoration) }
+                .map { $0.render(theme: theme, context: context, decoration: decoration) }
                 .forEach { ans.append($0) }
             ans.addAttributes(
                 [

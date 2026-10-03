@@ -43,7 +43,7 @@ final class BlockProcessor {
             paragraph.paragraphSpacing = theme.spacings.paragraph
             paragraph.paragraphSpacingBefore = theme.spacings.headingBefore
         } content: {
-            let string = contents.render(theme: theme, context: context, viewProvider: viewProvider, decoration: inlineTextDecoration)
+            let string = contents.render(theme: theme, context: context, decoration: inlineTextDecoration)
             let fullRange = NSRange(location: 0, length: string.length)
             string.enumerateAttribute(.font, in: fullRange, options: []) { value, range, _ in
                 // Inline code keeps its monospaced face inside a heading.
@@ -62,7 +62,7 @@ final class BlockProcessor {
             paragraph.paragraphSpacing = theme.spacings.paragraph
             paragraph.lineSpacing = 4
         } content: {
-            let rendered = contents.render(theme: theme, context: context, viewProvider: viewProvider, decoration: inlineTextDecoration)
+            let rendered = contents.render(theme: theme, context: context, decoration: inlineTextDecoration)
             if rendered.length == 0 {
                 return NSMutableAttributedString(string: " ", attributes: [.font: theme.fonts.body])
             }
@@ -133,7 +133,7 @@ final class BlockProcessor {
                 assertionFailure("Blockquote should only contain paragraphs after flattening")
                 continue
             }
-            let paragraphContent = content.render(theme: theme, context: context, viewProvider: viewProvider, decoration: inlineTextDecoration)
+            let paragraphContent = content.render(theme: theme, context: context, decoration: inlineTextDecoration)
             result.append(paragraphContent)
             if !result.string.hasSuffix("\n") {
                 result.append(NSAttributedString(string: "\n", attributes: [.font: theme.fonts.body]))
@@ -181,7 +181,7 @@ final class BlockProcessor {
         } else {
             let contents = rows.map {
                 $0.cells.map { rawCell in
-                    rawCell.content.render(theme: theme, context: context, viewProvider: viewProvider, decoration: inlineTextDecoration)
+                    rawCell.content.render(theme: theme, context: context, decoration: inlineTextDecoration)
                 }
             }
             let allContent = contents
@@ -238,17 +238,5 @@ extension BlockProcessor {
             string.append(.init(string: "\n"))
         }
         return string
-    }
-
-    private func removeLeadingSpacing(from attributedString: NSAttributedString) -> NSAttributedString {
-        let mutableString = attributedString.mutableCopy() as! NSMutableAttributedString
-        mutableString.enumerateAttribute(.paragraphStyle, in: NSRange(location: 0, length: mutableString.length), options: []) { value, range, _ in
-            if let style = value as? NSParagraphStyle {
-                let mutableStyle = style.mutableCopy() as! NSMutableParagraphStyle
-                mutableStyle.paragraphSpacingBefore = 0
-                mutableString.addAttribute(.paragraphStyle, value: mutableStyle, range: range)
-            }
-        }
-        return mutableString
     }
 }

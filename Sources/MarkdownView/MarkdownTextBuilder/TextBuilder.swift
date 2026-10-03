@@ -274,7 +274,6 @@ extension TextBuilder {
 
         let listProcessor = ListProcessor(
             theme: theme,
-            viewProvider: viewProvider,
             context: context,
             bulletDrawing: bulletDrawing,
             numberedDrawing: numberedDrawing,

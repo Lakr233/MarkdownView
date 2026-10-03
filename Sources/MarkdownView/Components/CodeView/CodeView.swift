@@ -116,9 +116,6 @@ final class CodeView: PlatformView {
 
     var actions: [CodeBlockAction] = []
 
-    private let callerIdentifier = UUID()
-    private var currentTaskIdentifier: UUID?
-
     lazy var barView: PlatformView = .init()
     #if canImport(UIKit)
         lazy var scrollView: HorizontalClippingScrollView = .init()

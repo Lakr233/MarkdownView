@@ -518,7 +518,7 @@ struct MarkdownViewLayoutTests {
         )
         let rendered = MarkdownInlineNode
             .text("中文段落 日本語かな العربية")
-            .render(theme: .default, context: context, viewProvider: .init())
+            .render(theme: .default, context: context)
 
         // Simplified Chinese and Japanese carry their locale in the resolved
         // font rather than in the attribute; Arabic still shapes by language.

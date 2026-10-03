@@ -1,9 +1,5 @@
 import Foundation
 
-#if canImport(NaturalLanguage)
-    import NaturalLanguage
-#endif
-
 @MainActor
 enum MarkdownContentLocale {
     private final class CachedLanguageRuns: NSObject {
@@ -86,24 +82,6 @@ enum MarkdownContentLocale {
         language != "zh-Hans" && language != "ja"
     }
 
-    static func dominantLanguageIdentifier(
-        for text: String,
-        fallbackLocale: Locale,
-    ) -> String? {
-        let scriptLanguage = scriptLanguageIdentifier(for: text, fallbackLocale: fallbackLocale)
-        if scriptLanguage != nil {
-            return scriptLanguage
-        }
-
-        #if canImport(NaturalLanguage)
-            let recognizer = NLLanguageRecognizer()
-            recognizer.processString(text)
-            return recognizer.dominantLanguage?.rawValue
-        #else
-            return nil
-        #endif
-    }
-
     private static func languageIdentifier(
         for character: Character,
         token: LanguageToken?,
@@ -118,13 +96,6 @@ enum MarkdownContentLocale {
             }
         }
         return scriptLanguageIdentifier(scalars: character.unicodeScalars, fallbackLocale: fallbackLocale)
-    }
-
-    private static func scriptLanguageIdentifier(
-        for text: String,
-        fallbackLocale: Locale,
-    ) -> String? {
-        scriptLanguageIdentifier(scalars: text.unicodeScalars, fallbackLocale: fallbackLocale)
     }
 
     private static func scriptLanguageIdentifier(

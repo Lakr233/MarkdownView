@@ -13,7 +13,7 @@ import DequeModule
 @MainActor
 private class ObjectPool<T: Equatable & Hashable> {
     private let factory: () -> T
-    fileprivate lazy var objects: Deque<T> = .init()
+    private lazy var objects: Deque<T> = .init()
 
     init(_ factory: @escaping () -> T) {
         self.factory = factory
@@ -63,11 +63,6 @@ public final class ReusableViewProvider {
     }
 
     public init() {}
-
-    func removeAll() {
-        codeViewPool.objects.removeAll()
-        tableViewPool.objects.removeAll()
-    }
 
     func acquireCodeView() -> CodeView {
         codeViewPool.acquire()
