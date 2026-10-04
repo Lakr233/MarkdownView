@@ -12,7 +12,7 @@ import MarkdownParser
 /// Parsed and pre-rendered markdown, ready for display in ``MarkdownTextView``.
 ///
 /// Build one off the main thread for streaming scenarios, or use
-/// ``init(markdown:theme:locale:)`` for one-shot rendering.
+/// ``init(markdown:theme:locale:isStreaming:)`` for one-shot rendering.
 public final class MarkdownContent: @unchecked Sendable {
     /// What a rendered piece of body text depends on.
     ///
@@ -69,14 +69,20 @@ public final class MarkdownContent: @unchecked Sendable {
     }
 
     /// Parses markdown text and pre-renders it in one step.
+    ///
+    /// Pass `isStreaming` for a document still being written: its unfinished
+    /// end is closed the way it is heading — `**bo` shows as bold, a lone
+    /// `-` is held back — see ``MarkdownParser/StreamingTail``. Build the
+    /// last update of a stream without it.
     @MainActor
     public convenience init(
         markdown: String,
         theme: MarkdownTheme = .default,
         locale: Locale = .autoupdatingCurrent,
+        isStreaming: Bool = false,
     ) {
         self.init(
-            parserResult: MarkdownParser().parse(markdown),
+            parserResult: MarkdownParser().parse(markdown, isStreaming: isStreaming),
             theme: theme,
             locale: locale,
         )
