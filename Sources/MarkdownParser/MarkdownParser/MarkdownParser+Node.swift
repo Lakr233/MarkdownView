@@ -16,14 +16,16 @@ extension MarkdownParser {
             return []
         }
         assert(root.pointee.type == CMARK_NODE_DOCUMENT.rawValue)
-        let nodeList = root.children
-            .flatMap(MarkdownBlockNode.makeBlocks(unsafeNode:))
-            .rewrite { node -> [MarkdownBlockNode] in
+        var nodeList = root.children.flatMap(MarkdownBlockNode.makeBlocks(unsafeNode:))
+        // Restoring is a no-op until the math pass has placed something.
+        if !mathContext.contents.isEmpty {
+            nodeList = nodeList.rewrite { node -> [MarkdownBlockNode] in
                 guard case let .codeBlock(language, content) = node else {
                     return [node]
                 }
                 return [.codeBlock(fenceInfo: language, content: mathContext.restore(content: content))]
             }
+        }
 
         let reorderContext = SpecializeContext()
         for node in nodeList {

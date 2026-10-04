@@ -294,7 +294,7 @@ public extension MarkdownParser {
         }
 
         func inlineNode(forReplacementText text: String) -> MarkdownInlineNode? {
-            guard !contents.isEmpty else { return nil }
+            guard !contents.isEmpty, text.utf8Contains("md://content?") else { return nil }
             guard MarkdownParser.typeForReplacementText(text) == .math,
                   let identifier = MarkdownParser.identifierForReplacementText(text),
                   let value = Int(identifier),
@@ -312,7 +312,7 @@ public extension MarkdownParser {
         }
 
         func restore(content: String) -> String {
-            guard content.contains("md://content?type=math") else { return content }
+            guard content.utf8Contains("md://content?type=math") else { return content }
             return contents.sorted(by: { $0.key < $1.key }).reduce(into: content) { partialResult, element in
                 let placeholder = MarkdownParser.replacementText(for: .math, identifier: .init(element.key))
                 let source = sourceContents[element.key] ?? element.value
@@ -359,10 +359,17 @@ private func textMayContainInlineMath(_ text: String) -> Bool {
 
 extension MarkdownParser {
     func finalizeMathBlocks(_ nodes: [MarkdownBlockNode], mathContext: MathContext) -> [MarkdownBlockNode] {
+        // Without placeholders, only a text node with math changes, and most
+        // documents have none: finding that out is cheaper than rebuilding.
+        if mathContext.contents.isEmpty, !nodes.containsText(where: textMayContainInlineMath) {
+            return nodes
+        }
         let inlineFinalized = nodes.rewrite { node in
             finalizeInlineMath(node, mathContext: mathContext)
         }
-        guard !mathContext.contents.isEmpty else { return inlineFinalized }
+        guard !mathContext.contents.isEmpty,
+              inlineFinalized.containsCodeBlock(where: { $0.utf8Contains("md://content?type=math") })
+        else { return inlineFinalized }
         return inlineFinalized.rewrite { node in
             guard case let .codeBlock(language, content) = node else {
                 return [node]
