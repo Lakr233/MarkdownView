@@ -173,6 +173,27 @@ private func extractMathMatches(in text: String, using regex: NSRegularExpressio
     }
 }
 
+/// Whether `text` holds what every `mathPattern` match starts with: `$$`,
+/// `\[` or `\(` (which `\\[` and `\\(` contain).
+///
+/// Most answers have none, and this byte scan is far cheaper than the regex.
+private func documentMayContainDelimitedMath(_ text: String) -> Bool {
+    var previous: UInt8 = 0
+    for byte in text.utf8 {
+        switch byte {
+        case UInt8(ascii: "$") where previous == UInt8(ascii: "$"):
+            return true
+        case UInt8(ascii: "[") where previous == UInt8(ascii: "\\"),
+             UInt8(ascii: "(") where previous == UInt8(ascii: "\\"):
+            return true
+        default:
+            break
+        }
+        previous = byte
+    }
+    return false
+}
+
 /// Whether a backtick run ends just before `location` with at least one of its
 /// backticks unescaped — one that would still join a code span delimiter.
 private func endsInUnescapedBacktick(_ text: NSString, before location: Int) -> Bool {
@@ -213,11 +234,16 @@ public extension MarkdownParser {
                 return
             }
 
+            guard documentMayContainDelimitedMath(document) else { return }
+            var matches = extractMathMatches(in: document, using: regex)
+            if matches.isEmpty {
+                return
+            }
             // Backtick-delimited regions (inline code spans and fenced blocks)
             // are literal — math markers inside them must not be replaced.
             let literalRanges = backtickDelimitedRanges(in: document)
-            let matches = extractMathMatches(in: document, using: regex).filter { match in
-                !literalRanges.contains { NSIntersectionRange($0, match.range).length > 0 }
+            matches.removeAll { match in
+                literalRanges.contains { NSIntersectionRange($0, match.range).length > 0 }
             }
             if matches.isEmpty {
                 return
