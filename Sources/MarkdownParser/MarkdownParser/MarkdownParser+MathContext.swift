@@ -7,27 +7,6 @@
 
 import Foundation
 
-private let mathPattern: NSRegularExpression? = {
-    let patterns = [
-        ###"\$\$([\s\S]*?)\$\$"###, // 块级公式 $$ ... $$
-        ###"\\\\\[([\s\S]*?)\\\\\]"###, // 带转义的块级公式 \\[ ... \\]
-        ###"\\\\\(([\s\S]*?)\\\\\)"###, // 带转义的行内公式 \\( ... \\)
-        ###"\\\[([\s\S]*?)\\\]"###, // 单个反斜杠的块级公式 \[ ... \]
-        ###"\\\(([^`\n]*?)\\\)"###, // 单个反斜杠的块级公式 \( ... \)，中间不能有 ` 和 换行
-    ]
-    let pattern = patterns.joined(separator: "|")
-    guard let regex = try? NSRegularExpression(
-        pattern: pattern,
-        options: [
-            .caseInsensitive,
-        ],
-    ) else {
-        assertionFailure("failed to create regex for math pattern")
-        return nil
-    }
-    return regex
-}()
-
 private struct MathMatch {
     let range: NSRange
     let content: String
@@ -85,12 +64,10 @@ private func containerPrefixEnd(in units: [UInt16], from start: Int) -> Int {
 /// Ranges spanned by paired backtick runs, following cmark's rule that a code
 /// span opener pairs with the next backtick run of the same length. A code
 /// span ends at a blank line, so only a fence pairs across one.
-private func backtickDelimitedRanges(in text: String) -> [NSRange] {
-    guard text.utf8.contains(UInt8(ascii: "`")) else { return [] }
-
-    // UTF-16 code units, so offsets line up with the NSRanges matched later.
-    let units = Array(text.utf16)
+private func backtickDelimitedRanges(in units: [UInt16]) -> [NSRange] {
     let backtick = UInt16(UInt8(ascii: "`"))
+    guard units.contains(backtick) else { return [] }
+
     var runs: [BacktickRun] = []
     var chunk = 0
     // Whether the line holds more than indentation and its container prefix
@@ -157,23 +134,17 @@ private func backtickDelimitedRanges(in text: String) -> [NSRange] {
     return ranges
 }
 
-private func extractMathMatches(in text: String, using regex: NSRegularExpression) -> [MathMatch] {
-    let nsText = text as NSString
-    return regex.matches(in: text, range: NSRange(location: 0, length: nsText.length)).compactMap { match in
-        for rangeIndex in 1 ..< match.numberOfRanges {
-            let captureRange = match.range(at: rangeIndex)
-            guard captureRange.location != NSNotFound else { continue }
-            return MathMatch(
-                range: match.range(at: 0),
-                content: nsText.substring(with: captureRange),
-                source: nsText.substring(with: match.range(at: 0)),
-            )
-        }
-        return nil
+private func mathMatches(_ matches: [MathDelimiterScanner.Match], in text: NSString) -> [MathMatch] {
+    matches.map { match in
+        MathMatch(
+            range: match.range,
+            content: text.substring(with: match.contentRange),
+            source: text.substring(with: match.range),
+        )
     }
 }
 
-/// Whether `text` holds what every `mathPattern` match starts with: `$$`,
+/// Whether `text` holds what every delimited math match starts with: `$$`,
 /// `\[` or `\(` (which `\\[` and `\\(` contain).
 ///
 /// Most answers have none, and this byte scan is far cheaper than the regex.
@@ -229,27 +200,25 @@ public extension MarkdownParser {
         }
 
         func process() {
-            guard let regex = mathPattern else {
-                assertionFailure()
-                return
-            }
-
             guard documentMayContainDelimitedMath(document) else { return }
-            var matches = extractMathMatches(in: document, using: regex)
-            if matches.isEmpty {
+            // UTF-16 code units, so offsets line up with NSString ranges.
+            let units = Array(document.utf16)
+            var scanned = MathDelimiterScanner.delimitedMath(in: units)
+            if scanned.isEmpty {
                 return
             }
             // Backtick-delimited regions (inline code spans and fenced blocks)
             // are literal — math markers inside them must not be replaced.
-            let literalRanges = backtickDelimitedRanges(in: document)
-            matches.removeAll { match in
+            let literalRanges = backtickDelimitedRanges(in: units)
+            scanned.removeAll { match in
                 literalRanges.contains { NSIntersectionRange($0, match.range).length > 0 }
             }
-            if matches.isEmpty {
+            if scanned.isEmpty {
                 return
             }
 
             let nsText = document as NSString
+            let matches = mathMatches(scanned, in: nsText)
             var result = ""
             result.reserveCapacity(document.utf8.count)
             var lastEnd = 0
@@ -341,24 +310,6 @@ public extension MarkdownParser {
     }
 }
 
-private let mathPatternWithinBlock: NSRegularExpression? = {
-    let patterns = [
-        ###"\\\(([^\r\n]+?)\\\)"###, // 行内公式 \(...\)
-        ###"(?<![\d$])\$(?=\S)([^\r\n$]+?)(?<=\S)\$(?!\d)"###, // 行内公式 $...$，排除货币金额
-    ]
-    let pattern = patterns.joined(separator: "|")
-    guard let regex = try? NSRegularExpression(
-        pattern: pattern,
-        options: [
-            .caseInsensitive,
-        ],
-    ) else {
-        assertionFailure("failed to create regex for math pattern")
-        return nil
-    }
-    return regex
-}()
-
 private func textMayContainInlineMath(_ text: String) -> Bool {
     var previous: UInt8 = 0
     for byte in text.utf8 {
@@ -411,13 +362,13 @@ extension MarkdownParser {
 
     private func processInlineMath(in text: String, mathContext: MathContext) -> [MarkdownInlineNode] {
         guard textMayContainInlineMath(text) else { return [.text(text)] }
-        guard let regex = mathPatternWithinBlock else { return [.text(text)] }
-        let matches = extractMathMatches(in: text, using: regex)
-        if matches.isEmpty {
+        let scanned = MathDelimiterScanner.inlineMath(in: Array(text.utf16))
+        if scanned.isEmpty {
             return [.text(text)]
         }
 
         let nsText = text as NSString
+        let matches = mathMatches(scanned, in: nsText)
         var result: [MarkdownInlineNode] = []
         var lastEnd = 0
 
