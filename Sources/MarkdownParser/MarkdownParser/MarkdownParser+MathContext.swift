@@ -134,13 +134,42 @@ private func backtickDelimitedRanges(in units: [UInt16]) -> [NSRange] {
     return ranges
 }
 
-private func mathMatches(_ matches: [MathDelimiterScanner.Match], in text: NSString) -> [MathMatch] {
+private func mathMatches(_ matches: [MathDelimiterScanner.Match], in text: inout UTF16Slicer) -> [MathMatch] {
     matches.map { match in
-        MathMatch(
-            range: match.range,
-            content: text.substring(with: match.contentRange),
-            source: text.substring(with: match.range),
-        )
+        let source = text.string(match.range)
+        return MathMatch(range: match.range, content: text.string(match.contentRange), source: source)
+    }
+}
+
+/// Slices a string at UTF-16 offsets, walking from the last offset asked for
+/// rather than from the start, so ascending offsets cost one pass in total.
+///
+/// Slices are taken by scalar, never rounded to a character boundary: a
+/// delimiter may be followed by a combining mark.
+private struct UTF16Slicer {
+    let text: String
+    private var index: String.Index
+    private var offset = 0
+
+    init(_ text: String) {
+        self.text = text
+        index = text.startIndex
+    }
+
+    mutating func index(at target: Int) -> String.Index {
+        index = text.utf16.index(index, offsetBy: target - offset)
+        offset = target
+        return index
+    }
+
+    mutating func substring(_ range: NSRange) -> Substring {
+        let start = index(at: range.location)
+        let end = index(at: range.location + range.length)
+        return Substring(text.unicodeScalars[start ..< end])
+    }
+
+    mutating func string(_ range: NSRange) -> String {
+        String(substring(range))
     }
 }
 
@@ -167,17 +196,17 @@ private func documentMayContainDelimitedMath(_ text: String) -> Bool {
 
 /// Whether a backtick run ends just before `location` with at least one of its
 /// backticks unescaped — one that would still join a code span delimiter.
-private func endsInUnescapedBacktick(_ text: NSString, before location: Int) -> Bool {
-    let backtick = unichar(UInt8(ascii: "`"))
-    let backslash = unichar(UInt8(ascii: "\\"))
+private func endsInUnescapedBacktick(_ units: [UInt16], before location: Int) -> Bool {
+    let backtick = UInt16(UInt8(ascii: "`"))
+    let backslash = UInt16(UInt8(ascii: "\\"))
     var index = location
-    while index > 0, text.character(at: index - 1) == backtick {
+    while index > 0, units[index - 1] == backtick {
         index -= 1
     }
     let run = location - index
     guard run > 0 else { return false }
     var backslashes = 0
-    while index > 0, text.character(at: index - 1) == backslash {
+    while index > 0, units[index - 1] == backslash {
         index -= 1
         backslashes += 1
     }
@@ -217,8 +246,8 @@ public extension MarkdownParser {
                 return
             }
 
-            let nsText = document as NSString
-            let matches = mathMatches(scanned, in: nsText)
+            var slicer = UTF16Slicer(document)
+            let matches = mathMatches(scanned, in: &slicer)
             var result = ""
             result.reserveCapacity(document.utf8.count)
             var lastEnd = 0
@@ -227,18 +256,18 @@ public extension MarkdownParser {
             // user code or another placeholder) would merge into its delimiter
             // run, so a space keeps the two apart. Where the placeholder ends
             // up literal, in a code block, restoring it takes the space too.
-            let backtick = unichar(UInt8(ascii: "`"))
+            let backtick = UInt16(UInt8(ascii: "`"))
             for match in matches {
                 if match.range.location > lastEnd {
-                    result += nsText.substring(
-                        with: NSRange(location: lastEnd, length: match.range.location - lastEnd),
+                    result += slicer.substring(
+                        NSRange(location: lastEnd, length: match.range.location - lastEnd),
                     )
                 }
                 let matchEnd = match.range.location + match.range.length
                 let followsPlaceholder = match.range.location == lastEnd && lastEnd > 0
                 let spaceBefore = followsPlaceholder
-                    || endsInUnescapedBacktick(nsText, before: match.range.location)
-                let spaceAfter = matchEnd < nsText.length && nsText.character(at: matchEnd) == backtick
+                    || endsInUnescapedBacktick(units, before: match.range.location)
+                let spaceAfter = matchEnd < units.count && units[matchEnd] == backtick
                 let placeholder = register(content: match.content, source: match.source)
                 let inserted = (spaceBefore ? " " : "") + placeholder + (spaceAfter ? " " : "")
                 if inserted != placeholder {
@@ -248,8 +277,8 @@ public extension MarkdownParser {
                 lastEnd = matchEnd
             }
 
-            if lastEnd < nsText.length {
-                result += nsText.substring(from: lastEnd)
+            if lastEnd < units.count {
+                result += slicer.substring(NSRange(location: lastEnd, length: units.count - lastEnd))
             }
 
             indexedContent = result
@@ -362,20 +391,21 @@ extension MarkdownParser {
 
     private func processInlineMath(in text: String, mathContext: MathContext) -> [MarkdownInlineNode] {
         guard textMayContainInlineMath(text) else { return [.text(text)] }
-        let scanned = MathDelimiterScanner.inlineMath(in: Array(text.utf16))
+        let units = Array(text.utf16)
+        let scanned = MathDelimiterScanner.inlineMath(in: units)
         if scanned.isEmpty {
             return [.text(text)]
         }
 
-        let nsText = text as NSString
-        let matches = mathMatches(scanned, in: nsText)
+        var slicer = UTF16Slicer(text)
+        let matches = mathMatches(scanned, in: &slicer)
         var result: [MarkdownInlineNode] = []
         var lastEnd = 0
 
         for match in matches {
             if match.range.location > lastEnd {
-                let beforeText = nsText.substring(
-                    with: NSRange(location: lastEnd, length: match.range.location - lastEnd),
+                let beforeText = slicer.string(
+                    NSRange(location: lastEnd, length: match.range.location - lastEnd),
                 )
                 if !beforeText.isEmpty {
                     result.append(.text(beforeText))
@@ -392,8 +422,8 @@ extension MarkdownParser {
             lastEnd = match.range.location + match.range.length
         }
 
-        if lastEnd < nsText.length {
-            let remainingText = nsText.substring(from: lastEnd)
+        if lastEnd < units.count {
+            let remainingText = slicer.string(NSRange(location: lastEnd, length: units.count - lastEnd))
             if !remainingText.isEmpty {
                 result.append(.text(remainingText))
             }
