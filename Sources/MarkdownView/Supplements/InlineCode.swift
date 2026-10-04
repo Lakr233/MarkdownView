@@ -113,17 +113,25 @@ final class InlineCodeBackground: NSObject {
 
 /// A text label that draws inline code on its pill.
 ///
-/// The pill has to be drawn before the line's text: drawn afterwards it
-/// either covers the glyphs or, composited beneath them, stacks up again on
-/// every partial redraw. Labels showing markdown use this class; a plain
-/// `TextLabelView` shows inline code without its background.
+/// Labels showing markdown use this class; a plain `TextLabelView` shows
+/// inline code without its background. A subclass that lays its text out
+/// itself returns a ``MarkdownTextLayout`` subclass from
+/// `makeTextLayout(_:)` to keep the pills.
 open class MarkdownTextLabelView: TextLabelView {
     override open func makeTextLayout(_ attributedText: NSAttributedString) -> TextLabel.Layout {
-        InlineCodeLayout(attributedString: attributedText)
+        MarkdownTextLayout(attributedString: attributedText)
     }
 }
 
-private final class InlineCodeLayout: TextLabel.Layout {
+/// The layout a ``MarkdownTextLabelView`` shows markdown with: it draws each
+/// inline code span on its pill.
+///
+/// The pill has to be drawn before the line's text: drawn afterwards it
+/// either covers the glyphs or, composited beneath them, stacks up again on
+/// every partial redraw. An override of `draw(line:at:in:)` that draws the
+/// glyphs itself calls ``drawInlineCodeBackgrounds(of:at:in:)`` first, or
+/// `super` to draw both.
+open class MarkdownTextLayout: TextLabel.Layout {
     private lazy var hasInlineCode: Bool = {
         var found = false
         attributedString.enumerateAttribute(
@@ -150,14 +158,19 @@ private final class InlineCodeLayout: TextLabel.Layout {
         let maxX: CGFloat
     }
 
-    override func draw(line: CTLine, at index: Int, in context: CGContext) {
-        if hasInlineCode {
-            drawInlineCodeBackgrounds(of: line, at: index, in: context)
-        }
+    override open func draw(line: CTLine, at index: Int, in context: CGContext) {
+        drawInlineCodeBackgrounds(of: line, at: index, in: context)
         super.draw(line: line, at: index, in: context)
     }
 
-    private func drawInlineCodeBackgrounds(of line: CTLine, at index: Int, in context: CGContext) {
+    /// Fills the pill behind every inline code span on `line`, in the
+    /// CoreText space `draw(line:at:in:)` hands over, and leaves the text
+    /// position where it was.
+    ///
+    /// - Important: Performance-sensitive: runs for every visible line on
+    ///   every display pass. A document without inline code returns at once.
+    open func drawInlineCodeBackgrounds(of line: CTLine, at index: Int, in context: CGContext) {
+        guard hasInlineCode else { return }
         let pills: [Pill]
         if let cached = pillCache[index], cached.line === line {
             pills = cached.pills
