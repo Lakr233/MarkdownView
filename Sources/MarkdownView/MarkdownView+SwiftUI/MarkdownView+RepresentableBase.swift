@@ -35,11 +35,14 @@ extension MarkdownViewRepresentableBase {
         case let .text(text):
             // A view last fed prebuilt content is showing that content, not
             // `lastText`, so any text replaces it — even the empty string.
+            // The end of a stream changes what is parsed, not the text.
+            let isStreaming = isStreaming ?? false
             let needsUpdate = coordinator.lastContent != nil
                 || coordinator.targetText != text
                 || coordinator.targetTheme != theme
+                || coordinator.targetIsStreaming != isStreaming
             if needsUpdate {
-                coordinator.setTextThrottled(text, theme: theme, on: view)
+                coordinator.setTextThrottled(text, theme: theme, isStreaming: isStreaming, on: view)
             }
 
         case let .content(markdownContent):
@@ -48,6 +51,7 @@ extension MarkdownViewRepresentableBase {
             if needsUpdate {
                 coordinator.cancelScheduledApply()
                 coordinator.lastText = ""
+                coordinator.lastParsedText = ""
                 coordinator.lastParseResult = nil
                 coordinator.lastContent = markdownContent
                 view.setContentImmediately(markdownContent, theme: theme)

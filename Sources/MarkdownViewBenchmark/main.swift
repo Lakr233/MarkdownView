@@ -273,6 +273,60 @@ struct MarkdownViewBenchmark {
             })
         }
 
+        // The same stream with its unfinished end closed before each parse,
+        // as `MarkdownView.streaming(true)` does. Next to `stream/16` it says
+        // what the repair costs a whole update; the parse cases below say
+        // what it costs the parse.
+        let repairedPrefixes = streamingPrefixes(
+            of: benchmarkDocument(sections: 16),
+            updates: 120,
+        )
+        cases.append(BenchmarkCase(
+            name: "stream/repaired_16",
+            operations: repairedPrefixes.count,
+            iterationLimit: 3,
+        ) { iterations in
+            for _ in 0 ..< iterations {
+                let view = MarkdownTextView()
+                for prefix in repairedPrefixes {
+                    autoreleasepool {
+                        let content = MarkdownContent(
+                            parserResult: parser.parse(prefix, isStreaming: true),
+                            theme: theme,
+                        )
+                        view.setContentImmediately(content)
+                        _ = view.boundingSize(for: 600)
+                    }
+                }
+            }
+        })
+        for isStreaming in [false, true] {
+            cases.append(BenchmarkCase(
+                name: isStreaming ? "stream/parse_repaired_16" : "stream/parse_16",
+                operations: repairedPrefixes.count,
+                iterationLimit: 10,
+            ) { iterations in
+                for _ in 0 ..< iterations {
+                    for prefix in repairedPrefixes {
+                        autoreleasepool {
+                            _ = parser.parse(prefix, isStreaming: isStreaming)
+                        }
+                    }
+                }
+            })
+        }
+        cases.append(BenchmarkCase(
+            name: "stream/tail_repair_16",
+            operations: repairedPrefixes.count,
+            iterationLimit: 10,
+        ) { iterations in
+            for _ in 0 ..< iterations {
+                for prefix in repairedPrefixes {
+                    _ = MarkdownParser.StreamingTail(closing: prefix)
+                }
+            }
+        })
+
         // The tail of a long answer, where every update already carries the
         // whole document. This is the worst update a reader ever waits on.
         let longPrefixes = Array(

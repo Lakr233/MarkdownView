@@ -103,6 +103,18 @@ view.setContent(nextContent)          // more of the stream fades in
 
 In a list, turn streaming on only for the row that is being written. A view that is not in a window, such as one measuring a row's height, never animates. In SwiftUI, use `MarkdownView(text).streaming(isGenerating)`.
 
+### The unfinished end of a stream
+
+Parsed as it arrives, a half-written answer flickers: `**bo` shows its asterisks until they close, a lone `-` flashes as an empty list item, and ```` ```sw ```` names a language from half its name. Parse with `isStreaming` and the end is closed the way it is heading instead, so `**bo` already shows as bold `bo` and grows into `bold`:
+
+```swift
+let result = MarkdownParser().parse(accumulatedText, isStreaming: true)
+// or
+let content = MarkdownContent(markdown: accumulatedText, isStreaming: true)
+```
+
+It holds back a last line of bare markers and a partial fence line, closes emphasis, strikethrough and code spans opened on the last line, closes an unfinished link destination, drops an unfinished image, and gives a table header its delimiter row early. It only cuts and appends at the very end, so every earlier block parses to the same bytes and is reused by the next rebuild. It leaves fenced code and unclosed `$$` math alone. `MarkdownView(text).streaming(true)` does this for you, and parses the text again without it when the stream ends. Build the final update of a stream without it, so the document lands on exactly what the text says.
+
 ### Subclassing
 
 `MarkdownTextView` is open the way Litext's `TextLabelView` is: its handlers, `theme`, `throttleInterval`, the content setters and its `TextLabelViewDelegate` methods can be overridden (call `super`). To change how the body is drawn, pass your own label:

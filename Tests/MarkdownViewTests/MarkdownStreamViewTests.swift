@@ -60,6 +60,21 @@ import Testing
             _ = window
         }
 
+        /// With the tail closed, `**bo` already shows as bold, so `**bold`
+        /// only appends to it and the new letters fade in.
+        @Test
+        func `streamed emphasis fades in as it grows`() {
+            let (view, window) = makeHostedView()
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            let intro = Self.paragraphs[0] + "\n\n"
+            view.setContent(MarkdownContent(markdown: intro + "Hello **bo", isStreaming: true))
+            view.setContent(MarkdownContent(markdown: intro + "Hello **bold", isStreaming: true))
+            #expect(view.streamLabel.isAnimating)
+            #expect(view.textLabelView.attributedText.string.hasSuffix("Hello bold\n"))
+            _ = window
+        }
+
         @Test
         func `content set immediately never animates`() {
             let (view, window) = makeHostedView()
