@@ -55,6 +55,9 @@
                         .foregroundStyle(.secondary)
                 }
             }
+            // The detail column's toolbar background starts a little left of the
+            // sidebar's edge, leaving a step at the top of the divider.
+            .toolbarBackground(.hidden, for: .windowToolbar)
             .toolbar {
                 ToolbarItemGroup {
                     Picker("Appearance", selection: Binding(
@@ -87,6 +90,8 @@
                         Label(width.name, systemImage: "arrow.left.and.right")
                             .labelStyle(.titleAndIcon)
                     }
+                    // Sized to its title, so the toolbar never truncates it.
+                    .fixedSize()
                     .help("Content width")
 
                     Toggle(isOn: $showsSource) {
