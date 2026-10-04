@@ -67,7 +67,7 @@ struct MarkdownViewBenchmark {
 
     @MainActor
     private static func benchmarkCases() -> [BenchmarkCase] {
-        legacyCases() + scalingCases() + streamingCases() + shapeCases() + drawCases() + localeCases() + highlightCases()
+        legacyCases() + parserCases() + scalingCases() + streamingCases() + shapeCases() + drawCases() + localeCases() + highlightCases()
     }
 
     // MARK: - Code highlighting
