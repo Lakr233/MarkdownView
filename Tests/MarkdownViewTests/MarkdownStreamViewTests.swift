@@ -158,6 +158,22 @@ import Testing
         }
 
         @Test
+        func `a finished highlight keeps streamed code fading`() throws {
+            let (view, window) = makeHostedView()
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            view.setContent(content("Intro.\n\n```swift\nlet a = 1\n"))
+            view.setContent(content("Intro.\n\n```swift\nlet a = 1\nlet b = 2\n"))
+            let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
+            #expect(codeView.textView.isAnimating)
+            // The highlight arrives for the code already on screen: only colours change.
+            let code = codeView.content
+            codeView.setContent(code, highlightMap: [NSRange(location: 0, length: 3): .keyword])
+            #expect(codeView.textView.isAnimating)
+            _ = window
+        }
+
+        @Test
         func `the body keeps its inline code pill`() {
             let view = MarkdownStreamView()
             #expect(view.textLabelView.lineRenderer is InlineCodeLineRenderer)
