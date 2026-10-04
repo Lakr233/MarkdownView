@@ -33,6 +33,8 @@
                         }
                     }
                 }
+                // The legacy scroller a mouse brings would sit in the sidebar's edge.
+                .scrollIndicators(.never)
                 .navigationSplitViewColumnWidth(min: 180, ideal: 210)
             } detail: {
                 if let sample = CatalogSample.all.first(where: { $0.id == selection }) {
@@ -68,10 +70,18 @@
                     .pickerStyle(.segmented)
                     .help("Appearance")
 
-                    Picker("Width", selection: $width) {
-                        ForEach(CatalogWidth.allCases) { width in
-                            Text(width.title).tag(width)
+                    // A bare picker in a toolbar shows only its chevron, so the menu
+                    // names the width it is set to.
+                    Menu {
+                        Picker("Width", selection: $width) {
+                            ForEach(CatalogWidth.allCases) { width in
+                                Text(width.title).tag(width)
+                            }
                         }
+                        .pickerStyle(.inline)
+                    } label: {
+                        Label(width.title, systemImage: "arrow.left.and.right")
+                            .labelStyle(.titleAndIcon)
                     }
                     .help("Content width")
 
