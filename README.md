@@ -89,6 +89,16 @@ Immediate, unthrottled replacement:
 markdownTextView.setContentImmediately(content)
 ```
 
+### Subclassing
+
+`MarkdownTextView` is open the way Litext's `TextLabelView` is: its handlers, `theme`, `throttleInterval`, the content setters and its `TextLabelViewDelegate` methods can be overridden (call `super`). To change how the body is drawn, pass your own label:
+
+```swift
+let view = MarkdownTextView(textLabelView: MyLabel()) // any TextLabelView subclass, LTXAnimatableLabel included
+```
+
+Inline code is drawn on its pill by an `InlineCodeLineRenderer`, a Litext line renderer. A label that arrives without a `lineRenderer` is given one, so the pill survives a label that returns a layout of its own; subclass `InlineCodeLineRenderer` to draw more behind the lines.
+
 ### watchOS
 
 ```swift

@@ -70,11 +70,17 @@ open class MarkdownTextView: PlatformView {
 
     /// - Parameter textLabelView: the label that draws the document body.
     ///   Pass a `TextLabelView` subclass to change how body text is drawn
-    ///   while code blocks, tables and selection keep working as before.
+    ///   while code blocks, tables and selection keep working as before. A
+    ///   label without a `lineRenderer` is given an
+    ///   ``InlineCodeLineRenderer``, so inline code keeps its pill; pass one
+    ///   that subclasses it to draw more behind the lines.
     public init(textLabelView: TextLabelView = MarkdownTextLabelView(), viewProvider: ReusableViewProvider = .init()) {
         self.textLabelView = textLabelView
         self.viewProvider = viewProvider
         super.init(frame: .zero)
+        if textLabelView.lineRenderer == nil {
+            textLabelView.lineRenderer = InlineCodeLineRenderer()
+        }
         textLabelView.isSelectable = true
         textLabelView.selectionBackgroundColor = theme.colors.selectionBackground
         textLabelView.delegate = self
