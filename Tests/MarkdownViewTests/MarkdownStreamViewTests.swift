@@ -3,9 +3,17 @@ import LitextAnimation
 @testable import MarkdownView
 import Testing
 
-#if canImport(AppKit) && !targetEnvironment(macCatalyst)
+#if canImport(UIKit)
+    import UIKit
+
+    private typealias HostWindow = UIWindow
+#elseif canImport(AppKit)
     import AppKit
 
+    private typealias HostWindow = NSWindow
+#endif
+
+#if !targetEnvironment(macCatalyst)
     @MainActor
     struct MarkdownStreamViewTests {
         private static let paragraphs = (0 ..< 6).map { "Paragraph \($0) of an answer that streams in." }
@@ -15,16 +23,22 @@ import Testing
         }
 
         /// A stream view in a window, showing the first paragraph.
-        private func makeHostedView(identity: AnyHashable? = nil) -> (MarkdownStreamView, NSWindow) {
-            let window = NSWindow(
-                contentRect: .init(x: 0, y: 0, width: 400, height: 600),
-                styleMask: [.titled, .resizable],
-                backing: .buffered,
-                defer: true,
-            )
+        private func makeHostedView(identity: AnyHashable? = nil) -> (MarkdownStreamView, HostWindow) {
+            let frame = CGRect(x: 0, y: 0, width: 400, height: 600)
             let view = MarkdownStreamView()
-            view.frame = CGRect(x: 0, y: 0, width: 400, height: 600)
-            window.contentView = view
+            view.frame = frame
+            #if canImport(UIKit)
+                let window = UIWindow(frame: frame)
+                window.addSubview(view)
+            #elseif canImport(AppKit)
+                let window = NSWindow(
+                    contentRect: frame,
+                    styleMask: [.titled, .resizable],
+                    backing: .buffered,
+                    defer: true,
+                )
+                window.contentView = view
+            #endif
             view.streamIdentity = identity
             view.setContentImmediately(content(Self.paragraphs[0]))
             return (view, window)
