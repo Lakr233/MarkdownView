@@ -7,6 +7,7 @@
 
 import Foundation
 import Litext
+import LRUCache
 import MarkdownParser
 import SwiftMath
 #if canImport(UIKit)
@@ -132,6 +133,15 @@ extension MarkdownInlineNode {
             let latexContent = context.rendered[replacementIdentifier]?.text ?? content
 
             if let item = context.rendered[replacementIdentifier], let image = item.image {
+                let cacheKey = InlineMathCache.Key(
+                    image: ObjectIdentifier(image),
+                    identifier: replacementIdentifier,
+                    latex: latexContent,
+                    color: theme.colors.body,
+                )
+                if let cached = InlineMathCache.storage.value(forKey: cacheKey) {
+                    return cached
+                }
                 let imageSize = image.size
                 let textColor = theme.colors.body
                 let contextKey = NSAttributedString.Key.contextIdentifier.rawValue as CFString
@@ -187,11 +197,13 @@ extension MarkdownInlineNode {
 
                     context.restoreGState()
                 }
-                let attachment = TextLabel.Attachment.hold(attrString: .init(string: latexContent))
                 // The image is drawn standing on the baseline, so it reserves its
                 // height above the baseline and nothing below it.
-                attachment.size = imageSize
-                attachment.descent = 0
+                let attachment = TextLabel.Attachment.hold(
+                    attrString: .init(string: latexContent),
+                    size: imageSize,
+                    descent: 0,
+                )
 
                 let attributes: [NSAttributedString.Key: Any] = [
                     .litextAttachment: attachment,
@@ -201,14 +213,36 @@ extension MarkdownInlineNode {
                     .mathLatexContent: latexContent, // Store LaTeX content for on-demand rendering
                 ]
 
-                return NSAttributedString(
+                let rendered = NSAttributedString(
                     string: TextLabel.Attachment.replacementText,
                     attributes: attributes,
                 )
+                InlineMathCache.storage.setValue(rendered, forKey: cacheKey)
+                return rendered
             } else {
                 // Fallback: render failed, show original LaTeX as inline code
                 return InlineCode.attributedString(latexContent, theme: theme)
             }
         }
     }
+}
+
+/// Rendered inline math, shared by every content.
+///
+/// A rebuilt document makes its math again, and the drawing action and run
+/// delegate it carries compare by identity, so a paragraph holding math never
+/// compared equal to itself: the label typeset it again on every streamed
+/// update. The same formula, image and colour now yield the same string.
+@MainActor
+private enum InlineMathCache {
+    /// The image is one `MathRenderer` cached for the formula; the entry keeps
+    /// it alive, so its identifier is not reused while the entry exists.
+    struct Key: Hashable, @unchecked Sendable {
+        let image: ObjectIdentifier
+        let identifier: String
+        let latex: String
+        let color: PlatformColor
+    }
+
+    static let storage = LRUCache<Key, NSAttributedString>(countLimit: 512)
 }

@@ -21,6 +21,8 @@ final class ListProcessor {
     private let bulletDrawing: TextBuilder.BulletDrawingCallback?
     private let numberedDrawing: TextBuilder.NumberedDrawingCallback?
     private let checkboxDrawing: TextBuilder.CheckboxDrawingCallback?
+    /// The view the markers are drawn for; see `MarkLineDrawingAction`.
+    private let drawingOwner: ObjectIdentifier?
     private let inlineTextDecoration: TextBuilder.InlineTextDecoration?
 
     init(
@@ -29,6 +31,7 @@ final class ListProcessor {
         bulletDrawing: TextBuilder.BulletDrawingCallback?,
         numberedDrawing: TextBuilder.NumberedDrawingCallback?,
         checkboxDrawing: TextBuilder.CheckboxDrawingCallback?,
+        drawingOwner: ObjectIdentifier?,
         inlineTextDecoration: TextBuilder.InlineTextDecoration?,
     ) {
         self.theme = theme
@@ -36,6 +39,7 @@ final class ListProcessor {
         self.bulletDrawing = bulletDrawing
         self.numberedDrawing = numberedDrawing
         self.checkboxDrawing = checkboxDrawing
+        self.drawingOwner = drawingOwner
         self.inlineTextDecoration = inlineTextDecoration
     }
 
@@ -77,15 +81,12 @@ final class ListProcessor {
                 .litextAttachment: TextLabel.Attachment.hold(
                     attrString: .init(string: Self.markerText(for: item)),
                 ),
-                .litextLineDrawingAction: TextLabel.LineDrawingAction(action: { context, line, lineOrigin in
-                    if item.ordered {
-                        numberedDrawing(context, line, lineOrigin, item.index)
-                    } else if item.isTask {
-                        checkboxDrawing(context, line, lineOrigin, item.isDone)
-                    } else {
-                        bulletDrawing(context, line, lineOrigin, item.depth)
-                    }
-                }),
+                .litextLineDrawingAction: markerDrawing(
+                    for: item,
+                    bullet: bulletDrawing,
+                    numbered: numberedDrawing,
+                    checkbox: checkboxDrawing,
+                ),
             ]))
         }
         string.append(item.paragraph.render(theme: theme, context: context, decoration: inlineTextDecoration))
@@ -127,6 +128,33 @@ final class ListProcessor {
 // MARK: - List Processing Types and Logic
 
 extension ListProcessor {
+    private func markerDrawing(
+        for item: ListItem,
+        bullet: @escaping TextBuilder.BulletDrawingCallback,
+        numbered: @escaping TextBuilder.NumberedDrawingCallback,
+        checkbox: @escaping TextBuilder.CheckboxDrawingCallback,
+    ) -> MarkLineDrawingAction {
+        let mark: MarkLineDrawingAction.Mark = if item.ordered {
+            .numbered(item.index)
+        } else if item.isTask {
+            .checkbox(isDone: item.isDone)
+        } else {
+            .bullet(depth: item.depth)
+        }
+        return MarkLineDrawingAction(mark: mark, theme: theme, owner: drawingOwner) { context, line, lineOrigin in
+            switch mark {
+            case let .numbered(index):
+                numbered(context, line, lineOrigin, index)
+            case let .checkbox(isDone):
+                checkbox(context, line, lineOrigin, isDone)
+            case let .bullet(depth):
+                bullet(context, line, lineOrigin, depth)
+            case .thematicBreak:
+                assertionFailure()
+            }
+        }
+    }
+
     private enum List {
         case bulleted([RawListItem])
         case numbered(Int, [RawListItem])

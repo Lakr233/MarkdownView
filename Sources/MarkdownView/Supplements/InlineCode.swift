@@ -6,6 +6,7 @@
 import CoreText
 import Foundation
 import Litext
+import LRUCache
 
 #if canImport(UIKit)
     import UIKit
@@ -74,14 +75,33 @@ enum InlineCode {
 
     /// A blank attachment as wide as the inset. It copies as nothing, so the
     /// copied text is the code alone.
+    ///
+    /// Spacers are shared: the run delegate an attachment carries compares by
+    /// identity, so a fresh spacer would make a rebuilt paragraph unequal to
+    /// the one it replaces, and the label would typeset it again.
     private static func spacer(background: InlineCodeBackground, font: PlatformFont) -> NSAttributedString {
-        let attachment = TextLabel.Attachment.hold(attrString: NSAttributedString())
-        attachment.size = CGSize(width: horizontalInset, height: 0)
-        return attachment.attributedString(attributes: [
+        let key = SpacerKey(background: background, font: font)
+        if let spacer = spacers.value(forKey: key) {
+            return spacer
+        }
+        let attachment = TextLabel.Attachment.hold(
+            attrString: NSAttributedString(),
+            size: CGSize(width: horizontalInset, height: 0),
+        )
+        let spacer = attachment.attributedString(attributes: [
             .font: font,
             .inlineCodeBackground: background,
         ])
+        spacers.setValue(spacer, forKey: key)
+        return spacer
     }
+
+    private struct SpacerKey: Hashable, @unchecked Sendable {
+        let background: InlineCodeBackground
+        let font: PlatformFont
+    }
+
+    private static let spacers = LRUCache<SpacerKey, NSAttributedString>(countLimit: 64)
 }
 
 /// The pill behind one inline code span. Spans that look the same compare

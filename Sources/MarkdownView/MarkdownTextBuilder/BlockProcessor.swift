@@ -20,6 +20,8 @@ final class BlockProcessor {
     private let viewProvider: ReusableViewProvider
     private let context: MarkdownContent
     private let thematicBreakDrawing: TextBuilder.DrawingCallback?
+    /// The view breaks are drawn for; see `MarkLineDrawingAction`.
+    private let drawingOwner: ObjectIdentifier?
     private let inlineTextDecoration: TextBuilder.InlineTextDecoration?
 
     init(
@@ -27,12 +29,14 @@ final class BlockProcessor {
         viewProvider: ReusableViewProvider,
         context: MarkdownContent,
         thematicBreakDrawing: TextBuilder.DrawingCallback?,
+        drawingOwner: ObjectIdentifier?,
         inlineTextDecoration: TextBuilder.InlineTextDecoration?,
     ) {
         self.theme = theme
         self.viewProvider = viewProvider
         self.context = context
         self.thematicBreakDrawing = thematicBreakDrawing
+        self.drawingOwner = drawingOwner
         self.inlineTextDecoration = inlineTextDecoration
     }
 
@@ -76,9 +80,13 @@ final class BlockProcessor {
             return .init(string: TextLabel.Attachment.replacementText, attributes: [
                 .font: theme.fonts.body,
                 .litextAttachment: TextLabel.Attachment.hold(attrString: .init(string: "\n\n")),
-                .litextLineDrawingAction: TextLabel.LineDrawingAction(action: { context, line, lineOrigin in
+                .litextLineDrawingAction: MarkLineDrawingAction(
+                    mark: .thematicBreak,
+                    theme: theme,
+                    owner: drawingOwner,
+                ) { context, line, lineOrigin in
                     drawingCallback?(context, line, lineOrigin)
-                }),
+                },
             ])
         }
     }

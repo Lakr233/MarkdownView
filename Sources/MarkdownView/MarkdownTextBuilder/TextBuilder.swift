@@ -269,6 +269,7 @@ extension TextBuilder {
             viewProvider: viewProvider,
             context: context,
             thematicBreakDrawing: thematicBreakDrawing,
+            drawingOwner: highlightRequester,
             inlineTextDecoration: inlineTextDecoration,
         )
 
@@ -278,6 +279,7 @@ extension TextBuilder {
             bulletDrawing: bulletDrawing,
             numberedDrawing: numberedDrawing,
             checkboxDrawing: checkboxDrawing,
+            drawingOwner: highlightRequester,
             inlineTextDecoration: inlineTextDecoration,
         )
 
