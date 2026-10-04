@@ -80,7 +80,7 @@
                         }
                         .pickerStyle(.inline)
                     } label: {
-                        Label(width.title, systemImage: "arrow.left.and.right")
+                        Label(width.name, systemImage: "arrow.left.and.right")
                             .labelStyle(.titleAndIcon)
                     }
                     .help("Content width")
@@ -325,6 +325,16 @@
             case .phone: "Phone · 390"
             case .reading: "Reading · 720"
             case .wide: "Wide · 1000"
+            case .fill: "Fill"
+            }
+        }
+
+        /// The width without its size, short enough for the toolbar.
+        var name: String {
+            switch self {
+            case .phone: "Phone"
+            case .reading: "Reading"
+            case .wide: "Wide"
             case .fill: "Fill"
             }
         }
