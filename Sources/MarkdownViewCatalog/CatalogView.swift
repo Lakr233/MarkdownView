@@ -3,14 +3,14 @@
 //  MarkdownViewCatalog
 //
 
-#if os(macOS)
+#if os(macOS) || os(iOS)
     import MarkdownView
     import SwiftUI
 
     struct CatalogView: View {
         @State private var selection: CatalogSample.ID? = CatalogSample.chatAnswer.id
         @State private var theme: MarkdownTheme = .default
-        @State private var appearance: CatalogAppearance = .sideBySide
+        @State private var appearance: CatalogAppearance = .initial
         @State private var width: CatalogWidth = .reading
         @State private var showsSource = false
         @State private var editingTheme = false
@@ -40,6 +40,9 @@
                 // The legacy scroller a mouse brings would sit in the sidebar's edge.
                 .scrollIndicators(.never)
                 .navigationSplitViewColumnWidth(min: 180, ideal: 210)
+                #if os(iOS)
+                    .navigationTitle("Catalog")
+                #endif
             } detail: {
                 if let sample = CatalogSample.all.first(where: { $0.id == selection }) {
                     CatalogPage(
@@ -50,65 +53,30 @@
                         showsSource: showsSource,
                     )
                     .id(sample.id)
+                    #if os(iOS)
+                        // A collapsed split view shows only one column, so the
+                        // controls ride along with the page.
+                        .toolbar {
+                            ToolbarItem(placement: .primaryAction) {
+                                optionsMenu
+                            }
+                        }
+                        .sheet(isPresented: $editingTheme) {
+                            ThemeEditor(theme: $theme)
+                        }
+                    #endif
                 } else {
                     Text("Select a component")
                         .foregroundStyle(.secondary)
                 }
             }
+            #if os(macOS)
             // The detail column's toolbar background starts a little left of the
             // sidebar's edge, leaving a step at the top of the divider.
             .toolbarBackground(.hidden, for: .windowToolbar)
             .toolbar {
                 ToolbarItemGroup {
-                    Picker("Appearance", selection: Binding(
-                        get: { appearance },
-                        set: { newValue in
-                            appearance = newValue
-                            // Light and Dark restyle the whole app, sidebar and
-                            // toolbar included, not only the rendered page.
-                            NSApplication.shared.appearance = newValue.applicationAppearance
-                        },
-                    )) {
-                        ForEach(CatalogAppearance.allCases) { appearance in
-                            Label(appearance.title, systemImage: appearance.systemImage)
-                                .tag(appearance)
-                        }
-                    }
-                    .pickerStyle(.segmented)
-                    .help("Appearance")
-
-                    // A bare picker in a toolbar shows only its chevron, so the menu
-                    // names the width it is set to.
-                    Menu {
-                        Picker("Width", selection: $width) {
-                            ForEach(CatalogWidth.allCases) { width in
-                                Text(width.title).tag(width)
-                            }
-                        }
-                        .pickerStyle(.inline)
-                    } label: {
-                        Label(width.name, systemImage: "arrow.left.and.right")
-                            .labelStyle(.titleAndIcon)
-                    }
-                    // Sized to its title, so the toolbar never truncates it.
-                    .fixedSize()
-                    .help("Content width")
-
-                    Toggle(isOn: $showsSource) {
-                        Label("Source", systemImage: "doc.plaintext")
-                    }
-                    .help("Show and edit the markdown source")
-
-                    Button {
-                        editingTheme = true
-                    } label: {
-                        Label("Theme", systemImage: "paintpalette")
-                    }
-                    .help("Edit the theme")
-                    .popover(isPresented: $editingTheme) {
-                        ThemeEditor(theme: $theme)
-                            .frame(width: 380, height: 640)
-                    }
+                    macControls
                 }
             }
             .task {
@@ -117,7 +85,103 @@
             .task {
                 await CatalogResizeStress.run { selection = $0 } fill: { width = .fill }
             }
+            #else
+            // Light and Dark restyle the whole app, not only the rendered page.
+            .preferredColorScheme(appearance.preferredColorScheme)
+            #endif
         }
+
+        #if os(macOS)
+            @ViewBuilder
+            private var macControls: some View {
+                Picker("Appearance", selection: Binding(
+                    get: { appearance },
+                    set: { newValue in
+                        appearance = newValue
+                        // Light and Dark restyle the whole app, sidebar and
+                        // toolbar included, not only the rendered page.
+                        NSApplication.shared.appearance = newValue.applicationAppearance
+                    },
+                )) {
+                    ForEach(CatalogAppearance.allCases) { appearance in
+                        Label(appearance.title, systemImage: appearance.systemImage)
+                            .tag(appearance)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .help("Appearance")
+
+                // A bare picker in a toolbar shows only its chevron, so the menu
+                // names the width it is set to.
+                Menu {
+                    Picker("Width", selection: $width) {
+                        ForEach(CatalogWidth.allCases) { width in
+                            Text(width.title).tag(width)
+                        }
+                    }
+                    .pickerStyle(.inline)
+                } label: {
+                    Label(width.name, systemImage: "arrow.left.and.right")
+                        .labelStyle(.titleAndIcon)
+                }
+                // Sized to its title, so the toolbar never truncates it.
+                .fixedSize()
+                .help("Content width")
+
+                Toggle(isOn: $showsSource) {
+                    Label("Source", systemImage: "doc.plaintext")
+                }
+                .help("Show and edit the markdown source")
+
+                Button {
+                    editingTheme = true
+                } label: {
+                    Label("Theme", systemImage: "paintpalette")
+                }
+                .help("Edit the theme")
+                .popover(isPresented: $editingTheme) {
+                    ThemeEditor(theme: $theme)
+                        .frame(width: 380, height: 640)
+                }
+            }
+        #else
+            /// Every page-wide setting behind one button, since a phone's
+            /// navigation bar has room for only a few items.
+            private var optionsMenu: some View {
+                Menu {
+                    Picker(selection: $appearance) {
+                        ForEach(CatalogAppearance.allCases) { appearance in
+                            Label(appearance.title, systemImage: appearance.systemImage)
+                                .tag(appearance)
+                        }
+                    } label: {
+                        Label("Appearance", systemImage: appearance.systemImage)
+                    }
+                    .pickerStyle(.menu)
+
+                    Picker(selection: $width) {
+                        ForEach(CatalogWidth.allCases) { width in
+                            Text(width.title).tag(width)
+                        }
+                    } label: {
+                        Label("Width", systemImage: "arrow.left.and.right")
+                    }
+                    .pickerStyle(.menu)
+
+                    Toggle(isOn: $showsSource) {
+                        Label("Source", systemImage: "doc.plaintext")
+                    }
+
+                    Button {
+                        editingTheme = true
+                    } label: {
+                        Label("Theme", systemImage: "paintpalette")
+                    }
+                } label: {
+                    Label("Options", systemImage: "slider.horizontal.3")
+                }
+            }
+        #endif
     }
 
     /// The detail column: one sample rendered on a canvas, optionally beside
@@ -131,6 +195,9 @@
 
         @State private var source: String
         @State private var streaming: Task<Void, Never>?
+        #if os(iOS)
+            @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+        #endif
 
         init(
             sample: CatalogSample,
@@ -149,47 +216,76 @@
 
         var body: some View {
             GeometryReader { proxy in
-                // The source takes one share and each rendered pane another,
-                // so source, light and dark all get the same width.
-                let shares = CGFloat(appearance.schemes.count + (showsSource ? 1 : 0))
-                let paneWidth = proxy.size.width / shares
-                HStack(spacing: 0) {
-                    if showsSource {
-                        TextEditor(text: $source)
-                            .font(.system(.body, design: .monospaced))
-                            .scrollContentBackground(.hidden)
-                            .sourceMargins()
-                            .frame(width: paneWidth)
-                            .background(.background)
-                        Divider()
+                if isCompact {
+                    // Too narrow to sit beside the page, so the source takes
+                    // the top half instead.
+                    VStack(spacing: 0) {
+                        if showsSource {
+                            sourceEditor
+                                .frame(height: proxy.size.height / 2)
+                            Divider()
+                        }
+                        canvas
                     }
-                    canvas
+                } else {
+                    // The source takes one share and each rendered pane another,
+                    // so source, light and dark all get the same width.
+                    let shares = CGFloat(appearance.schemes.count + (showsSource ? 1 : 0))
+                    let paneWidth = proxy.size.width / shares
+                    HStack(spacing: 0) {
+                        if showsSource {
+                            sourceEditor
+                                .frame(width: paneWidth)
+                            Divider()
+                        }
+                        canvas
+                    }
                 }
             }
             .navigationTitle(sample.title)
-            .navigationSubtitle(sample.summary)
-            .toolbar {
-                ToolbarItemGroup {
-                    Button {
-                        stream()
-                    } label: {
-                        Label("Stream", systemImage: streaming == nil ? "play" : "stop")
-                    }
-                    .help("Replay the source as a streamed answer, fading each token in")
+            #if os(macOS)
+                .navigationSubtitle(sample.summary)
+            #else
+                .navigationBarTitleDisplayMode(.inline)
+            #endif
+                .toolbar {
+                    ToolbarItemGroup {
+                        Button {
+                            stream()
+                        } label: {
+                            Label("Stream", systemImage: streaming == nil ? "play" : "stop")
+                        }
+                        .help("Replay the source as a streamed answer, fading each token in")
 
-                    Button {
-                        streaming?.cancel()
-                        source = sample.markdown
-                    } label: {
-                        Label("Revert", systemImage: "arrow.uturn.backward")
+                        Button {
+                            streaming?.cancel()
+                            source = sample.markdown
+                        } label: {
+                            Label("Revert", systemImage: "arrow.uturn.backward")
+                        }
+                        .help("Restore the original source")
+                        .disabled(source == sample.markdown && streaming == nil)
                     }
-                    .help("Restore the original source")
-                    .disabled(source == sample.markdown && streaming == nil)
                 }
-            }
-            .onDisappear {
-                streaming?.cancel()
-            }
+                .onDisappear {
+                    streaming?.cancel()
+                }
+        }
+
+        private var isCompact: Bool {
+            #if os(iOS)
+                horizontalSizeClass == .compact
+            #else
+                false
+            #endif
+        }
+
+        private var sourceEditor: some View {
+            TextEditor(text: $source)
+                .font(.system(.body, design: .monospaced))
+                .scrollContentBackground(.hidden)
+                .sourceMargins()
+                .background(.background)
         }
 
         /// Panes share one scroll view, so light and dark stay on the same
@@ -201,8 +297,8 @@
                         // Replaying the source streams it, fading each token in.
                         MarkdownView(source, theme: theme)
                             .streaming(streaming != nil)
-                            .padding(.horizontal, 32)
-                            .padding(.vertical, 28)
+                            .padding(.horizontal, isCompact ? 16 : 32)
+                            .padding(.vertical, isCompact ? 16 : 28)
                             .frame(maxWidth: width.points)
                             .frame(maxWidth: .infinity)
                             .modifier(ColorSchemeOverride(scheme: scheme))
@@ -218,7 +314,7 @@
                 // viewport even when the document is shorter than it.
                 HStack(spacing: 0) {
                     ForEach(appearance.schemes, id: \.self) { scheme in
-                        Color(nsColor: .textBackgroundColor)
+                        Color.canvasBackground
                             .modifier(ColorSchemeOverride(scheme: scheme))
                         if scheme != appearance.schemes.last {
                             Divider()
@@ -254,12 +350,22 @@
         /// pane's edge rather than being cut off a margin short of it.
         @ViewBuilder
         func sourceMargins() -> some View {
-            if #available(macOS 14, *) {
+            if #available(macOS 14, iOS 17, *) {
                 contentMargins(.horizontal, 20, for: .scrollContent)
                     .contentMargins(.vertical, 24, for: .scrollContent)
             } else {
                 padding(8)
             }
+        }
+    }
+
+    private extension Color {
+        static var canvasBackground: Color {
+            #if os(macOS)
+                Color(nsColor: .textBackgroundColor)
+            #else
+                Color(uiColor: .systemBackground)
+            #endif
         }
     }
 
@@ -301,14 +407,34 @@
             }
         }
 
-        /// The appearance the whole app takes; `nil` follows the system.
-        var applicationAppearance: NSAppearance? {
-            switch self {
-            case .system, .sideBySide: nil
-            case .light: NSAppearance(named: .aqua)
-            case .dark: NSAppearance(named: .darkAqua)
-            }
+        /// Side by side on a Mac; a phone is too narrow for two panes.
+        static var initial: Self {
+            #if os(macOS)
+                .sideBySide
+            #else
+                .system
+            #endif
         }
+
+        #if os(macOS)
+            /// The appearance the whole app takes; `nil` follows the system.
+            var applicationAppearance: NSAppearance? {
+                switch self {
+                case .system, .sideBySide: nil
+                case .light: NSAppearance(named: .aqua)
+                case .dark: NSAppearance(named: .darkAqua)
+                }
+            }
+        #else
+            /// The scheme the whole app takes; `nil` follows the system.
+            var preferredColorScheme: ColorScheme? {
+                switch self {
+                case .system, .sideBySide: nil
+                case .light: .light
+                case .dark: .dark
+                }
+            }
+        #endif
 
         /// The schemes to render, one pane each; `nil` follows the app.
         var schemes: [ColorScheme?] {

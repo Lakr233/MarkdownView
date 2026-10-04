@@ -28,11 +28,24 @@
             .defaultSize(width: 1280, height: 860)
         }
     }
+#elseif os(iOS)
+    import SwiftUI
+
+    /// The same catalog on iPhone and iPad, built by the `Catalog` target in
+    /// `Example/Example.xcodeproj`.
+    @main
+    struct CatalogApp: App {
+        var body: some Scene {
+            WindowGroup {
+                CatalogView()
+            }
+        }
+    }
 #else
     @main
     enum CatalogApp {
         static func main() {
-            print("MarkdownViewCatalog runs on macOS only.")
+            print("MarkdownViewCatalog runs on macOS and iOS only.")
         }
     }
 #endif
