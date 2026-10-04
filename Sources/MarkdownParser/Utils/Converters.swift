@@ -171,11 +171,46 @@ extension MarkdownInlineNode {
 
 extension UnsafeNode {
     var nodeType: MarkdownNodeType {
+        // A node an extension owns may name its own type (a task list item is
+        // a core item that reports "tasklist"), so only a node without one
+        // can be read off its core type.
+        if pointee.extension == nil, let coreType = coreNodeType {
+            return coreType
+        }
         let typeString = String(cString: cmark_node_get_type_string(self))
         guard let nodeType = MarkdownNodeType(rawValue: typeString) else {
             fatalError("Unknown node type '\(typeString)' found.")
         }
         return nodeType
+    }
+
+    /// The type `cmark_node_get_type_string` names for a node no extension
+    /// owns, or nil for one it names something `MarkdownNodeType` lacks.
+    private var coreNodeType: MarkdownNodeType? {
+        switch cmark_node_type(rawValue: UInt32(pointee.type)) {
+        case CMARK_NODE_DOCUMENT: .document
+        case CMARK_NODE_BLOCK_QUOTE: .blockquote
+        case CMARK_NODE_LIST: .list
+        case CMARK_NODE_ITEM: .item
+        case CMARK_NODE_CODE_BLOCK: .codeBlock
+        case CMARK_NODE_HTML_BLOCK: .htmlBlock
+        case CMARK_NODE_CUSTOM_BLOCK: .customBlock
+        case CMARK_NODE_PARAGRAPH: .paragraph
+        case CMARK_NODE_HEADING: .heading
+        case CMARK_NODE_THEMATIC_BREAK: .thematicBreak
+        case CMARK_NODE_TEXT: .text
+        case CMARK_NODE_SOFTBREAK: .softBreak
+        case CMARK_NODE_LINEBREAK: .lineBreak
+        case CMARK_NODE_CODE: .code
+        case CMARK_NODE_HTML_INLINE: .html
+        case CMARK_NODE_CUSTOM_INLINE: .customInline
+        case CMARK_NODE_EMPH: .emphasis
+        case CMARK_NODE_STRONG: .strong
+        case CMARK_NODE_LINK: .link
+        case CMARK_NODE_IMAGE: .image
+        case CMARK_NODE_ATTRIBUTE: .inlineAttributes
+        default: nil
+        }
     }
 
     var children: UnsafeNodeSequence {
