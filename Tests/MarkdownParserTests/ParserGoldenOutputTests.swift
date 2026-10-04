@@ -204,6 +204,8 @@ enum ParserGoldenCorpus {
 
         not | a | table
         """),
+        ("unicode", "$\u{301}x$ and $$e\u{301}$$ then \\(\u{301}\\) and 1$x$ x$5$ $x$٣ ٣$x$ $\u{A0}x$ $x\u{3000}$ "
+            + "\\[🎉\\] `$$a$$` $y$\u{301} 👨‍👩‍👧$z$ e\u{301}$$w$$\r\n\\(a\rb\\) \\\\[q\\\\]"),
         ("code", """
         ```swift title="x"
         func f() -> Int { 1 }

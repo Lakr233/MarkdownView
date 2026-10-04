@@ -55,6 +55,8 @@ let parserGoldenHashes: [String: String] = [
     "snippet/lists/prefixes": "b2e2630978d95af8",
     "snippet/math": "4866560ae752a642",
     "snippet/math/prefixes": "c3ca11e9905d1952",
+    "snippet/unicode": "ce09bdd892a08abd",
+    "snippet/unicode/prefixes": "e767c6ffdb218550",
     "snippet/tables": "4eeb50237df67710",
     "snippet/tables/prefixes": "4a0f07ee0e65d6da",
 ]
