@@ -295,10 +295,10 @@ public extension MarkdownParser {
 
         func inlineNode(forReplacementText text: String) -> MarkdownInlineNode? {
             guard !contents.isEmpty, text.utf8Contains("md://content?") else { return nil }
-            guard MarkdownParser.typeForReplacementText(text) == .math,
-                  let identifier = MarkdownParser.identifierForReplacementText(text),
-                  let value = Int(identifier),
-                  let content = contents[value]
+            guard let identifier = Self.placeholderIdentifier(in: text)
+                ?? Self.parsedMathIdentifier(in: text),
+                let value = Int(identifier),
+                let content = contents[value]
             else {
                 return nil
             }
@@ -309,6 +309,22 @@ public extension MarkdownParser {
                     identifier: identifier,
                 ),
             )
+        }
+
+        /// The identifier of a math placeholder exactly as `register` writes
+        /// it, without the URL parsing that anything else needs.
+        private static func placeholderIdentifier(in text: String) -> String? {
+            let prefix = "md://content?type=math&identifier=".utf8
+            let utf8 = text.utf8
+            guard utf8.count > prefix.count, utf8.starts(with: prefix) else { return nil }
+            let digits = utf8.dropFirst(prefix.count)
+            guard digits.allSatisfy({ $0 >= UInt8(ascii: "0") && $0 <= UInt8(ascii: "9") }) else { return nil }
+            return String(digits)
+        }
+
+        private static func parsedMathIdentifier(in text: String) -> String? {
+            guard MarkdownParser.typeForReplacementText(text) == .math else { return nil }
+            return MarkdownParser.identifierForReplacementText(text)
         }
 
         func restore(content: String) -> String {
