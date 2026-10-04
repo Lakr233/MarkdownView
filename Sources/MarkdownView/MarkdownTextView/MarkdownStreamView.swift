@@ -214,9 +214,12 @@ open class MarkdownStreamView: MarkdownTextView {
             label.animator = LTXFadeInAnimator()
             label.animationPolicy = LTXClosureAnimationPolicy { [weak self] context in
                 guard let self else { return false }
-                return isAnimatingRebuild
+                // A finished highlight only recolours the code, so the code in flight
+                // keeps fading instead of showing at once.
+                return (isAnimatingRebuild
                     && context.change.isAppend
-                    && LTXDefaultAnimationPolicy().shouldAnimate(context)
+                    && LTXDefaultAnimationPolicy().shouldAnimate(context))
+                    || (!context.change.hasInsertion && context.wasAnimating)
             }
         }
     }
