@@ -156,7 +156,7 @@
                     } label: {
                         Label("Stream", systemImage: streaming == nil ? "play" : "stop")
                     }
-                    .help("Replay the source as a streamed answer")
+                    .help("Replay the source as a streamed answer, fading each token in")
 
                     Button {
                         streaming?.cancel()
@@ -179,7 +179,9 @@
             ScrollView {
                 HStack(alignment: .top, spacing: 0) {
                     ForEach(appearance.schemes, id: \.self) { scheme in
+                        // Replaying the source streams it, fading each token in.
                         MarkdownView(source, theme: theme)
+                            .streaming(streaming != nil)
                             .padding(.horizontal, 32)
                             .padding(.vertical, 28)
                             .frame(maxWidth: width.points)
