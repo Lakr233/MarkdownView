@@ -149,8 +149,11 @@ struct MarkdownInlineCacheTests {
         let japanese = RenderProbe.content("placeholder", locale: .init(identifier: "ja"))
         let chinese = RenderProbe.content("placeholder", locale: .init(identifier: "zh-Hans"))
 
-        let fromJapanese = japanese.cachedBodyText("汉字", theme: .default)
-        let fromChinese = chinese.cachedBodyText("汉字", theme: .default)
+        // Characters both a Japanese and a Chinese face cover. One only a Chinese
+        // face has, such as 汉, falls back to that face under either locale on
+        // iOS, and comes out the same.
+        let fromJapanese = japanese.cachedBodyText(Self.variantHan, theme: .default)
+        let fromChinese = chinese.cachedBodyText(Self.variantHan, theme: .default)
 
         // Two contents, two locales, one shared cache: the entries must not be
         // the same one, and the difference has to survive as far as the glyphs.

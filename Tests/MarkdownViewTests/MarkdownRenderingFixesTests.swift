@@ -27,7 +27,11 @@ struct MarkdownRenderingFixesTests {
     func `Inline code in a heading keeps its monospaced font`() {
         let text = RenderProbe.show("# Call `foo()`", in: MarkdownTextView())
         let font = RenderProbe.font(at: "foo", in: text)
-        #expect(font?.fontDescriptor.symbolicTraits.contains(.monoSpace) == true)
+        #if canImport(UIKit)
+            #expect(font?.fontDescriptor.symbolicTraits.contains(.traitMonoSpace) == true)
+        #elseif canImport(AppKit)
+            #expect(font?.fontDescriptor.symbolicTraits.contains(.monoSpace) == true)
+        #endif
     }
 
     /// Ideographs alone say nothing about the language; the content's locale
