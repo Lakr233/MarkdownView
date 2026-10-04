@@ -24,9 +24,13 @@
                                 Label {
                                     Text(sample.title)
                                 } icon: {
-                                    // One column for every symbol, whatever its natural width.
+                                    // Every symbol fits one fixed square, so a wide one never
+                                    // reaches into the title and the titles line up.
                                     Image(systemName: sample.systemImage)
-                                        .frame(width: 20)
+                                        .resizable()
+                                        .scaledToFit()
+                                        .frame(width: 16, height: 16)
+                                        .frame(width: 20, height: 20)
                                 }
                                 .tag(sample.id)
                             }
