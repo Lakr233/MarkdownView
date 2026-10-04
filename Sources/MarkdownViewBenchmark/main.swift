@@ -67,7 +67,7 @@ struct MarkdownViewBenchmark {
 
     @MainActor
     private static func benchmarkCases() -> [BenchmarkCase] {
-        legacyCases() + scalingCases() + streamingCases() + shapeCases() + localeCases() + highlightCases()
+        legacyCases() + scalingCases() + streamingCases() + shapeCases() + drawCases() + localeCases() + highlightCases()
     }
 
     // MARK: - Code highlighting
@@ -459,6 +459,65 @@ struct MarkdownViewBenchmark {
             }
         })
 
+        return cases
+    }
+
+    // MARK: - Drawing
+
+    /// The document body drawn into a bitmap, as a display pass draws it.
+    ///
+    /// Every other case stops at layout. These cover what a label does per
+    /// line when it paints: `repeat` draws one layout again and again, the
+    /// way scrolling and partial redraws do; `first` makes a new layout
+    /// before each draw, the way every streamed token does.
+    @MainActor
+    private static func drawCases() -> [BenchmarkCase] {
+        let theme = MarkdownTheme.default
+        let parser = MarkdownParser()
+        let width: CGFloat = 600
+
+        func preparedView(_ markdown: String) -> MarkdownTextView {
+            let view = MarkdownTextView()
+            view.setContentImmediately(MarkdownContent(parserResult: parser.parse(markdown), theme: theme))
+            let height = view.boundingSize(for: width).height
+            view.frame = CGRect(x: 0, y: 0, width: width, height: height)
+            layoutNow(view)
+            return view
+        }
+
+        func bitmap(for view: MarkdownTextView) -> CGContext {
+            CGContext(
+                data: nil,
+                width: Int(view.bounds.width),
+                height: Int(view.bounds.height),
+                bitsPerComponent: 8,
+                bytesPerRow: 0,
+                space: CGColorSpaceCreateDeviceRGB(),
+                bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue,
+            )!
+        }
+
+        var cases: [BenchmarkCase] = []
+        for (name, markdown) in [("inline_heavy", inlineHeavyMarkdown), ("latin_only", latinOnlyMarkdown)] {
+            cases.append(BenchmarkCase(name: "draw/\(name)/repeat") { iterations in
+                let view = preparedView(markdown)
+                let context = bitmap(for: view)
+                for _ in 0 ..< iterations {
+                    view.textLabelView.textLayout.draw(in: context, visibleRect: view.bounds)
+                }
+            })
+        }
+        cases.append(BenchmarkCase(name: "draw/inline_heavy/first", iterationLimit: 200) { iterations in
+            let view = preparedView(inlineHeavyMarkdown)
+            let context = bitmap(for: view)
+            for _ in 0 ..< iterations {
+                autoreleasepool {
+                    view.textLabelView.reloadTextLayout()
+                    layoutNow(view)
+                    view.textLabelView.textLayout.draw(in: context, visibleRect: view.bounds)
+                }
+            }
+        })
         return cases
     }
 
