@@ -4,6 +4,7 @@
 //
 
 import Litext
+import LitextAnimation
 
 final class CodeView: PlatformView {
     // MARK: - CONTENT
@@ -139,7 +140,9 @@ final class CodeView: PlatformView {
     #endif
 
     lazy var languageLabel: BarTextLabel = .init()
-    lazy var textView: TextLabelView = .init()
+    /// Animates streamed code only while a `MarkdownStreamView` gives it an
+    /// animator; until then it draws exactly like a plain label.
+    lazy var textView: LTXAnimatableLabel = .init()
     lazy var lineNumberView: LineNumberView = .init()
 
     override init(frame: CGRect) {

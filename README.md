@@ -89,6 +89,20 @@ Immediate, unthrottled replacement:
 markdownTextView.setContentImmediately(content)
 ```
 
+### Streaming with animation
+
+`MarkdownStreamView` is a `MarkdownTextView` for an answer that is still being written. While `isStreaming` is on, `setContent(_:)` rebuilds at a pace set by what a rebuild costs, the new text fades in (inside code blocks too), and new code blocks and tables fade in whole. Everything else appears at once, and with `isStreaming` off the view behaves exactly like `MarkdownTextView`.
+
+```swift
+let view = MarkdownStreamView()
+view.streamIdentity = message.id      // a reused row never replays another item's text
+view.isStreaming = message.isGenerating
+view.setContentImmediately(content)   // the first fill appears at once
+view.setContent(nextContent)          // more of the stream fades in
+```
+
+In a list, turn streaming on only for the row that is being written. A view that is not in a window, such as one measuring a row's height, never animates. In SwiftUI, use `MarkdownView(text).streaming(isGenerating)`.
+
 ### Subclassing
 
 `MarkdownTextView` is open the way Litext's `TextLabelView` is: its handlers, `theme`, `throttleInterval`, the content setters and its `TextLabelViewDelegate` methods can be overridden (call `super`). To change how the body is drawn, pass your own label:

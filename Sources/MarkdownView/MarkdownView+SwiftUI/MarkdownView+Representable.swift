@@ -13,6 +13,7 @@ import SwiftUI
     struct MarkdownViewRepresentable: UIViewRepresentable, MarkdownViewRepresentableBase {
         let contentSource: MarkdownView.ContentSource
         let theme: MarkdownTheme
+        let isStreaming: Bool?
 
         func makeUIView(context _: Context) -> MarkdownTextView {
             createMarkdownTextView()
@@ -41,6 +42,7 @@ import SwiftUI
     struct MarkdownViewRepresentable: NSViewRepresentable, MarkdownViewRepresentableBase {
         let contentSource: MarkdownView.ContentSource
         let theme: MarkdownTheme
+        let isStreaming: Bool?
 
         func makeNSView(context _: Context) -> MarkdownTextView {
             createMarkdownTextView()

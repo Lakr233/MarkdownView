@@ -66,12 +66,12 @@ extension MarkdownTextView {
             contentSubject
                 .dropFirst()
                 .throttle(for: .seconds(throttleInterval), scheduler: DispatchQueue.main, latest: true)
-                .sink { [weak self] content in self?.use(content) }
+                .sink { [weak self] content in self?.deliverStreamedContent(content) }
                 .store(in: &cancellables)
         } else {
             contentSubject
                 .dropFirst()
-                .sink { [weak self] content in self?.use(content) }
+                .sink { [weak self] content in self?.deliverStreamedContent(content) }
                 .store(in: &cancellables)
         }
     }
@@ -105,9 +105,12 @@ extension MarkdownTextView {
     ///
     /// `resizes` is false for a rebuild that only recolours what is on
     /// screen, which leaves the height alone and so need not send SwiftUI back
-    /// through `sizeThatFits(_:)`.
-    func use(_ content: MarkdownContent, resizes: Bool = true) {
+    /// through `sizeThatFits(_:)`. `streamed` is true for content that came
+    /// through ``setContent(_:)``; see ``applyDocument(_:newContextViews:animated:)``.
+    func use(_ content: MarkdownContent, resizes: Bool = true, streamed: Bool = false) {
         assert(Thread.isMainThread)
+        rebuildIsStreamed = streamed
+        defer { rebuildIsStreamed = false }
         self.content = content
         // due to a bug in model gemini-flash
         // there might be a large of unknown empty whitespace inside the table

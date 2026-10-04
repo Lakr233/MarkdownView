@@ -12,11 +12,13 @@ import SwiftUI
 protocol MarkdownViewRepresentableBase {
     var contentSource: MarkdownView.ContentSource { get }
     var theme: MarkdownTheme { get }
+    /// `nil` for a plain view; see `MarkdownView.streaming(_:)`.
+    var isStreaming: Bool? { get }
 }
 
 extension MarkdownViewRepresentableBase {
     func createMarkdownTextView() -> MarkdownTextView {
-        let view = MarkdownTextView()
+        let view = isStreaming == nil ? MarkdownTextView() : MarkdownStreamView()
         view.theme = theme
         view.setContentHuggingPriority(.required, for: .vertical)
         view.setContentCompressionResistancePriority(.required, for: .vertical)
@@ -26,6 +28,9 @@ extension MarkdownViewRepresentableBase {
     }
 
     func updateMarkdownTextView(_ view: MarkdownTextView, coordinator: MarkdownViewCoordinator) {
+        // Set before the text, so the last update of a stream that just ended
+        // appears at once.
+        (view as? MarkdownStreamView)?.isStreaming = isStreaming ?? false
         switch contentSource {
         case let .text(text):
             // A view last fed prebuilt content is showing that content, not

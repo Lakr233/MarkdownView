@@ -35,8 +35,9 @@ extension MarkdownTextView {
             viewProvider: viewProvider,
             ownedContextViews: ownedContextViews,
         )
-        textLabelView.attributedText = artifacts.document
         contextViews = artifacts.subviews
+        let newContextViews = artifacts.subviews.filter { !oldViews.contains($0) }
+        applyDocument(artifacts.document, newContextViews: newContextViews, animated: rebuildIsStreamed)
         renderedHighlightKeys = artifacts.highlightKeys
         blockFragmentCache = artifacts.fragmentCache
 

@@ -7,8 +7,8 @@
 
 import Litext
 
-// The delegate methods live in the class body, so a subclass can override
-// them; see `MarkdownTextView`.
+/// The delegate methods live in the class body, so a subclass can override
+/// them; see `MarkdownTextView`.
 extension MarkdownTextView: TextLabelViewDelegate {}
 
 #if canImport(UIKit)

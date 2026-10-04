@@ -106,7 +106,17 @@ final class MarkdownViewCoordinator {
         // A deferred (throttled) apply happens outside a SwiftUI update
         // cycle; the view invalidating its intrinsic size on every rebuild is
         // what prompts SwiftUI to re-query sizeThatFits(_:).
-        view.setContentImmediately(content, theme: theme)
+        if let streamView = view as? MarkdownStreamView,
+           streamView.isStreaming,
+           lastApplyDate != .distantPast,
+           theme == lastTheme
+        {
+            // More of a stream already on screen: the view paces it and fades
+            // the new text in.
+            streamView.setContent(content)
+        } else {
+            view.setContentImmediately(content, theme: theme)
+        }
         lastTheme = theme
         lastApplyDate = Date()
     }

@@ -67,6 +67,8 @@ open class MarkdownTextView: PlatformView {
     }
 
     let viewProvider: ReusableViewProvider
+    /// Whether the rebuild in progress shows content from ``setContent(_:)``.
+    var rebuildIsStreamed = false
 
     /// - Parameter textLabelView: the label that draws the document body.
     ///   Pass a `TextLabelView` subclass to change how body text is drawn
@@ -220,6 +222,14 @@ open class MarkdownTextView: PlatformView {
         contentSubject.send(content)
     }
 
+    /// Shows content that came through ``setContent(_:)`` once the throttle
+    /// lets it through. `MarkdownStreamView` paces it itself.
+    /// Declared here rather than in an extension, so `MarkdownStreamView` can
+    /// override it.
+    func deliverStreamedContent(_ content: MarkdownContent) {
+        use(content, streamed: true)
+    }
+
     /// Parses and displays markdown text in one step.
     /// For streaming or off-main-thread parsing, build a ``MarkdownContent``
     /// yourself and use ``setContent(_:)``.
@@ -243,6 +253,19 @@ open class MarkdownTextView: PlatformView {
         contentSubject.send(.init())
         use(.init())
         setupCombine()
+    }
+
+    /// Shows a rebuilt document. The default assigns it to ``textLabelView``.
+    ///
+    /// `animated` is `true` when the document was built from content that
+    /// arrived through ``setContent(_:)``, the path a stream feeds, and `false`
+    /// for every other rebuild: ``setContentImmediately(_:)``, a theme, a
+    /// finished highlight. `newContextViews` are the code and table views this
+    /// document shows that the previous one did not. The view already lists
+    /// every code and table view the document shows, but none is placed yet.
+    /// Overrides must show `document` in ``textLabelView``.
+    open func applyDocument(_ document: NSAttributedString, newContextViews _: [PlatformView], animated _: Bool) {
+        textLabelView.attributedText = document
     }
 
     @available(*, deprecated, renamed: "trackedScrollView")

@@ -19,6 +19,8 @@ public struct MarkdownView: View {
 
     let contentSource: ContentSource
     public var theme: MarkdownTheme
+    /// `nil` until ``streaming(_:)`` is applied; see there.
+    var isStreaming: Bool?
 
     public init(_ text: String, theme: MarkdownTheme = .default) {
         contentSource = .text(text)
@@ -37,7 +39,21 @@ public struct MarkdownView: View {
         MarkdownViewRepresentable(
             contentSource: contentSource,
             theme: theme,
+            isStreaming: isStreaming,
         )
         .frame(maxWidth: .infinity, alignment: .topLeading)
+    }
+
+    /// Shows the text as a document that is still being written: while
+    /// `isStreaming` is `true`, each update fades its new text in, and
+    /// rebuilds are paced by what they cost. See ``MarkdownStreamView``.
+    ///
+    /// A view this is applied to is drawn by a ``MarkdownStreamView``, even
+    /// while `isStreaming` is `false`, so keep the modifier on a view whose
+    /// stream ends rather than adding and removing it.
+    public func streaming(_ isStreaming: Bool = true) -> MarkdownView {
+        var view = self
+        view.isStreaming = isStreaming
+        return view
     }
 }
