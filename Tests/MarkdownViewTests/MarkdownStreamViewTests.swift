@@ -193,5 +193,199 @@ import Testing
             let view = MarkdownStreamView()
             #expect(view.textLabelView.lineRenderer is InlineCodeLineRenderer)
         }
+
+        // MARK: - Tables
+
+        private static let table = "Intro.\n\n| Name | Value |\n| --- | --- |\n| alpha | 1"
+
+        private func tableView(in view: MarkdownStreamView) throws -> TableView {
+            try #require(view.contextViews.compactMap { $0 as? TableView }.first)
+        }
+
+        /// The table's cells, which a stream can animate only as animatable
+        /// labels.
+        private func animatableCells(of table: TableView) throws -> [LTXAnimatableLabel] {
+            try table.cellViews.map { try #require($0 as? LTXAnimatableLabel) }
+        }
+
+        /// A stream view in a window that streams a table whose last cell
+        /// just grew from `1` to `123`.
+        private func makeStreamedTable() throws -> (MarkdownStreamView, HostWindow, TableView) {
+            let (view, window) = makeHostedView()
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            view.setContent(content(Self.table))
+            let table = try tableView(in: view)
+            view.setContent(content(Self.table + "23"))
+            #expect(try tableView(in: view) === table)
+            return (view, window, table)
+        }
+
+        @Test
+        func `streamed text fades in inside a table cell`() throws {
+            let (_, window, table) = try makeStreamedTable()
+            let cells = try animatableCells(of: table)
+            #expect(cells.map(\.attributedText.string) == ["Name", "Value", "alpha", "123"])
+            #expect(cells.last?.isAnimating == true)
+            // Cells whose text did not change stay as they are.
+            #expect(cells.dropLast().allSatisfy { !$0.isAnimating })
+            _ = window
+        }
+
+        @Test
+        func `a new table row fades in`() throws {
+            let (view, window, table) = try makeStreamedTable()
+            view.setContent(content(Self.table + "23\n| beta | 2"))
+            let cells = try animatableCells(of: table)
+            #expect(cells.count == 6)
+            #expect(cells[safe: 4]?.attributedText.string == "beta")
+            #expect(cells[safe: 4]?.isAnimating == true)
+            #expect(cells[safe: 5]?.isAnimating == true)
+            _ = window
+        }
+
+        @Test
+        func `a table outside a window never animates`() throws {
+            let view = MarkdownStreamView()
+            view.frame = CGRect(x: 0, y: 0, width: 400, height: 600)
+            view.setContentImmediately(content(Self.paragraphs[0]))
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            view.setContent(content(Self.table))
+            view.setContent(content(Self.table + "23\n| beta | 2"))
+            let cells = try animatableCells(of: tableView(in: view))
+            #expect(cells.count == 6)
+            #expect(cells.allSatisfy { !$0.isAnimating })
+        }
+
+        @Test
+        func `a table view taking another table shows it at once`() throws {
+            let (view, window, table) = try makeStreamedTable()
+            #expect(try animatableCells(of: table).last?.isAnimating == true)
+            // Same place, another table: the pooled view takes it.
+            view.setContent(content("Intro.\n\n| Fruit | Count |\n| --- | --- |\n| pear | 40"))
+            #expect(try tableView(in: view) === table)
+            let cells = try animatableCells(of: table)
+            #expect(cells.map(\.attributedText.string) == ["Fruit", "Count", "pear", "40"])
+            #expect(cells.allSatisfy { !$0.isAnimating })
+            _ = window
+        }
+
+        @Test
+        func `ending the stream lets a table's text in flight finish`() throws {
+            let (view, window, table) = try makeStreamedTable()
+            let cell = try #require(try animatableCells(of: table).last)
+            view.isStreaming = false
+            #expect(cell.isAnimating)
+            view.setContentImmediately(content(Self.table + "23"))
+            #expect(cell.animator == nil)
+            #expect(!cell.isAnimating)
+            _ = window
+        }
+
+        @Test
+        func `another item ends the animations inside its blocks`() throws {
+            let (view, window, table) = try makeStreamedTable()
+            view.setContent(content(Self.table + "23\n\n```swift\nlet a = 1\n"))
+            view.setContent(content(Self.table + "23\n\n```swift\nlet a = 1\nlet b = 2\n"))
+            let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
+            #expect(try animatableCells(of: table).last?.isAnimating == true)
+            #expect(codeView.textView.isAnimating)
+            view.streamIdentity = "another"
+            #expect(try animatableCells(of: table).allSatisfy { !$0.isAnimating })
+            #expect(!codeView.textView.isAnimating)
+            // The other item's text, streamed into the same views, shows at once.
+            view.setContent(content(Self.table + "234\n\n```swift\nlet a = 1\nlet b = 2\nlet c = 3\n"))
+            #expect(try animatableCells(of: table).allSatisfy { !$0.isAnimating })
+            #expect(!codeView.textView.isAnimating)
+            _ = window
+        }
+
+        // MARK: - The effect blocks fade in with
+
+        @Test
+        func `blocks fade in the way the body does`() throws {
+            let (view, window) = makeHostedView()
+            let configuration = LTXFadeInAnimator.Configuration(duration: 0.5, curve: .linear, maxBatches: 32)
+            view.animator = LTXFadeInAnimator(configuration: configuration)
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            view.setContent(content(Self.table + "\n\n```swift\nlet a = 1\n"))
+            let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
+            let labels = try [codeView.textView] + animatableCells(of: tableView(in: view))
+            for label in labels {
+                let animator = try #require(label.animator as? LTXFadeInAnimator)
+                #expect(animator.configuration == configuration)
+                #expect(animator !== view.animator)
+            }
+            // Every label keeps a timeline of its own.
+            let animators = Set(labels.compactMap { $0.animator.map { ObjectIdentifier($0) } })
+            #expect(animators.count == labels.count)
+            _ = window
+        }
+
+        @Test
+        func `a new body effect reaches the blocks`() throws {
+            let (view, window, table) = try makeStreamedTable()
+            let cell = try #require(try animatableCells(of: table).last)
+            let configuration = LTXFadeInAnimator.Configuration(duration: 1)
+            view.animator = LTXFadeInAnimator(configuration: configuration)
+            #expect(!cell.isAnimating)
+            view.setContent(content(Self.table + "234"))
+            #expect((cell.animator as? LTXFadeInAnimator)?.configuration == configuration)
+            #expect(cell.isAnimating)
+            _ = window
+        }
+
+        @Test
+        func `without a body effect blocks show their text at once`() throws {
+            let (view, window) = makeHostedView()
+            view.animator = nil
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            view.setContent(content(Self.table))
+            view.setContent(content(Self.table + "23"))
+            let cells = try animatableCells(of: tableView(in: view))
+            #expect(cells.allSatisfy { $0.animator == nil && !$0.isAnimating })
+            _ = window
+        }
+
+        @Test
+        func `a subclass gives blocks an effect of its own`() throws {
+            let frame = CGRect(x: 0, y: 0, width: 400, height: 600)
+            let view = BlockEffectStreamView()
+            view.frame = frame
+            #if canImport(UIKit)
+                let window = UIWindow(frame: frame)
+                window.addSubview(view)
+            #elseif canImport(AppKit)
+                let window = NSWindow(contentRect: frame, styleMask: [.titled], backing: .buffered, defer: true)
+                window.contentView = view
+            #endif
+            view.setContentImmediately(content(Self.paragraphs[0]))
+            view.isStreaming = true
+            view.rebuildIntervals = 0 ... 0
+            view.setContent(content(Self.table + "\n\n```swift\nlet a = 1\n"))
+            view.setContent(content(Self.table + "23\n\n```swift\nlet a = 1\nlet b = 2\n"))
+            let codeView = try #require(view.contextViews.compactMap { $0 as? CodeView }.first)
+            let cells = try animatableCells(of: tableView(in: view))
+            #expect(codeView.textView.animator is BlockEffect)
+            #expect(codeView.textView.isAnimating)
+            #expect(cells.allSatisfy { $0.animator is BlockEffect })
+            #expect(cells.last?.isAnimating == true)
+            #expect(!(view.animator is BlockEffect))
+            _ = window
+        }
+    }
+
+    /// Stands for an effect of a subclass's own.
+    @MainActor
+    private final class BlockEffect: LTXFadeInAnimator {}
+
+    @MainActor
+    private final class BlockEffectStreamView: MarkdownStreamView {
+        override func makeBlockAnimator() -> (any LTXTextAnimator)? {
+            BlockEffect()
+        }
     }
 #endif
