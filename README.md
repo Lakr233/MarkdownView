@@ -91,7 +91,7 @@ markdownTextView.setContentImmediately(content)
 
 ### Streaming with animation
 
-`MarkdownStreamView` is a `MarkdownTextView` for an answer that is still being written. While `isStreaming` is on, `setContent(_:)` rebuilds at a pace set by what a rebuild costs, the new text fades in (inside code blocks too), and new code blocks and tables fade in whole. Everything else appears at once, and with `isStreaming` off the view behaves exactly like `MarkdownTextView`.
+`MarkdownStreamView` is a `MarkdownTextView` for an answer that is still being written. While `isStreaming` is on, `setContent(_:)` rebuilds at a pace set by what a rebuild costs, the new text fades in, in the body, inside code blocks and in table cells, and new code blocks and tables fade in whole. Everything else appears at once, and with `isStreaming` off the view behaves exactly like `MarkdownTextView`.
 
 ```swift
 let view = MarkdownStreamView()
@@ -102,6 +102,16 @@ view.setContent(nextContent)          // more of the stream fades in
 ```
 
 In a list, turn streaming on only for the row that is being written. A view that is not in a window, such as one measuring a row's height, never animates. In SwiftUI, use `MarkdownView(text).streaming(isGenerating)`.
+
+Set `animator` to change the effect. Code blocks and table cells fade in the way the body does, each with an animator of its own: an `LTXFadeInAnimator` configured like `animator`, or with the default configuration when `animator` is another effect. Only text appended to what a block showed fades in, so a block view the stream reuses for another block shows it at once, and turning `isStreaming` off lets the text in flight finish. To give blocks an effect of their own, subclass and override `makeBlockAnimator()`:
+
+```swift
+final class AnswerView: MarkdownStreamView {
+    override func makeBlockAnimator() -> (any LTXTextAnimator)? {
+        LTXFadeUpAnimator()                // nil shows text inside blocks at once
+    }
+}
+```
 
 ### The unfinished end of a stream
 
