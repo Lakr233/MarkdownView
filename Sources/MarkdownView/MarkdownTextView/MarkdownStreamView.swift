@@ -19,10 +19,11 @@ import QuartzCore
 ///
 /// While ``isStreaming`` is `true`, content passed to ``setContent(_:)`` is
 /// rebuilt at a pace set by what a rebuild costs, and the text it adds fades
-/// in, in the body and inside code blocks; new code blocks and tables fade in
-/// whole. Everything else appears at once: ``setContentImmediately(_:)``, a
-/// theme, a finished highlight, and any content while ``isStreaming`` is
-/// `false`, when the view behaves exactly like a ``MarkdownTextView``.
+/// in, in the body, inside code blocks and in table cells; new code blocks
+/// and tables fade in whole. Everything else appears at once:
+/// ``setContentImmediately(_:)``, a theme, a finished highlight, and any
+/// content while ``isStreaming`` is `false`, when the view behaves exactly
+/// like a ``MarkdownTextView``.
 ///
 /// In a reused table or list row, set ``streamIdentity`` to the item the row
 /// shows and ``isStreaming`` to whether that item is still being written,
@@ -60,6 +61,7 @@ open class MarkdownStreamView: MarkdownTextView {
             if isStreaming {
                 idleThrottleInterval = throttleInterval
                 throttleInterval = nil
+                prepareBlocksForStreaming()
             } else {
                 applyPendingContent()
                 throttleInterval = idleThrottleInterval
@@ -68,17 +70,34 @@ open class MarkdownStreamView: MarkdownTextView {
     }
 
     /// What the view shows, for telling a reused row's next item from more of
-    /// the same one. Changing it ends the animations in flight.
+    /// the same one. Changing it ends the animations in flight, inside code
+    /// blocks and tables too.
     open var streamIdentity: AnyHashable? {
         get { streamLabel.animationIdentity }
-        set { streamLabel.animationIdentity = newValue }
+        set {
+            guard newValue != streamLabel.animationIdentity else { return }
+            streamLabel.animationIdentity = newValue
+            for label in blockLabels {
+                label.finishAnimations()
+            }
+        }
     }
 
     /// The effect streamed text appears with. Defaults to an
-    /// `LTXFadeInAnimator`; `nil` shows streamed text at once.
+    /// `LTXFadeInAnimator`; `nil` shows streamed text at once, in the body
+    /// and in code blocks and tables alike. Each code block and table cell
+    /// fades in with an animator of its own, from ``makeBlockAnimator()``.
     open var animator: (any LTXTextAnimator)? {
         get { streamLabel.animator }
-        set { streamLabel.animator = newValue }
+        set {
+            guard newValue !== streamLabel.animator else { return }
+            streamLabel.animator = newValue
+            // Blocks follow the new effect from their next change on.
+            for label in blockLabels {
+                label.animator = nil
+                prepareForStreaming(label)
+            }
+        }
     }
 
     /// The share of the main thread streamed rebuilds may take. Each rebuild
@@ -94,6 +113,9 @@ open class MarkdownStreamView: MarkdownTextView {
 
     /// `throttleInterval` to restore once streaming ends.
     private var idleThrottleInterval: TimeInterval? = 1 / 20
+    /// The ``streamIdentity`` the last rebuild showed. A streamed rebuild
+    /// for another item fills code blocks and tables at once.
+    private var shownIdentity: AnyHashable?
     private var pendingContent: MarkdownContent?
     private var rebuildTimer: Timer?
     private var nextRebuildTime: CFTimeInterval = 0
@@ -115,6 +137,13 @@ open class MarkdownStreamView: MarkdownTextView {
     /// Whether the rebuild in progress shows streamed content while streaming.
     private var isAnimatingRebuild: Bool {
         isStreaming && rebuildIsStreamed
+    }
+
+    /// Whether the rebuild in progress fades in the text it streams into
+    /// code blocks and tables: it is animated, and shows more of the item the
+    /// last rebuild showed. The body's label tells items apart itself.
+    private var animatesBlockText: Bool {
+        isAnimatingRebuild && streamIdentity == shownIdentity
     }
 
     // MARK: - Content
@@ -191,37 +220,86 @@ open class MarkdownStreamView: MarkdownTextView {
 
     override open func applyDocument(_ document: NSAttributedString, newContextViews: [PlatformView], animated: Bool) {
         super.applyDocument(document, newContextViews: newContextViews, animated: animated)
-        prepareCodeViewsForStreaming()
+        shownIdentity = streamIdentity
+        prepareBlocksForStreaming()
         guard isAnimatingRebuild, window != nil, contextViewFadeDuration > 0 else { return }
         for view in newContextViews {
             fadeIn(view)
         }
     }
 
-    /// Gives code blocks an animator of their own while streaming, so code
-    /// streamed into a block fades in like the body text.
+    // MARK: - Text inside blocks
+
+    /// Makes the animator that text streamed into one code block or table
+    /// cell fades in with. Called for each such label without one while
+    /// ``isStreaming`` is on and ``animator`` is set.
     ///
-    /// A block animates only text appended to what it showed, so a pooled
-    /// code view taking another block shows it at once.
-    private func prepareCodeViewsForStreaming() {
-        for case let codeView as CodeView in contextViews {
-            let label = codeView.textView
-            guard isStreaming, animator != nil else {
-                label.animator = nil
-                continue
+    /// The default fades the text in the way the body does: an
+    /// `LTXFadeInAnimator` with the configuration and speed of ``animator``
+    /// when that is one, and with the default configuration otherwise.
+    /// Override it to give blocks an effect of their own, or return `nil` to
+    /// show their text at once. Return a new animator from every call: an
+    /// animator keeps the timeline of one label.
+    open func makeBlockAnimator() -> (any LTXTextAnimator)? {
+        guard let body = animator as? LTXFadeInAnimator else { return LTXFadeInAnimator() }
+        let blockAnimator = LTXFadeInAnimator(configuration: body.configuration)
+        blockAnimator.speed = body.speed
+        return blockAnimator
+    }
+
+    /// The labels inside the code blocks and tables the document shows.
+    private var blockLabels: [LTXAnimatableLabel] {
+        contextViews.flatMap { view -> [LTXAnimatableLabel] in
+            if let codeView = view as? CodeView {
+                return [codeView.textView]
             }
-            guard label.animator == nil else { continue }
-            label.animator = LTXFadeInAnimator()
-            label.animationPolicy = LTXClosureAnimationPolicy { [weak self] context in
-                guard let self else { return false }
-                // A finished highlight only recolours the code, so the code in flight
-                // keeps fading instead of showing at once.
-                return (isAnimatingRebuild
-                    && context.change.isAppend
-                    && LTXDefaultAnimationPolicy().shouldAnimate(context))
-                    || (!context.change.hasInsertion && context.wasAnimating)
+            if let tableView = view as? TableView {
+                return tableView.cellViews.compactMap { $0 as? LTXAnimatableLabel }
+            }
+            return []
+        }
+    }
+
+    /// The policy of every label inside a code block or a table.
+    ///
+    /// A label animates only text appended to what it showed, so a pooled
+    /// view taking another block shows it at once. A finished highlight only
+    /// recolours the code, so the code in flight keeps fading instead of
+    /// showing at once.
+    private lazy var blockAnimationPolicy = LTXClosureAnimationPolicy { [weak self] context in
+        guard let self else { return false }
+        return (animatesBlockText
+            && context.change.isAppend
+            && LTXDefaultAnimationPolicy().shouldAnimate(context))
+            || (!context.change.hasInsertion && context.wasAnimating)
+    }
+
+    /// Gives every label inside a code block or a table an animator of its
+    /// own while streaming, so text streamed into a block fades in like the
+    /// body's, and has each table do the same for the cells of a new row
+    /// before their first text.
+    private func prepareBlocksForStreaming() {
+        for case let tableView as TableView in contextViews {
+            tableView.prepareCell = { [weak self] cell in
+                self?.prepareForStreaming(cell)
             }
         }
+        for label in blockLabels {
+            prepareForStreaming(label)
+        }
+    }
+
+    /// Gives `label` an animator while the document streams, and takes it
+    /// away at the first rebuild after the stream has ended. Until then,
+    /// text in flight finishes fading in.
+    private func prepareForStreaming(_ label: LTXAnimatableLabel) {
+        guard isStreaming, animator != nil else {
+            label.animator = nil
+            return
+        }
+        guard label.animator == nil else { return }
+        label.animator = makeBlockAnimator()
+        label.animationPolicy = blockAnimationPolicy
     }
 
     private func fadeIn(_ view: PlatformView) {

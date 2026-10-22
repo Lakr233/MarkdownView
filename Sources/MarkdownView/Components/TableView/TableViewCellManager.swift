@@ -7,6 +7,7 @@
 //
 
 import Litext
+import LitextAnimation
 import MarkdownParser
 
 #if canImport(UIKit)
@@ -86,7 +87,13 @@ struct TableLayoutMetrics: Equatable {
 
         // MARK: - Properties
 
+        /// Each an `LTXAnimatableLabel`, so a streaming document can fade in
+        /// the text a cell grows by. Without an animator, which is how they
+        /// are made, they draw exactly as a `MarkdownTextLabelView` does.
         private(set) var cells: [TextLabelView] = []
+        /// Called with every cell made, after it joins its column and before
+        /// it shows any text.
+        var prepareCell: ((LTXAnimatableLabel) -> Void)?
         private var records: [CellRecord?] = []
         private(set) var cellSizes: [CGSize] = []
         private(set) var widths: [CGFloat] = []
@@ -206,26 +213,33 @@ struct TableLayoutMetrics: Equatable {
             in containerView: PlatformView,
         ) -> CGSize {
             let cell: TextLabelView
+            var newCell: LTXAnimatableLabel?
 
             if index >= cells.count {
-                cell = MarkdownTextLabelView()
+                let made = LTXAnimatableLabel()
+                made.lineRenderer = InlineCodeLineRenderer()
                 #if canImport(UIKit)
-                    cell.backgroundColor = .clear
+                    made.backgroundColor = .clear
                 #elseif canImport(AppKit)
-                    cell.wantsLayer = true
-                    cell.layer?.backgroundColor = NSColor.clear.cgColor
+                    made.wantsLayer = true
+                    made.layer?.backgroundColor = NSColor.clear.cgColor
                 #endif
-                cell.selectionBackgroundColor = theme.colors.selectionBackground
-                cell.delegate = delegate
-                cell.isSelectable = true
-                cells.append(cell)
+                made.selectionBackgroundColor = theme.colors.selectionBackground
+                made.delegate = delegate
+                made.isSelectable = true
+                cells.append(made)
                 records.append(nil)
+                cell = made
+                newCell = made
             } else {
                 cell = cells[index]
             }
             // A new column count moves a kept cell into another column.
             if cell.superview !== containerView {
                 containerView.addSubview(cell)
+            }
+            if let newCell {
+                prepareCell?(newCell)
             }
 
             // The header cell gives up its accessory's width, and the column

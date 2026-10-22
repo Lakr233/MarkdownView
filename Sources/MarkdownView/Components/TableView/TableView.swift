@@ -4,6 +4,7 @@
 //
 
 import Litext
+import LitextAnimation
 import MarkdownParser
 
 /// `naturalWidths` stretched evenly to fill `availableWidth` less
@@ -123,6 +124,13 @@ final class TableView: PlatformView {
     /// The cells drawn, row by row.
     var cellViews: [TextLabelView] {
         cellManager.cells
+    }
+
+    /// Called with every cell the table makes, before it shows any text, so
+    /// a streaming document can fade in the first text of a new row.
+    var prepareCell: ((LTXAnimatableLabel) -> Void)? {
+        get { cellManager.prepareCell }
+        set { cellManager.prepareCell = newValue }
     }
 
     private var numberOfColumns: Int {
