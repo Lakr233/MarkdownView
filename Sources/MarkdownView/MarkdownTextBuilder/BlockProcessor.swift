@@ -243,7 +243,12 @@ extension BlockProcessor {
             range: .init(location: 0, length: string.length),
         )
         if withNewLine, !string.string.hasSuffix("\n") {
-            string.append(.init(string: "\n"))
+            // The newline carries the body font rather than none. CoreText typesets
+            // a newline with no font in its default, Helvetica 12, and on iOS 27 and
+            // macOS 27 that shows: after a paragraph ending in a full-width closing
+            // bracket (`」`, `）`), a newline in another font moves half an em to the
+            // start of the next paragraph, whose first line then begins indented.
+            string.append(.init(string: "\n", attributes: [.font: theme.fonts.body]))
         }
         return string
     }
