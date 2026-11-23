@@ -95,7 +95,10 @@ final class ListProcessor {
             [.paragraphStyle: paragraphStyle],
             range: .init(location: 0, length: string.length),
         )
-        string.append(.init(string: "\n"))
+        // In the body font, for the reason `BlockProcessor` gives where it ends a
+        // paragraph: a newline with no font indents the next line on iOS 27 and
+        // macOS 27 when the item ends in a full-width closing bracket.
+        string.append(.init(string: "\n", attributes: [.font: theme.fonts.body]))
         return string
     }
 
