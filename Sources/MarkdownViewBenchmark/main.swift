@@ -186,7 +186,9 @@ struct MarkdownViewBenchmark {
         let parser = MarkdownParser()
         var cases: [BenchmarkCase] = []
 
-        for sections in [1, 4, 16] {
+        // 160 sections is a document of about a hundred thousand characters,
+        // where costs that grow faster than the text show.
+        for sections in [1, 4, 16, 160] {
             let markdown = benchmarkDocument(sections: sections)
             let parsed = parser.parse(markdown)
             let content = MarkdownContent(parserResult: parsed, theme: theme)
@@ -219,7 +221,10 @@ struct MarkdownViewBenchmark {
             // The same build into a fresh view, so no block comes from the
             // view's fragment cache. Inline text still hits the process-wide
             // render cache once warm, as it would for a new row in an app.
-            cases.append(BenchmarkCase(name: "scale/cold_build/\(sections)") { iterations in
+            cases.append(BenchmarkCase(
+                name: "scale/cold_build/\(sections)",
+                iterationLimit: sections > 16 ? 5 : nil,
+            ) { iterations in
                 for _ in 0 ..< iterations {
                     autoreleasepool {
                         let view = MarkdownTextView()
@@ -348,6 +353,32 @@ struct MarkdownViewBenchmark {
                         )
                         view.setContentImmediately(content)
                         _ = view.boundingSize(for: 600)
+                    }
+                }
+            }
+        })
+
+        // The same tail ten times as far in: the last eighth of a document of
+        // about a hundred thousand characters, in sixty updates. The contents
+        // are built up front and the view is kept, so an operation is one
+        // rebuild and one measurement: the stream runs to its end, and going
+        // back to its start, which only drops the tail, is one more. Next to
+        // `stream/tail_16` it says what an update costs once the document is
+        // that long.
+        let hugeContents = streamingPrefixes(of: benchmarkDocument(sections: 160), updates: 480)
+            .suffix(60)
+            .map { MarkdownContent(parserResult: parser.parse($0, isStreaming: true), theme: theme) }
+        let hugeView = MarkdownTextView()
+        cases.append(BenchmarkCase(
+            name: "stream/tail_160",
+            operations: hugeContents.count,
+            iterationLimit: 5,
+        ) { iterations in
+            for _ in 0 ..< iterations {
+                for content in hugeContents {
+                    autoreleasepool {
+                        hugeView.setContentImmediately(content)
+                        _ = hugeView.boundingSize(for: 600)
                     }
                 }
             }
