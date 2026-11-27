@@ -68,6 +68,56 @@ import Testing
             #expect(CGFloat(pillMax - inkMax) / scale >= InlineCode.wrappedEndInset + 1)
         }
 
+        /// Spacers are shared between spans, and a pill that reached out to its
+        /// spacers only did so for the span the spacer was first made for.
+        @MainActor
+        @Test
+        func `Every pill is as wide as the first one drawn with its colors`() throws {
+            // Colors no other test uses, so the first span here is the first with them.
+            var theme = MarkdownTheme.default
+            theme.colors.codeBackground = PlatformColor(red: 0.93, green: 0.07, blue: 0.11, alpha: 1)
+            theme.colors.code = .black
+
+            func pillWidths(_ markdown: String) throws -> [Int] {
+                let view = RenderProbe.view(markdown, width: 480, theme: theme)
+                let rep = try #require(view.bitmapImageRepForCachingDisplay(in: view.bounds))
+                view.cacheDisplay(in: view.bounds, to: rep)
+                func isPill(_ x: Int, _ y: Int) -> Bool {
+                    guard let color = rep.colorAt(x: x, y: y) else { return false }
+                    return color.alphaComponent > 0.9 && color.redComponent > 0.8
+                        && color.greenComponent < 0.3 && color.blueComponent < 0.3
+                }
+                // Columns that hold any pill pixel, in runs: one run a pill.
+                var widths: [Int] = []
+                var width = 0
+                for x in 0 ..< rep.pixelsWide {
+                    if (0 ..< rep.pixelsHigh).contains(where: { isPill(x, $0) }) {
+                        width += 1
+                    } else if width > 0 {
+                        widths.append(width)
+                        width = 0
+                    }
+                }
+                if width > 0 { widths.append(width) }
+                return widths
+            }
+
+            // The same code three times on a line: three pills, not one across the
+            // words between them.
+            let first = try pillWidths("first `code` then `code` and `code` again")
+            #expect(first.count == 3, "\(first)")
+            // A pixel apart at most, where an edge falls between two pixels: a
+            // pill that reached its spacers would be four points wider.
+            #expect((first.max() ?? 0) - (first.min() ?? 0) <= 1, "pills of the same code differ: \(first)")
+            // A view built later draws them the same.
+            let later = try pillWidths("later `code` once more")
+            #expect(later.count == 1, "\(later)")
+            #expect(abs((later.first ?? 0) - (first.first ?? 0)) <= 1, "\(later) after \(first)")
+            // And so is the pill of code no view has drawn before.
+            let other = try pillWidths("other `edoc` here")
+            #expect(abs((other.first ?? 0) - (first.first ?? 0)) <= 1, "\(other) after \(first)")
+        }
+
         @Test
         func `Only <br> reads as a line break`() {
             #expect(InlineCode.isLineBreak("<br>"))
