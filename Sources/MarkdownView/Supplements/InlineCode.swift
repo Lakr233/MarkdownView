@@ -20,13 +20,13 @@ extension NSAttributedString.Key {
 }
 
 /// Inline code as a rounded pill: monospaced text at the body's size, on a
-/// background inset a few points past the text on either side.
+/// background that reaches a little past the text on either side.
 @MainActor
 enum InlineCode {
-    /// Space between the pill's edge and the text, on each side.
+    /// The room a spacer keeps clear on each side of the code.
     static let horizontalInset: CGFloat = 4
-    /// Space past the text where a wrapped span breaks, and so has no spacer
-    /// on that side of the line.
+    /// How far the pill reaches past the code on each side, whether the span
+    /// ends there or wraps on.
     static let wrappedEndInset: CGFloat = 2
     /// How far the pill reaches above and below the code font's glyph box.
     static let verticalInset: CGFloat = 1
@@ -245,47 +245,54 @@ open class InlineCodeLineRenderer: TextLabel.LineRenderer {
         return Unmanaged<AnyObject>.fromOpaque(value).takeUnretainedValue()
     }
 
-    /// One pill per code span on `line`, spanning its text and the spacers
-    /// beside it. A spacer the line break left on a line by itself gets
-    /// none, and a side the span wraps on, with its spacer on another line,
-    /// reaches `wrappedEndInset` past the text instead.
+    /// One pill per code span on `line`, reaching `wrappedEndInset` past its
+    /// text on each side. A spacer the line break left on a line by itself
+    /// gets none.
+    ///
+    /// A span is the code text alone, and what tells one span from the next
+    /// is that their text does not touch. Neither the spacers nor the
+    /// background can: both are shared. A spacer carries the background of the
+    /// span it was first made for, so only that span's pill used to reach out
+    /// to its spacers, four points wider than every pill after it; and the
+    /// same code written twice comes out of the inline cache with one
+    /// background, so two of them on a line used to share one pill, drawn
+    /// across the words between them.
     private static func pills(of line: CTLine) -> [Pill] {
         struct Span {
             let background: InlineCodeBackground
             var minX: CGFloat
             var maxX: CGFloat
-            /// String ranges of the code text and of the spacers on this line.
-            var code: NSRange?
-            var spacers: [NSRange] = []
+            /// The code's range in the string, as far as this line holds it.
+            var code: NSRange
+
+            func touches(_ range: NSRange) -> Bool {
+                NSMaxRange(code) == range.location || NSMaxRange(range) == code.location
+            }
         }
         var spans: [Span] = []
         for run in CTLineGetGlyphRuns(line) as! [CTRun] {
             let attributes = CTRunGetAttributes(run)
             guard let background = runValue(attributes, backgroundKey) as? InlineCodeBackground,
+                  runValue(attributes, attachmentKey) == nil,
                   let (start, end) = InlineCode.horizontalExtent(of: run)
             else { continue }
             let cfRange = CTRunGetStringRange(run)
             let range = NSRange(location: cfRange.location, length: cfRange.length)
-            let index = spans.firstIndex { $0.background === background } ?? {
-                spans.append(Span(background: background, minX: start, maxX: end))
-                return spans.count - 1
-            }()
-            spans[index].minX = min(spans[index].minX, start)
-            spans[index].maxX = max(spans[index].maxX, end)
-            if runValue(attributes, attachmentKey) == nil {
-                spans[index].code = spans[index].code.map { NSUnionRange($0, range) } ?? range
+            // A span is several runs where its text changes font or direction.
+            if let index = spans.firstIndex(where: { $0.background === background && $0.touches(range) }) {
+                spans[index].minX = min(spans[index].minX, start)
+                spans[index].maxX = max(spans[index].maxX, end)
+                spans[index].code = NSUnionRange(spans[index].code, range)
             } else {
-                spans[index].spacers.append(range)
+                spans.append(Span(background: background, minX: start, maxX: end, code: range))
             }
         }
         return spans.compactMap { span in
-            guard let code = span.code, span.minX < span.maxX else { return nil }
-            let hasLeadingSpacer = span.spacers.contains { $0.location < code.location }
-            let hasTrailingSpacer = span.spacers.contains { $0.location >= NSMaxRange(code) }
+            guard span.minX < span.maxX else { return nil }
             return Pill(
                 background: span.background,
-                minX: span.minX - (hasLeadingSpacer ? 0 : InlineCode.wrappedEndInset),
-                maxX: span.maxX + (hasTrailingSpacer ? 0 : InlineCode.wrappedEndInset),
+                minX: span.minX - InlineCode.wrappedEndInset,
+                maxX: span.maxX + InlineCode.wrappedEndInset,
             )
         }
     }
